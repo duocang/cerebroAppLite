@@ -43,12 +43,14 @@ output[["expression_details_selected_cells"]] <- DT::renderDataTable({
     expression_projection_coordinates(),
     expression_projection_expression_levels()
   )
+  meta_data <- getMetaData()
+  req(!is.null(meta_data))
   selected_cells <- expression_projection_selected_cells()
   ## check selection
   ## ... selection has not been made or there is no cell in it
   if ( is.null(selected_cells) ) {
     ## prepare empty table
-    getMetaData() %>%
+    meta_data %>%
     dplyr::slice(0) %>%
     prepareEmptyTable()
   ## ... selection has been made and at least 1 cell is in it

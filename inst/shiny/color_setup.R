@@ -29,6 +29,37 @@ cell_cycle_colorset <- setNames(
 ##----------------------------------------------------------------------------##
 reactive_colors <- reactive({
   req(data_set())
+  ## pick dataset-specific colors if provided via Cerebro.options
+  dataset_colors <- NULL
+  if (exists('Cerebro.options') && !is.null(Cerebro.options[['colors']])) {
+    colors_option <- Cerebro.options[['colors']]
+    dataset_key <- NULL
+    ## try to map selected file to provided names (when a named list of files was given)
+    if (!is.null(available_crb_files$names) && !is.null(available_crb_files$files)) {
+      idx <- match(available_crb_files$selected, available_crb_files$files)
+      if (!is.na(idx)) {
+        dataset_key <- available_crb_files$names[idx]
+      }
+    }
+    ## fall back to experiment name if available
+    if (is.null(dataset_key)) {
+      experiment_name <- tryCatch({ data_set()$getExperiment() }, error = function(e) NULL)
+      if (!is.null(experiment_name)) {
+        dataset_key <- experiment_name
+      }
+    }
+    ## pick matching colorset if key exists; otherwise allow a single unnamed entry as default
+    if (!is.null(dataset_key)) {
+      if (is.list(dataset_key)) {
+          dataset_key <- dataset_key[[1]]
+      }
+      if (!is.null(colors_option[[ dataset_key ]])) {
+        dataset_colors <- colors_option[[ dataset_key ]]
+      }
+    } else if (length(colors_option) == 1 && is.null(names(colors_option))) {
+      dataset_colors <- colors_option[[1]]
+    }
+  }
   ## get cell meta data
   meta_data <- getMetaData()
   colors <- list()
@@ -43,9 +74,21 @@ reactive_colors <- reactive({
         colors[[ group_name ]][ group_level ] <- input[[ paste0('color_', group_name, '_', gsub(group_level, pattern = '[^[:alnum:]]', replacement = '_')) ]]
       }
     } else {
-      colors[[ group_name ]] <- default_colorset[seq_along(getGroupLevels(group_name))]
-      names(colors[[ group_name ]]) <- getGroupLevels(group_name)
-      if ( 'N/A' %in% getGroupLevels(group_name) ) {
+      group_levels <- getGroupLevels(group_name)
+      custom_colors <- NULL
+      if (!is.null(dataset_colors) && !is.null(dataset_colors[[ group_name ]])) {
+        custom_colors <- dataset_colors[[ group_name ]]
+      }
+      ## start from defaults, then override with provided colors where they match
+      colors[[ group_name ]] <- default_colorset[seq_along(group_levels)]
+      names(colors[[ group_name ]]) <- group_levels
+      if (!is.null(custom_colors)) {
+        matches <- intersect(names(custom_colors), group_levels)
+        if (length(matches) > 0) {
+          colors[[ group_name ]][ matches ] <- custom_colors[ matches ]
+        }
+      }
+      if ( 'N/A' %in% group_levels ) {
         colors[[ group_name ]][ which(names(colors[[ group_name ]]) == 'N/A') ] <- '#898989'
       }
     }

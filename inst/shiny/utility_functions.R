@@ -822,152 +822,193 @@ setRowOrder <- function(df, order) {
 ## Never directly interact with data set: data_set()
 ##----------------------------------------------------------------------------##
 getExperiment <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getExperiment())
   }
 }
 getParameters <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getParameters())
   }
 }
 getTechnicalInfo <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getTechnicalInfo())
   }
 }
 getGeneLists <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getGeneLists())
   }
 }
+getMeanExpressionForGenes <- function(genes) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
+    return(data_set()$getMeanExpressionForGenes(genes))
+  }
+}
+getMeanExpressionForCells <- function(cells, genes) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
+    return(data_set()$getMeanExpressionForCells(cells, genes))
+  }
+}
+getExpressionMatrix <- function(...) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
+    return(data_set()$getExpressionMatrix(...))
+  }
+}
+getCellNames <- function() {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
+    return(data_set()$getCellNames())
+  }
+}
 getGeneNames <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getGeneNames())
   }
 }
 getGroups <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getGroups())
   }
 }
 getGroupLevels <- function(group) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getGroupLevels(group))
   }
 }
 getCellCycle <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getCellCycle())
   }
 }
 getMetaData <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getMetaData())
   }
 }
 availableProjections <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$availableProjections())
   }
 }
 getProjection <- function(name) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getProjection(name))
   }
 }
 getTree <- function(group) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getTree(group))
   }
 }
 getGroupsWithMostExpressedGenes <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getGroupsWithMostExpressedGenes())
   }
 }
 getMostExpressedGenes <- function(group) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getMostExpressedGenes(group))
   }
 }
 getMethodsForMarkerGenes <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getMethodsForMarkerGenes())
   }
 }
 getGroupsWithMarkerGenes <- function(method) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getGroupsWithMarkerGenes(method))
   }
 }
 getMarkerGenes <- function(method, group) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getMarkerGenes(method, group))
   }
 }
 getMethodsForEnrichedPathways <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getMethodsForEnrichedPathways())
   }
 }
 getGroupsWithEnrichedPathways <- function(method) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getGroupsWithEnrichedPathways(method))
   }
 }
 getEnrichedPathways <- function(method, group) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getEnrichedPathways(method, group))
   }
 }
 getMethodsForTrajectories <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getMethodsForTrajectories())
   }
 }
 getNamesOfTrajectories <- function(method) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getNamesOfTrajectories(method))
   }
 }
 getTrajectory <- function(method, name) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getTrajectory(method, name))
   }
 }
+getBCR <- function() {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
+    if ( is.function(data_set()$getBCR) ) {
+      return(data_set()$getBCR())
+    } else {
+      return(data_set()$bcr_data)
+    }
+  }
+}
+getTCR <- function() {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
+    if ( is.function(data_set()$getTCR) ) {
+      return(data_set()$getTCR())
+    } else {
+      return(data_set()$tcr_data)
+    }
+  }
+}
+.has_scRepertoire <- function() {
+  requireNamespace("scRepertoire", quietly = TRUE)
+}
 getExtraMaterialCategories <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getExtraMaterialCategories())
   }
 }
 checkForExtraTables <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$checkForExtraTables())
   }
 }
 getNamesOfExtraTables <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getNamesOfExtraTables())
   }
 }
 getExtraTable <- function(name) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getExtraTable(name))
   }
 }
 checkForExtraPlots <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$checkForExtraPlots())
   }
 }
 getNamesOfExtraPlots <- function() {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getNamesOfExtraPlots())
   }
 }
 getExtraPlot <- function(name) {
-  if ( 'Cerebro' %in% class(data_set()) ) {
+  if ( 'Cerebro_v1.3' %in% class(data_set()) ) {
     return(data_set()$getExtraPlot(name))
   }
 }

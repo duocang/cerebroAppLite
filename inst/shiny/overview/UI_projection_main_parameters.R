@@ -2,6 +2,21 @@
 ## UI elements to set main parameters for the projection.
 ##----------------------------------------------------------------------------##
 output[["overview_projection_main_parameters_UI"]] <- renderUI({
+  ## determine which metadata columns to include based on exclude_trivial_metadata
+  exclude_trivial <- FALSE
+  if (exists('Cerebro.options') && !is.null(Cerebro.options[['exclude_trivial_metadata']])) {
+    exclude_trivial <- Cerebro.options[['exclude_trivial_metadata']]
+  }
+
+  ## build choices based on setting
+  if (exclude_trivial == TRUE) {
+    ## only include groups from getGroups()
+    metadata_cols <- getGroups()
+  } else {
+    ## include all metadata columns except cell_barcode
+    metadata_cols <- colnames(getMetaData())[! colnames(getMetaData()) %in% c("cell_barcode")]
+  }
+
   tagList(
     selectInput(
       "overview_projection_to_display",
@@ -11,7 +26,7 @@ output[["overview_projection_main_parameters_UI"]] <- renderUI({
     selectInput(
       "overview_projection_point_color",
       label = "Color cells by",
-      choices = colnames(getMetaData())[! colnames(getMetaData()) %in% c("cell_barcode")]
+      choices = metadata_cols
     )
   )
 })

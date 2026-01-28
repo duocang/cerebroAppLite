@@ -7,7 +7,7 @@ output[["expression_projection_input_type_UI"]] <- renderUI({
     selectizeInput(
       'expression_genes_input',
       label = 'Gene(s)',
-      choices = data.table::as.data.table(data.frame("Genes" = list_of_genes())),
+      choices = data.table::as.data.table(data.frame("Genes" = getGeneNames())),
       multiple = TRUE,
       options = list(
         create = TRUE

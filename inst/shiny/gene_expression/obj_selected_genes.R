@@ -6,7 +6,7 @@
 expression_selected_genes <- reactive({
   req(
     input[["expression_analysis_mode"]],
-    list_of_genes()
+    getGeneNames()
   )
   # message('--> trigger "expression_selected_genes"')
   ## prepare empty list for data
@@ -39,7 +39,7 @@ expression_selected_genes <- reactive({
     gene_sets[["genes_to_display"]] <- getGenesForGeneSet(input[["expression_select_gene_set"]])
   }
   ## check which are available in the data set
-  genes_to_display_here <- list_of_genes()[ match(tolower(gene_sets[["genes_to_display"]]), tolower(list_of_genes())) ]
+  genes_to_display_here <- getGeneNames()[ match(tolower(gene_sets[["genes_to_display"]]), tolower(getGeneNames())) ]
   ## get which genes are available in the data set
   gene_sets[["genes_to_display_present"]] <- na.omit(genes_to_display_here)
   ## get names of provided genes that are not in the data set
