@@ -7,3 +7,4 @@ docs
 tests
 .Rproj.user
 *.Rproj
+inst/extdata/example.crb
