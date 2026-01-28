@@ -1,0 +1,2293 @@
+\nonstopmode{}
+\documentclass[a4paper]{book}
+\usepackage[times,inconsolata,hyper]{Rd}
+\usepackage{makeidx}
+\makeatletter\@ifl@t@r\fmtversion{2018/04/01}{}{\usepackage[utf8]{inputenc}}\makeatother
+% \usepackage{graphicx} % @USE GRAPHICX@
+\makeindex{}
+\begin{document}
+\chapter*{}
+\begin{center}
+{\textbf{\huge Package `cerebroAppLite'}}
+\par\bigskip{\large \today}
+\end{center}
+\ifthenelse{\boolean{Rd@use@hyper}}{\hypersetup{pdftitle = {cerebroAppLite: Interactive visualization of single cell transcriptomics}}}{}
+\ifthenelse{\boolean{Rd@use@hyper}}{\hypersetup{pdfauthor = {Roman Hillje; Mischko Heming; Xuesong Wang}}}{}
+\begin{description}
+\raggedright{}
+\item[Title]\AsIs{Interactive visualization of single cell transcriptomics}
+\item[Version]\AsIs{1.5.4}
+\item[Author]\AsIs{Roman Hillje [aut, cre], Mischko Heming [aut], Xuesong Wang [aut]}
+\item[Maintainer]\AsIs{Mischko Heming }\email{mihem@mailbox.org}\AsIs{}
+\item[Description]\AsIs{cerebroAppLite is a Shiny application that allows to interactively visualize scRNA-seq data. Data must be exported from a Seurat object.}
+\item[License]\AsIs{MIT + file LICENSE}
+\item[Encoding]\AsIs{UTF-8}
+\item[LazyData]\AsIs{true}
+\item[RoxygenNote]\AsIs{7.3.3}
+\item[Depends]\AsIs{R (>= 3.5.1)}
+\item[biocViews]\AsIs{FeatureExtraction, GeneExpression, GUI, SingleCell,
+Software, Technology, Transcription, Transcriptomics,
+Visualization}
+\item[Imports]\AsIs{ape (>= 5.4), BPCells, biomaRt (>= 2.38.0), colourpicker (>=
+1.0), dplyr (>= 1.0.0), DT (>= 0.14.0), future.apply (>=
+1.1.0), ggplot2 (>= 3.2.1), glue (>= 1.4.0), GSVA (>= 1.30.0),
+HDF5Array (>= 1.18.1), httr (>= 1.4.0), igraph, Matrix (>=
+1.2), methods, msigdbr (>= 6.2.1), pbapply (>= 1.4), plotly (>=
+4.9.0), qvalue (>= 2.14.0), R6 (>= 2.4.0), readr (>= 1.3.1),
+rlang (>= 0.4.2), scales (>= 1.1.0), shiny (>= 1.3.2),
+shinycssloaders (>= 1.0.0), shinydashboard (>= 0.7.1),
+shinyFiles (>= 0.8.0), shinyjs (>= 1.1), shinyWidgets (>=
+0.5.0), stats, stringr, tibble (>= 3.0.0), tidyr (>= 1.1.0),
+tidyselect(>= 1.1.0), utils, viridis (>= 0.5.1)}
+\item[Suggests]\AsIs{formattable (>= 0.2.0.1), knitr, rmarkdown, Seurat (>= 3.0.0)}
+\item[VignetteBuilder]\AsIs{knitr}
+\end{description}
+\Rdcontents{Contents}
+\HeaderA{.read\_GMT\_file}{Read GMT file.}{.read.Rul.GMT.Rul.file}
+%
+\begin{Description}
+This functions reads a (tab-delimited) GMT file which contains the gene set
+name in the first column, the gene set description in the second column, and
+the gene names in the following columns.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+.read_GMT_file(file)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{file}] Path to GMT file.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Returns an object in the same format as from the GSA.read.gmt function (GSA
+package) with gene sets, gene set names, and gene set descriptions stored in
+lists.
+\end{Value}
+\HeaderA{.send\_enrichr\_query}{Gene enrichment using Enrichr.}{.send.Rul.enrichr.Rul.query}
+%
+\begin{Description}
+Gene enrichment using Enrichr.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+.send_enrichr_query(genes, databases = NULL, URL_API = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{genes}] Gene names or dataframe of gene names in first column and a
+score between 0 and 1 in the other.
+
+\item[\code{databases}] Databases to search.
+
+\item[\code{URL\_API}] URL to send requests to (Enrichr API).
+See https://maayanlab.cloud/Enrichr/\#stats for available databases.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Returns a data frame of enrichment terms, p-values, ...
+\end{Value}
+%
+\begin{Author}
+Wajid Jawaid, modified by Roman Hillje
+\end{Author}
+\HeaderA{addPercentMtRibo}{Add percentage of mitochondrial and ribosomal transcripts.}{addPercentMtRibo}
+%
+\begin{Description}
+Get percentage of transcripts of gene list compared to all transcripts per
+cell.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+addPercentMtRibo(object, assay = "RNA", organism, gene_nomenclature)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] Seurat object.
+
+\item[\code{assay}] Assay to pull counts from; defaults to 'RNA'. Only relevant in
+Seurat v3.0 or higher since the concept of assays wasn't implemented before.
+
+\item[\code{organism}] Organism, can be either human ('hg') or mouse ('mm'). Genes
+need to annotated as gene symbol, e.g. MKI67 (human) / Mki67 (mouse).
+
+\item[\code{gene\_nomenclature}] Define if genes are saved by their name ('name'),
+ENSEMBL ID ('ensembl') or GENCODE ID ('gencode\_v27', 'gencode\_vM16').
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Seurat object with two new meta data columns containing the percentage of
+mitochondrial and ribosomal gene expression for each cell.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+pbmc <- readRDS(system.file("extdata/pbmc_seurat.rds",
+  package = "cerebroAppLite"))
+pbmc <- addPercentMtRibo(
+  object = pbmc,
+  assay = 'RNA',
+  organism = 'hg',
+  gene_nomenclature = 'name'
+)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{calculatePercentGenes}{Calculate percentage of transcripts of gene list.}{calculatePercentGenes}
+%
+\begin{Description}
+Get percentage of transcripts of gene list compared to all transcripts per
+cell.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+calculatePercentGenes(object, assay = "RNA", genes)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] Seurat object.
+
+\item[\code{assay}] Assay to pull counts from; defaults to 'RNA'. Only relevant in
+Seurat v3.0 or higher since the concept of assays wasn't implemented before.
+
+\item[\code{genes}] List(s) of genes.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+List of lists containing the percentages of expression for each provided
+gene list.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+pbmc <- readRDS(system.file("extdata/pbmc_seurat.rds",
+  package = "cerebroAppLite"))
+pbmc <- calculatePercentGenes(
+  object = pbmc,
+  assay = 'RNA',
+  genes = list('example' = c('FCN1','CD3D'))
+)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{Cerebro}{R6 class in which data sets will be stored for visualization in Cerebro.}{Cerebro}
+%
+\begin{Description}
+A \code{Cerebro} object is an R6 class that contains several types of
+data that can be visualized in Cerebro.
+\end{Description}
+%
+\begin{Value}
+A new \code{Cerebro} object.
+\end{Value}
+%
+\begin{Section}{Public fields}
+
+\begin{description}
+
+\item[\code{version}] cerebroApp version that was used to create the object.
+
+\item[\code{experiment}] \code{list} that contains meta data about the data set,
+including experiment name, species, date of export.
+
+\item[\code{technical\_info}] \code{list} that contains technical information
+about the analysis, including the R session info.
+
+\item[\code{parameters}] \code{list} that contains important parameters that
+were used during the analysis, e.g. cut-off values for cell filtering.
+
+\item[\code{groups}] \code{list} that contains specified grouping variables and
+and the group levels (subgroups) that belong to each of them. For each
+grouping variable, a corresponding column with the same name must exist
+in the meta data.
+
+\item[\code{cell\_cycle}] \code{vector} that contains the name of columns in the
+meta data that contain cell cycle assignments.
+
+\item[\code{gene\_lists}] \code{list} that contains gene lists, e.g.
+mitochondrial and/or ribosomal genes.
+
+\item[\code{expression}] \code{matrix}-like object that holds transcript counts.
+
+\item[\code{meta\_data}] \code{data.frame} that contains cell meta data.
+
+\item[\code{projections}] \code{list} that contains projections/dimensional
+reductions.
+
+\item[\code{most\_expressed\_genes}] \code{list} that contains a \code{data.frame}
+holding the most expressed genes for each grouping variable that was
+specified during the call to \code{\LinkA{getMostExpressedGenes}{getMostExpressedGenes}}.
+
+\item[\code{marker\_genes}] \code{list} that contains a \code{list} for every
+method that was used to calculate marker genes, and a \code{data.frame}
+for each grouping variable, e.g. those that were specified during the
+call to \code{\LinkA{getMarkerGenes}{getMarkerGenes}}.
+
+\item[\code{enriched\_pathways}] \code{list} that contains a \code{list} for
+every method that was used to calculate marker genes, and a
+\code{data.frame} for each grouping variable, e.g. those that were
+specified during the call to \code{\LinkA{getEnrichedPathways}{getEnrichedPathways}} or
+\code{\LinkA{performGeneSetEnrichmentAnalysis}{performGeneSetEnrichmentAnalysis}}.
+
+\item[\code{trees}] \code{list} that contains a phylogenetic tree (class
+\code{phylo}) for grouping variables.
+
+\item[\code{trajectories}] \code{list} that contains a \code{list} for every
+method that was used to calculate trajectories, and, depending on the
+method, a \code{data.frame} or \code{list} for each specific trajectory,
+e.g. those extracted with \code{\LinkA{extractMonocleTrajectory}{extractMonocleTrajectory}}.
+
+\item[\code{extra\_material}] \code{list} that can contain additional material
+related to the data set; tables should be stored in \code{data.frame}
+format in a named \code{list} called `tables`
+
+\end{description}
+
+
+\end{Section}
+%
+\begin{Section}{Methods}
+%
+\begin{SubSection}{Public methods}
+\begin{itemize}
+
+\item{} \Rhref{\#method-Cerebro-new}{\code{Cerebro\$new()}}
+\item{} \Rhref{\#method-Cerebro-setVersion}{\code{Cerebro\$setVersion()}}
+\item{} \Rhref{\#method-Cerebro-getVersion}{\code{Cerebro\$getVersion()}}
+\item{} \Rhref{\#method-Cerebro-checkIfGroupExists}{\code{Cerebro\$checkIfGroupExists()}}
+\item{} \Rhref{\#method-Cerebro-checkIfColumnExistsInMetadata}{\code{Cerebro\$checkIfColumnExistsInMetadata()}}
+\item{} \Rhref{\#method-Cerebro-addExperiment}{\code{Cerebro\$addExperiment()}}
+\item{} \Rhref{\#method-Cerebro-getExperiment}{\code{Cerebro\$getExperiment()}}
+\item{} \Rhref{\#method-Cerebro-addParameters}{\code{Cerebro\$addParameters()}}
+\item{} \Rhref{\#method-Cerebro-getParameters}{\code{Cerebro\$getParameters()}}
+\item{} \Rhref{\#method-Cerebro-addTechnicalInfo}{\code{Cerebro\$addTechnicalInfo()}}
+\item{} \Rhref{\#method-Cerebro-getTechnicalInfo}{\code{Cerebro\$getTechnicalInfo()}}
+\item{} \Rhref{\#method-Cerebro-addGroup}{\code{Cerebro\$addGroup()}}
+\item{} \Rhref{\#method-Cerebro-getGroups}{\code{Cerebro\$getGroups()}}
+\item{} \Rhref{\#method-Cerebro-getGroupLevels}{\code{Cerebro\$getGroupLevels()}}
+\item{} \Rhref{\#method-Cerebro-setMetaData}{\code{Cerebro\$setMetaData()}}
+\item{} \Rhref{\#method-Cerebro-getMetaData}{\code{Cerebro\$getMetaData()}}
+\item{} \Rhref{\#method-Cerebro-addGeneList}{\code{Cerebro\$addGeneList()}}
+\item{} \Rhref{\#method-Cerebro-getGeneLists}{\code{Cerebro\$getGeneLists()}}
+\item{} \Rhref{\#method-Cerebro-setExpression}{\code{Cerebro\$setExpression()}}
+\item{} \Rhref{\#method-Cerebro-getCellNames}{\code{Cerebro\$getCellNames()}}
+\item{} \Rhref{\#method-Cerebro-getGeneNames}{\code{Cerebro\$getGeneNames()}}
+\item{} \Rhref{\#method-Cerebro-getMeanExpressionForGenes}{\code{Cerebro\$getMeanExpressionForGenes()}}
+\item{} \Rhref{\#method-Cerebro-getMeanExpressionForCells}{\code{Cerebro\$getMeanExpressionForCells()}}
+\item{} \Rhref{\#method-Cerebro-getExpressionMatrix}{\code{Cerebro\$getExpressionMatrix()}}
+\item{} \Rhref{\#method-Cerebro-setCellCycle}{\code{Cerebro\$setCellCycle()}}
+\item{} \Rhref{\#method-Cerebro-getCellCycle}{\code{Cerebro\$getCellCycle()}}
+\item{} \Rhref{\#method-Cerebro-addProjection}{\code{Cerebro\$addProjection()}}
+\item{} \Rhref{\#method-Cerebro-availableProjections}{\code{Cerebro\$availableProjections()}}
+\item{} \Rhref{\#method-Cerebro-getProjection}{\code{Cerebro\$getProjection()}}
+\item{} \Rhref{\#method-Cerebro-addTree}{\code{Cerebro\$addTree()}}
+\item{} \Rhref{\#method-Cerebro-getTree}{\code{Cerebro\$getTree()}}
+\item{} \Rhref{\#method-Cerebro-addMostExpressedGenes}{\code{Cerebro\$addMostExpressedGenes()}}
+\item{} \Rhref{\#method-Cerebro-getGroupsWithMostExpressedGenes}{\code{Cerebro\$getGroupsWithMostExpressedGenes()}}
+\item{} \Rhref{\#method-Cerebro-getMostExpressedGenes}{\code{Cerebro\$getMostExpressedGenes()}}
+\item{} \Rhref{\#method-Cerebro-addMarkerGenes}{\code{Cerebro\$addMarkerGenes()}}
+\item{} \Rhref{\#method-Cerebro-getMethodsWithMarkerGenes}{\code{Cerebro\$getMethodsWithMarkerGenes()}}
+\item{} \Rhref{\#method-Cerebro-getGroupsWithMarkerGenes}{\code{Cerebro\$getGroupsWithMarkerGenes()}}
+\item{} \Rhref{\#method-Cerebro-getMarkerGenes}{\code{Cerebro\$getMarkerGenes()}}
+\item{} \Rhref{\#method-Cerebro-addEnrichedPathways}{\code{Cerebro\$addEnrichedPathways()}}
+\item{} \Rhref{\#method-Cerebro-getMethodsWithEnrichedPathways}{\code{Cerebro\$getMethodsWithEnrichedPathways()}}
+\item{} \Rhref{\#method-Cerebro-getGroupsWithEnrichedPathways}{\code{Cerebro\$getGroupsWithEnrichedPathways()}}
+\item{} \Rhref{\#method-Cerebro-getEnrichedPathways}{\code{Cerebro\$getEnrichedPathways()}}
+\item{} \Rhref{\#method-Cerebro-addTrajectory}{\code{Cerebro\$addTrajectory()}}
+\item{} \Rhref{\#method-Cerebro-getMethodsWithTrajectories}{\code{Cerebro\$getMethodsWithTrajectories()}}
+\item{} \Rhref{\#method-Cerebro-getTrajectories}{\code{Cerebro\$getTrajectories()}}
+\item{} \Rhref{\#method-Cerebro-getTrajectory}{\code{Cerebro\$getTrajectory()}}
+\item{} \Rhref{\#method-Cerebro-addExtraMaterial}{\code{Cerebro\$addExtraMaterial()}}
+\item{} \Rhref{\#method-Cerebro-getExtraMaterial}{\code{Cerebro\$getExtraMaterial()}}
+\item{} \Rhref{\#method-Cerebro-clone}{\code{Cerebro\$clone()}}
+
+\end{itemize}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-new}{}
+%
+\begin{SubSection}{Method \code{new()}}
+Create a new \code{Cerebro} object.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$new()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+A new \code{Cerebro} object.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-setVersion}{}
+%
+\begin{SubSection}{Method \code{setVersion()}}
+Set the version of \code{cerebroApp} that was used to generate this
+object.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$setVersion(version)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{version}] Version to set.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getVersion}{}
+%
+\begin{SubSection}{Method \code{getVersion()}}
+Get the version of \code{cerebroApp} that was used to generate this
+object.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getVersion()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+Version as \code{package\_version} class.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-checkIfGroupExists}{}
+%
+\begin{SubSection}{Method \code{checkIfGroupExists()}}
+Safety function that will check if a provided group name is present in
+the \code{groups} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$checkIfGroupExists(group_name)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{group\_name}] Group name to be tested
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-checkIfColumnExistsInMetadata}{}
+%
+\begin{SubSection}{Method \code{checkIfColumnExistsInMetadata()}}
+Safety function that will check if a provided group name is present in
+the meta data.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$checkIfColumnExistsInMetadata(group_name)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{group\_name}] Group name to be tested.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addExperiment}{}
+%
+\begin{SubSection}{Method \code{addExperiment()}}
+Add information to \code{experiment} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addExperiment(field, content)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{field}] Name of the information, e.g. \code{organism}.
+
+\item[\code{content}] Actual information, e.g. \code{hg}.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getExperiment}{}
+%
+\begin{SubSection}{Method \code{getExperiment()}}
+Retrieve information from \code{experiment} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getExperiment()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{list} of all entries in the \code{experiment} field.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addParameters}{}
+%
+\begin{SubSection}{Method \code{addParameters()}}
+Add information to \code{parameters} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addParameters(field, content)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{field}] Name of the information, e.g. \code{number\_of\_PCs}.
+
+\item[\code{content}] Actual information, e.g. \code{30}.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getParameters}{}
+%
+\begin{SubSection}{Method \code{getParameters()}}
+Retrieve information from \code{parameters} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getParameters()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{list} of all entries in the \code{parameters} field.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addTechnicalInfo}{}
+%
+\begin{SubSection}{Method \code{addTechnicalInfo()}}
+Add information to \code{technical\_info} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addTechnicalInfo(field, content)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{field}] Name of the information, e.g. \code{R}.
+
+\item[\code{content}] Actual information, e.g. \code{4.0.2}.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getTechnicalInfo}{}
+%
+\begin{SubSection}{Method \code{getTechnicalInfo()}}
+Retrieve information from \code{technical\_info} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getTechnicalInfo()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{list} of all entries in the \code{technical\_info} field.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addGroup}{}
+%
+\begin{SubSection}{Method \code{addGroup()}}
+Add group to the groups registered in the \code{groups} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addGroup(group_name, levels)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{group\_name}] Group name.
+
+\item[\code{levels}] \code{vector} of group levels (subgroups).
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getGroups}{}
+%
+\begin{SubSection}{Method \code{getGroups()}}
+Retrieve all names in the \code{groups} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getGroups()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of registered groups.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getGroupLevels}{}
+%
+\begin{SubSection}{Method \code{getGroupLevels()}}
+Retrieve group levels for a group registered in the \code{groups} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getGroupLevels(group_name)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{group\_name}] Group name for which to retrieve group levels.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of group levels.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-setMetaData}{}
+%
+\begin{SubSection}{Method \code{setMetaData()}}
+Set meta data for cells.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$setMetaData(table)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{table}] \code{data.frame} that contains meta data for cells. The
+number of rows must be equal to the number of rows of projections and
+the number of columns in the transcript count matrix.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getMetaData}{}
+%
+\begin{SubSection}{Method \code{getMetaData()}}
+Retrieve meta data for cells.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getMetaData()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{data.frame} containing meta data.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addGeneList}{}
+%
+\begin{SubSection}{Method \code{addGeneList()}}
+Add a gene list to the \code{gene\_lists}.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addGeneList(name, genes)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{name}] Name of the gene list.
+
+\item[\code{genes}] \code{vector} of genes.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getGeneLists}{}
+%
+\begin{SubSection}{Method \code{getGeneLists()}}
+Retrieve gene lists from the \code{gene\_lists}.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getGeneLists()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{list} of all entries in the \code{gene\_lists} field.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-setExpression}{}
+%
+\begin{SubSection}{Method \code{setExpression()}}
+Set transcript count matrix.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$setExpression(counts)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{counts}] \code{matrix}-like object that contains transcript counts
+for cells in the data set. Number of columns must be equal to the number
+of rows in the \code{meta\_data} field.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getCellNames}{}
+%
+\begin{SubSection}{Method \code{getCellNames()}}
+Get names of all cells.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getCellNames()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} containing all cell names/barcodes.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getGeneNames}{}
+%
+\begin{SubSection}{Method \code{getGeneNames()}}
+Get names of all genes in transcript count matrix.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getGeneNames()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} containing all gene names in transcript count matrix.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getMeanExpressionForGenes}{}
+%
+\begin{SubSection}{Method \code{getMeanExpressionForGenes()}}
+Retrieve mean expression across all cells in the data set for a set of
+genes.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getMeanExpressionForGenes(genes)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{genes}] Names of genes to extract; no default.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{data.frame} containing specified gene names and their respective
+mean expression across all cells in the data set.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getMeanExpressionForCells}{}
+%
+\begin{SubSection}{Method \code{getMeanExpressionForCells()}}
+Retrieve (mean) expression for a single gene or a set of genes for a
+given set of cells.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getMeanExpressionForCells(cells = NULL, genes = NULL)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{cells}] Names/barcodes of cells to extract; defaults to \code{NULL},
+which will return all cells.
+
+\item[\code{genes}] Names of genes to extract; defaults to \code{NULL}, which
+will return all genes.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} containing (mean) expression across all specified genes in
+each specified cell.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getExpressionMatrix}{}
+%
+\begin{SubSection}{Method \code{getExpressionMatrix()}}
+Retrieve transcript count matrix.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getExpressionMatrix(cells = NULL, genes = NULL)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{cells}] Names/barcodes of cells to extract; defaults to \code{NULL},
+which will return all cells.
+
+\item[\code{genes}] Names of genes to extract; defaults to \code{NULL}, which
+will return all genes.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+Dense transcript count matrix for specified cells and genes.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-setCellCycle}{}
+%
+\begin{SubSection}{Method \code{setCellCycle()}}
+Add columns containing cell cycle assignments to the \code{cell\_cycle}
+field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$setCellCycle(cols)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{cols}] \code{vector} of columns names containing cell cycle
+assignments.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getCellCycle}{}
+%
+\begin{SubSection}{Method \code{getCellCycle()}}
+Retrieve column names containing cell cycle assignments.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getCellCycle()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of column names in meta data.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addProjection}{}
+%
+\begin{SubSection}{Method \code{addProjection()}}
+Add projections (dimensional reductions).
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addProjection(name, projection)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{name}] Name of the projection.
+
+\item[\code{projection}] \code{data.frame} containing positions of cells in
+projection.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-availableProjections}{}
+%
+\begin{SubSection}{Method \code{availableProjections()}}
+Get list of available projections (dimensional reductions).
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$availableProjections()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of projections / dimensional reductions that are available.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getProjection}{}
+%
+\begin{SubSection}{Method \code{getProjection()}}
+Retrieve data for a specific projection.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getProjection(name)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{name}] Name of projection.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{data.frame} containing the positions of cells in the projection.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addTree}{}
+%
+\begin{SubSection}{Method \code{addTree()}}
+Add phylogenetic tree to \code{trees} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addTree(group_name, tree)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{group\_name}] Group name that this tree belongs to.
+
+\item[\code{tree}] Phylogenetic tree as \code{phylo} object.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getTree}{}
+%
+\begin{SubSection}{Method \code{getTree()}}
+Retrieve phylogenetic tree for a specific group.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getTree(group_name)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{group\_name}] Group name for which to retrieve phylogenetic tree.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+Phylogenetic tree as \code{phylo} object.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addMostExpressedGenes}{}
+%
+\begin{SubSection}{Method \code{addMostExpressedGenes()}}
+Add table of most expressed genes.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addMostExpressedGenes(group_name, table)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{group\_name}] Name of grouping variable that the most expressed genes
+belong to. Must be registered in the \code{groups} field.
+
+\item[\code{table}] \code{data.frame} that contains the most expressed genes.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getGroupsWithMostExpressedGenes}{}
+%
+\begin{SubSection}{Method \code{getGroupsWithMostExpressedGenes()}}
+Retrieve names of grouping variables for which most expressed genes are
+available.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getGroupsWithMostExpressedGenes()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of grouping variables for which most expressed genes are
+available.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getMostExpressedGenes}{}
+%
+\begin{SubSection}{Method \code{getMostExpressedGenes()}}
+Retrieve table of most expressed genes for a specific grouping variable.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getMostExpressedGenes(group_name)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{group\_name}] Name of grouping variable for which to retrieve most
+expressed genes.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{data.frame} containing the most expressed genes.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addMarkerGenes}{}
+%
+\begin{SubSection}{Method \code{addMarkerGenes()}}
+Add table of marker genes.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addMarkerGenes(method, group_name, table)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{method}] Name of method that was used to calculate marker genes.
+
+\item[\code{group\_name}] Name of grouping variable that the marker genes belong
+to. Must be registered in the \code{groups} field.
+
+\item[\code{table}] \code{data.frame} that contains the marker genes.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getMethodsWithMarkerGenes}{}
+%
+\begin{SubSection}{Method \code{getMethodsWithMarkerGenes()}}
+Retrieve names of methods for which marker genes are available.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getMethodsWithMarkerGenes()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of methods for which marker genes are available.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getGroupsWithMarkerGenes}{}
+%
+\begin{SubSection}{Method \code{getGroupsWithMarkerGenes()}}
+Retrieve names of grouping variables for which marker genes are
+available for a specific method.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getGroupsWithMarkerGenes(method)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{method}] Name of method for which to retrieve grouping variables.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of grouping variables for which marker genes are available.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getMarkerGenes}{}
+%
+\begin{SubSection}{Method \code{getMarkerGenes()}}
+Retrieve table of marker genes for a specific method and grouping
+variable.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getMarkerGenes(method, group_name)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{method}] Name of method for which to retrieve marker genes.
+
+\item[\code{group\_name}] Name of grouping variable for which to retrieve marker
+genes.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{data.frame} containing the marker genes.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addEnrichedPathways}{}
+%
+\begin{SubSection}{Method \code{addEnrichedPathways()}}
+Add table of enriched pathways.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addEnrichedPathways(method, group_name, table)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{method}] Name of method that was used to calculate enriched
+pathways.
+
+\item[\code{group\_name}] Name of grouping variable that the enriched pathways
+belong to. Must be registered in the \code{groups} field.
+
+\item[\code{table}] \code{data.frame} that contains the enriched pathways.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getMethodsWithEnrichedPathways}{}
+%
+\begin{SubSection}{Method \code{getMethodsWithEnrichedPathways()}}
+Retrieve names of methods for which enriched pathways are available.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getMethodsWithEnrichedPathways()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of methods for which enriched pathways are available.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getGroupsWithEnrichedPathways}{}
+%
+\begin{SubSection}{Method \code{getGroupsWithEnrichedPathways()}}
+Retrieve names of grouping variables for which enriched pathways are
+available for a specific method.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getGroupsWithEnrichedPathways(method)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{method}] Name of method for which to retrieve grouping variables.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of grouping variables for which enriched pathways are
+available.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getEnrichedPathways}{}
+%
+\begin{SubSection}{Method \code{getEnrichedPathways()}}
+Retrieve table of enriched pathways for a specific method and grouping
+variable.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getEnrichedPathways(method, group_name)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{method}] Name of method for which to retrieve enriched pathways.
+
+\item[\code{group\_name}] Name of grouping variable for which to retrieve enriched
+pathways.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{data.frame} containing the enriched pathways.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addTrajectory}{}
+%
+\begin{SubSection}{Method \code{addTrajectory()}}
+Add trajectory to \code{trajectories} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addTrajectory(method, trajectory_name, trajectory)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{method}] Name of method that was used to calculate trajectory.
+
+\item[\code{trajectory\_name}] Name of trajectory.
+
+\item[\code{trajectory}] Trajectory data as \code{data.frame} or \code{list}.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getMethodsWithTrajectories}{}
+%
+\begin{SubSection}{Method \code{getMethodsWithTrajectories()}}
+Retrieve names of methods for which trajectories are available.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getMethodsWithTrajectories()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of methods for which trajectories are available.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getTrajectories}{}
+%
+\begin{SubSection}{Method \code{getTrajectories()}}
+Retrieve names of trajectories for a specific method.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getTrajectories(method)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{method}] Name of method for which to retrieve trajectories.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+\code{vector} of trajectories for the specified method.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getTrajectory}{}
+%
+\begin{SubSection}{Method \code{getTrajectory()}}
+Retrieve trajectory data for a specific method and trajectory name.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getTrajectory(method, trajectory_name)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{method}] Name of method for which to retrieve trajectory.
+
+\item[\code{trajectory\_name}] Name of trajectory to retrieve.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+%
+\begin{SubSubSection}{Returns}
+Trajectory data as \code{data.frame} or \code{list}.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-addExtraMaterial}{}
+%
+\begin{SubSection}{Method \code{addExtraMaterial()}}
+Add extra material to \code{extra\_material} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$addExtraMaterial(name, content)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{name}] Name of the extra material.
+
+\item[\code{content}] Content of the extra material.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-getExtraMaterial}{}
+%
+\begin{SubSection}{Method \code{getExtraMaterial()}}
+Retrieve extra material from \code{extra\_material} field.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$getExtraMaterial()\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Returns}
+\code{list} of all entries in the \code{extra\_material} field.
+\end{SubSubSection}
+
+\end{SubSection}
+
+
+
+\hypertarget{method-Cerebro-clone}{}
+%
+\begin{SubSection}{Method \code{clone()}}
+The objects of this class are cloneable with this method.
+%
+\begin{SubSubSection}{Usage}
+\begin{alltt}Cerebro$clone(deep = FALSE)\end{alltt}
+
+\end{SubSubSection}
+
+
+%
+\begin{SubSubSection}{Arguments}
+
+\begin{description}
+
+\item[\code{deep}] Whether to make a deep clone.
+
+\end{description}
+
+
+\end{SubSubSection}
+
+\end{SubSection}
+
+\end{Section}
+\HeaderA{exportFromSCE}{Export SingleCellExperiment (SCE) object to Cerebro.}{exportFromSCE}
+%
+\begin{Description}
+This function allows to export a \code{SingleCellExperiment} (\code{SCE})
+object to visualize in Cerebro.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+exportFromSCE(
+  object,
+  assay = "logcounts",
+  file,
+  experiment_name,
+  organism,
+  groups,
+  cell_cycle = NULL,
+  nUMI = "nUMI",
+  nGene = "nGene",
+  add_all_meta_data = TRUE,
+  use_delayed_array = FALSE,
+  verbose = FALSE
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] \code{SingleCellExperiment} (\code{SCE}) object.
+
+\item[\code{assay}] Assay to pull expression values from; defaults to
+\code{logcounts}. It is recommended to use sparse data (such as
+log-transformed or raw counts) instead of dense data (such as the 'scaled'
+slot) to avoid performance bottlenecks in the Cerebro interface.
+
+\item[\code{file}] Where to save the output.
+
+\item[\code{experiment\_name}] Experiment name.
+
+\item[\code{organism}] Organism, e.g. \code{hg} (human), \code{mm} (mouse), etc.
+
+\item[\code{groups}] Names of grouping variables in meta data
+(\code{colData(object)}), e.g. \code{c("sample","cluster")}; at least one
+must be provided; defaults to \code{NULL}.
+
+\item[\code{cell\_cycle}] Names of columns in meta data (\code{colData(object)}) that\#
+contain cell cycle information, e.g. \code{c("Phase")}; defaults to
+\code{NULL}.
+
+\item[\code{nUMI}] Column in \code{colData(object)} that contains information about
+number of transcripts per cell; defaults to \code{nUMI}.
+
+\item[\code{nGene}] Column in \code{colData(object)} that contains information about
+number of expressed genes per cell; defaults to \code{nGene}.
+
+\item[\code{add\_all\_meta\_data}] If set to \code{TRUE}, all further meta data columns
+will be extracted as well.
+
+\item[\code{use\_delayed\_array}] When set to \code{TRUE}, the expression matrix will
+be stored as an \code{RleMatrix} (see \code{DelayedArray} package). This can
+be useful for very large data sets, as the matrix won't be loaded into memory
+and instead values will be read from the disk directly, at the cost of
+performance. Note that it is necessary to install the \code{DelayedArray}
+package. If set to \code{FALSE} (default), the expression matrix will be
+copied from the input object as is. It is recommended to use a sparse format,
+such as \code{dgCMatrix} from the \code{Matrix} package.
+
+\item[\code{verbose}] Set this to \code{TRUE} if you want additional log messages;
+defaults to \code{FALSE}.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+No data returned.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+pbmc <- readRDS(system.file("extdata/pbmc_SCE.rds",
+  package = "cerebroAppLite"))
+exportFromSCE(
+  object = pbmc,
+  file = 'pbmc_SCE.crb',
+  experiment_name = 'PBMC',
+  organism = 'hg',
+  groups = c('sample','cluster'),
+  nUMI = 'nUMI',
+  nGene = 'nGene',
+  use_delayed_array = FALSE,
+  verbose = TRUE
+)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{exportFromSeurat}{Export Seurat object to Cerebro.}{exportFromSeurat}
+%
+\begin{Description}
+This function allows to export a Seurat object to visualize in Cerebro.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+exportFromSeurat(
+  object,
+  assay = "RNA",
+  slot = "data",
+  file,
+  experiment_name,
+  organism,
+  groups,
+  cell_cycle = NULL,
+  nUMI = "nUMI",
+  nGene = "nGene",
+  add_all_meta_data = TRUE,
+  use_delayed_array = FALSE,
+  verbose = FALSE
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] Seurat object.
+
+\item[\code{assay}] Assay to pull expression values from; defaults to \code{RNA}.
+
+\item[\code{slot}] Slot to pull expression values from; defaults to \code{data}. It
+is recommended to use sparse data (such as log-transformed or raw counts)
+instead of dense data (such as the \code{scaled} slot) to avoid performance
+bottlenecks in the Cerebro interface.
+
+\item[\code{file}] Where to save the output.
+
+\item[\code{experiment\_name}] Experiment name.
+
+\item[\code{organism}] Organism, e.g. \code{hg} (human), \code{mm} (mouse), etc.
+
+\item[\code{groups}] Names of grouping variables in meta data
+(\code{object@meta.data}), e.g. \code{c("sample","cluster")}; at least one
+must be provided; defaults to \code{NULL}.
+
+\item[\code{cell\_cycle}] Names of columns in meta data
+(\code{object@meta.data}) that contain cell cycle information, e.g.
+\code{c("Phase")}; defaults to \code{NULL}.
+
+\item[\code{nUMI}] Column in \code{object@meta.data} that contains information about
+number of transcripts per cell; defaults to \code{nUMI}.
+
+\item[\code{nGene}] Column in \code{object@meta.data} that contains information
+about number of expressed genes per cell; defaults to \code{nGene}.
+
+\item[\code{add\_all\_meta\_data}] If set to \code{TRUE}, all further meta data columns
+will be extracted as well.
+
+\item[\code{use\_delayed\_array}] When set to \code{TRUE}, the expression matrix will
+be stored as an \code{RleMatrix} (see \code{DelayedArray} package). This can
+be useful for very large data sets, as the matrix won't be loaded into memory
+and instead values will be read from the disk directly, at the cost of
+performance. Note that it is necessary to install the \code{DelayedArray}
+package. If set to \code{FALSE} (default), the expression matrix will be
+copied from the input object as is. It is recommended to use a sparse format,
+such as \code{dgCMatrix} from the \code{Matrix} package.
+
+\item[\code{verbose}] Set this to \code{TRUE} if you want additional log messages;
+defaults to \code{FALSE}.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+No data returned.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+pbmc <- readRDS(system.file("extdata/pbmc_seurat.rds",
+  package = "cerebroAppLite"))
+exportFromSeurat(
+  object = pbmc,
+  file = 'pbmc_Seurat.crb',
+  experiment_name = 'PBMC',
+  organism = 'hg',
+  groups = c('sample','seurat_clusters'),
+  nUMI = 'nCount_RNA',
+  nGene = 'nFeature_RNA',
+  use_delayed_array = FALSE,
+  verbose = TRUE
+)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{extractMonocleTrajectory}{Extract trajectory from Monocle and add to Seurat object.}{extractMonocleTrajectory}
+%
+\begin{Description}
+This function takes a Monocle object, extracts a trajectory that was
+calculated, and stores it in the specified Seurat object. Trajectory info
+(state, pseudotime, projection and tree) will be stored in
+\code{object@misc\$trajectories\$monocle2} under the specified name.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+extractMonocleTrajectory(
+  monocle,
+  seurat,
+  trajectory_name,
+  column_state = "State",
+  column_pseudotime = "Pseudotime"
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{monocle}] Monocle object to extract trajectory from.
+
+\item[\code{seurat}] Seurat object to transfer trajectory to.
+
+\item[\code{trajectory\_name}] Name of trajectory.
+
+\item[\code{column\_state}] Name of meta data column that holds info about the state
+of a cell; defaults to 'State'.
+
+\item[\code{column\_pseudotime}] Name of meta data column that holds info about the
+pseudotime of a cell; defaults to 'Pseudotime'.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Returns Seurat object with added trajectory. Trajectory info (state,
+pseudotime, projection and tree) will be stored in
+\code{object@misc\$trajectories\$monocle2}` under the specified name.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+## Not run: 
+  seurat <- extractMonocleTrajectory(
+    monocle = monocle,
+    seurat = seurat,
+    name = 'trajectory_1',
+    column_state = 'State',
+    column_pseudotime = 'Pseudotime'
+  )
+
+## End(Not run)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{getEnrichedPathways}{Get enriched pathways based on marker genes from EnrichR.}{getEnrichedPathways}
+%
+\begin{Description}
+This function uses the enrichR API to look for enriched pathways in marker
+gene sets of all available grouping variables.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+getEnrichedPathways(
+  object,
+  marker_genes_input = "cerebro_seurat",
+  databases = c("GO_Biological_Process_2018", "GO_Cellular_Component_2018",
+    "GO_Molecular_Function_2018", "KEGG_2016", "WikiPathways_2016", "Reactome_2016",
+    "Panther_2016", "Human_Gene_Atlas", "Mouse_Gene_Atlas"),
+  adj_p_cutoff = 0.05,
+  max_terms = 100,
+  URL_API = "http://maayanlab.cloud/Enrichr"
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] Seurat object with marker genes calculated by
+\code{\LinkA{getMarkerGenes}{getMarkerGenes}}.
+
+\item[\code{marker\_genes\_input}] Name of list of marker gene tables that will be
+used as input. This could be the "name" parameter used in
+\code{\LinkA{getMarkerGenes()}{getMarkerGenes()}}. Enriched pathways will be calculated for
+every group level of every grouping variable. Defaults to "cerebro\_seurat".
+
+\item[\code{databases}] Which databases to query. Use enrichR::listEnrichrDbs() to
+check what databases are available.
+
+\item[\code{adj\_p\_cutoff}] Cut-off for adjusted p-value of enriched pathways;
+defaults to 0.05,
+
+\item[\code{max\_terms}] Save only first n entries of each database; defaults to 100.
+
+\item[\code{URL\_API}] URL to send requests to (Enrichr API). Allows to overwrite
+default URL with an alternative taken from the Enrichr website in case the
+original is out-of-service; defaults to
+'http://maayanlab.cloud/Enrichr'.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Seurat object with Enrichr results for all provided grouping variables,
+stored in \code{object@misc\$enriched\_pathways\$<marker\_genes\_input>\_enrichr}
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+pbmc <- readRDS(system.file("extdata/pbmc_seurat.rds",
+  package = "cerebroAppLite"))
+pbmc <- getEnrichedPathways(
+  object = pbmc,
+  marker_genes_input = 'cerebro_seurat',
+  databases = c('GO_Biological_Process_2018','GO_Cellular_Component_2018'),
+  adj_p_cutoff = 0.01,
+  max_terms = 100,
+  URL_API = 'http://maayanlab.cloud/Enrichr'
+)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{getMarkerGenes}{Get marker genes for specified grouping variables in Seurat object.}{getMarkerGenes}
+%
+\begin{Description}
+This function gets marker genes for one or multiple grouping variables in
+the meta data of the provided Seurat object.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+getMarkerGenes(
+  object,
+  assay = "RNA",
+  organism = NULL,
+  groups = NULL,
+  name = "cerebro_seurat",
+  only_pos = TRUE,
+  min_pct = 0.7,
+  thresh_logFC = 0.25,
+  thresh_p_val = 0.01,
+  test = "wilcox",
+  verbose = TRUE,
+  ...
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] Seurat object.
+
+\item[\code{assay}] Assay to pull transcripts counts from; defaults to 'RNA'.
+
+\item[\code{organism}] Organism information for pulling info about presence of
+marker genes of cell surface; can be omitted if already saved in Seurat
+object; defaults to NULL.
+
+\item[\code{groups}] Grouping variables (columns) in object@meta.data for which
+marker genes should be calculated.
+
+\item[\code{name}] Name of list that should be used to store the results in
+\code{object@misc\$marker\_genes\$<name>}; defaults to 'cerebro\_seurat'.
+
+\item[\code{only\_pos}] Identify only over-expressed genes; defaults to TRUE.
+
+\item[\code{min\_pct}] Only keep genes that are expressed in at least n\% of current
+group of cells, defaults to 0.70 (70\%).
+
+\item[\code{thresh\_logFC}] Only keep genes that show an average logFC of at least n;
+defaults to 0.25.
+
+\item[\code{thresh\_p\_val}] Threshold for p-value, defaults to 0.01.
+
+\item[\code{test}] Statistical test used, defaults to 'wilcox' (Wilcoxon test).
+
+\item[\code{verbose}] Print progress bar; defaults to TRUE.
+
+\item[\code{...}] Further parameters can be passed to control
+Seurat::FindAllMakers().
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Seurat object with marker gene results for the specified grouping variables
+stored in \code{object@misc\$marker\_genes}.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+pbmc <- readRDS(system.file("extdata/pbmc_seurat.rds",
+  package = "cerebroAppLite"))
+pbmc <- getMarkerGenes(
+  object = pbmc,
+  assay = 'RNA',
+  organism = 'hg',
+  groups = c('sample','seurat_clusters'),
+  name = 'cerebro_seurat',
+  only_pos = TRUE,
+  min_pct = 0.7,
+  thresh_logFC = 0.25,
+  thresh_p_val = 0.01,
+  test = 'wilcox',
+  verbose = TRUE
+)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{getMostExpressedGenes}{Get most expressed genes for specified grouping variables in Seurat object.}{getMostExpressedGenes}
+%
+\begin{Description}
+This function calculates the most expressed genes for one or multiple
+grouping variables in the meta data of the provided Seurat object.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+getMostExpressedGenes(object, assay = "RNA", groups = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] Seurat object.
+
+\item[\code{assay}] Assay to pull transcripts counts from; defaults to 'RNA'.
+
+\item[\code{groups}] Grouping variables (columns) in \code{object@meta.data} for
+which most expressed genes should be calculated; defaults to NULL.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Seurat object with most expressed genes stored for every group level of the
+specified groups stored in \code{object@misc\$most\_expressed\_genes}.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+pbmc <- readRDS(system.file("extdata/pbmc_seurat.rds",
+  package = "cerebroAppLite"))
+pbmc <- getMostExpressedGenes(
+  object = pbmc,
+  assay = 'RNA',
+  groups = c('sample','seurat_clusters')
+)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{launchCerebro}{Launch Cerebro interface.}{launchCerebro}
+%
+\begin{Description}
+Launch the Cerebro Shiny application.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+launchCerebro(
+  mode = "open",
+  maxFileSize = 800,
+  crb_file_to_load = NULL,
+  expression_matrix_mode = "crb",
+  expression_matrix_h5 = NULL,
+  expression_matrix_BPCells = NULL,
+  welcome_message = NULL,
+  overview_default_point_size = 5,
+  gene_expression_default_point_size = 5,
+  overview_default_point_opacity = 1,
+  gene_expression_default_point_opacity = 1,
+  overview_default_percentage_cells_to_show = 100,
+  gene_expression_default_percentage_cells_to_show = 100,
+  projections_show_hover_info = TRUE,
+  ...
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{mode}] Cerebro can be ran in \code{open} or \code{closed} mode, allowing
+the user to load their own data set (\code{open}) or only show a pre-loaded
+data set (\code{closed}, removes the "Load data" element); defaults to
+\code{open}.
+
+\item[\code{maxFileSize}] Maximum size of input file; defaults to \code{800}
+(800 MB).
+
+\item[\code{crb\_file\_to\_load}] Path to \code{.crb} file to load on launch of
+Cerebro. Useful when using/hosting Cerebro in \code{closed} mode. Defaults to
+\code{NULL}.
+
+\item[\code{expression\_matrix\_mode}] Mode of expression matrix. Can be either
+crb, h5, or BPCells. Default is crb.
+
+\item[\code{expression\_matrix\_h5}] Optional: Path to \code{.h5} file containing an expression
+matrix created with \code{HDF5Array::writeTENxMatrix()}, with genes as
+columns and cells as rows, contrary to the conventional format of genes as
+rows and cells as columns. This format greatly favors performance for
+extracting expression values for a gene (column), rather than a cell (row),
+which is the primary action in Cerebro. Importantly, the matrix should be
+stored with "expression" as group name (see parameters of the
+\code{HDF5Array::writeTENxMatrix()} function). Saving the expression matrix
+in \code{TENxMatrix} format has the benefit of a low memory footprint since
+the expression values are directly read from disk. This is particularly
+useful when working with very large data sets and/or when startup of the
+Cerebro app is a priority (which is shorter because only the rest of the data
+that needs to be loaded tends to be very small). By default, this value is
+set to \code{NULL}, meaning that the expression matrix is expected to be part
+of the \code{.crb} file.
+
+\item[\code{expression\_matrix\_BPCells}] Optional: Path to BPCells directory created with
+\code{BPCells::write\_matrix\_dir()}. This is a hopefully faster alternative to h5
+with a similar approach.
+
+\item[\code{welcome\_message}] \code{string} with custom welcome message to display
+in the "Load data" tab. Can contain HTML formatting, e.g.
+\code{'<h3>Hi!</h3>'}. Defaults to \code{NULL}.
+
+\item[\code{overview\_default\_point\_size}] Default point size in overview. This
+value can be changed in the UI; defaults to 5.
+
+\item[\code{gene\_expression\_default\_point\_size}] Default point size in gene\_expression. This
+value can be changed in the UI; defaults to 5.
+
+\item[\code{overview\_default\_point\_opacity}] Default point opacity in
+overview. This value can be changed in the UI; defaults to 1.0.
+
+\item[\code{gene\_expression\_default\_point\_opacity}] Default point opacity in
+gene expression. This value can be changed in the UI; defaults to 1.0.
+
+\item[\code{overview\_default\_percentage\_cells\_to\_show}] Default percentage of
+cells to show in overview. This value can be changed in the UI; defaults
+to 100.
+
+\item[\code{gene\_expression\_default\_percentage\_cells\_to\_show}] Default percentage of
+cells to show in gene expression. This value can be changed in the UI; defaults
+to 100.
+
+\item[\code{projections\_show\_hover\_info}] Show hover infos in projections. This
+
+\item[\code{...}] Further parameters that are used by \code{shiny::runApp}, e.g.
+\code{host} or \code{port}.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Shiny application.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+if ( interactive() ) {
+  launchCerebro(
+    mode = "open",
+    maxFileSize = 800
+  )
+}
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{performGeneSetEnrichmentAnalysis}{Perform gene set enrichment analysis with GSVA.}{performGeneSetEnrichmentAnalysis}
+%
+\begin{Description}
+This function calculates enrichment scores, p- and q-value statistics for
+provided gene sets for specified groups of cells in given Seurat object using
+gene set variation analysis (GSVA). Calculation of p- and q-values for gene
+sets is performed as done in "Evaluation of methods to assign cell type
+labels to cell clusters from single-cell RNA-sequencing data", Diaz-Mejia et
+al., F1000Research (2019).
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+performGeneSetEnrichmentAnalysis(
+  object,
+  assay = "RNA",
+  GMT_file,
+  groups = NULL,
+  name = "cerebro_GSVA",
+  thresh_p_val = 0.05,
+  thresh_q_val = 0.1,
+  ...
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] Seurat object.
+
+\item[\code{assay}] Assay to pull counts from; defaults to 'RNA'. Only relevant in
+Seurat v3.0 or higher since the concept of assays wasn't implemented before.
+
+\item[\code{GMT\_file}] Path to GMT file containing the gene sets to be tested.
+The Broad Institute provides many gene sets which can be downloaded:
+http://software.broadinstitute.org/gsea/msigdb/index.jsp
+
+\item[\code{groups}] Grouping variables (columns) in object@meta.data for which
+gene set enrichment analysis should be performed
+
+\item[\code{name}] Name of list that should be used to store the results in
+object@misc\$enriched\_pathways\$<name>; defaults to 'cerebro\_GSVA'.
+
+\item[\code{thresh\_p\_val}] Threshold for p-value, defaults to 0.05.
+
+\item[\code{thresh\_q\_val}] Threshold for q-value, defaults to 0.1.
+
+\item[\code{...}] Further parameters can be passed to control GSVA::gsva().
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Seurat object with GSVA results for the specified grouping variables
+stored in object@misc\$enriched\_pathways\$<name>
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+pbmc <- readRDS(system.file("extdata/pbmc_seurat.rds",
+  package = "cerebroAppLite"))
+example_gene_set <- system.file("extdata/example_gene_set.gmt",
+  package = "cerebroAppLite")
+pbmc <- performGeneSetEnrichmentAnalysis(
+  object = pbmc,
+  GMT_file = example_gene_set,
+  groups = c('sample','seurat_clusters'),
+  thresh_p_val = 0.05,
+  thresh_q_val = 0.1
+)
+
+\end{ExampleCode}
+\end{Examples}
+\printindex{}
+\end{document}

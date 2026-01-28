@@ -1,0 +1,13 @@
+.read_GMT_file	dot-read_GMT_file
+.send_enrichr_query	dot-send_enrichr_query
+addPercentMtRibo	addPercentMtRibo
+calculatePercentGenes	calculatePercentGenes
+Cerebro	Cerebro
+exportFromSCE	exportFromSCE
+exportFromSeurat	exportFromSeurat
+extractMonocleTrajectory	extractMonocleTrajectory
+getEnrichedPathways	getEnrichedPathways
+getMarkerGenes	getMarkerGenes
+getMostExpressedGenes	getMostExpressedGenes
+launchCerebro	launchCerebro
+performGeneSetEnrichmentAnalysis	performGeneSetEnrichmentAnalysis

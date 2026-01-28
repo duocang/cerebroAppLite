@@ -1,0 +1,23 @@
+.read_GMT_file          Read GMT file.
+.send_enrichr_query     Gene enrichment using Enrichr.
+addPercentMtRibo        Add percentage of mitochondrial and ribosomal
+                        transcripts.
+calculatePercentGenes   Calculate percentage of transcripts of gene
+                        list.
+Cerebro                 R6 class in which data sets will be stored for
+                        visualization in Cerebro.
+exportFromSCE           Export SingleCellExperiment (SCE) object to
+                        Cerebro.
+exportFromSeurat        Export Seurat object to Cerebro.
+extractMonocleTrajectory
+                        Extract trajectory from Monocle and add to
+                        Seurat object.
+getEnrichedPathways     Get enriched pathways based on marker genes
+                        from EnrichR.
+getMarkerGenes          Get marker genes for specified grouping
+                        variables in Seurat object.
+getMostExpressedGenes   Get most expressed genes for specified grouping
+                        variables in Seurat object.
+launchCerebro           Launch Cerebro interface.
+performGeneSetEnrichmentAnalysis
+                        Perform gene set enrichment analysis with GSVA.

@@ -15,8 +15,8 @@
 #' specified groups stored in \code{object@misc$most_expressed_genes}.
 #'
 #' @examples
-#' pbmc <- readRDS(system.file("extdata/v1.3/pbmc_seurat.rds",
-#'   package = "cerebroApp"))
+#' pbmc <- readRDS(system.file("extdata/pbmc_seurat.rds",
+#'   package = "cerebroAppLite"))
 #' pbmc <- getMostExpressedGenes(
 #'   object = pbmc,
 #'   assay = 'RNA',
@@ -226,7 +226,7 @@ getMostExpressedGenes <- function(
         ## get names of cells belonging to current group level
         cells_of_current_group_level <- rownames(object@meta.data)[ which(object@meta.data[[ current_group ]] == x) ]
 
-        ## subset transcript count matrix for 
+        ## subset transcript count matrix for
         transcript_count_matrix <- object@assays[[assay]]@counts[,cells_of_current_group_level]
 
         ## check how many cells are present in the matrix

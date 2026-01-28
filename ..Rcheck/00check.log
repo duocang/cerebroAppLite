@@ -1,0 +1,136 @@
+* using log directory ‘/Users/nuioi/projects/cerebroAppLite/..Rcheck’
+* using R version 4.5.2 (2025-10-31)
+* using platform: aarch64-apple-darwin20
+* R was compiled by
+    Apple clang version 16.0.0 (clang-1600.0.26.6)
+    GNU Fortran (GCC) 14.2.0
+* running under: macOS Sequoia 15.6.1
+* using session charset: UTF-8
+* using options ‘--no-examples --no-vignettes’
+* checking for file ‘./DESCRIPTION’ ... OK
+* this is package ‘cerebroAppLite’ version ‘1.5.4’
+* package encoding: UTF-8
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... NOTE
+Found the following hidden files and directories:
+  .gitignore
+  R/.DS_Store
+  ..Rcheck
+  .git
+These were most likely included in error. See section ‘Package
+structure’ in the ‘Writing R Extensions’ manual.
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘cerebroAppLite’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... WARNING
+Invalid license file pointers: LICENSE
+Checking should be performed on sources prepared by ‘R CMD build’.
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... WARNING
+Found the following directory with the name of a check directory:
+  ./..Rcheck
+Most likely, these were included erroneously.
+* checking code files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking dependencies in R code ... WARNING
+'::' or ':::' import not declared from: ‘SingleCellExperiment’
+'library' or 'require' calls not declared from:
+  ‘DelayedArray’ ‘SingleCellExperiment’
+'loadNamespace' or 'requireNamespace' calls not declared from:
+  ‘DelayedArray’ ‘monocle’ ‘SingleCellExperiment’
+'library' or 'require' calls in package code:
+  ‘DelayedArray’ ‘SingleCellExperiment’
+  Please use :: or requireNamespace() instead.
+  See section 'Suggested packages' in the 'Writing R Extensions' manual.
+Namespaces in Imports field not imported from:
+  ‘BPCells’ ‘HDF5Array’
+  All declared Imports should be used.
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+exportFromSCE: no visible global function definition for ‘colData’
+exportFromSCE: no visible global function definition for ‘assays’
+exportFromSCE: no visible global function definition for ‘as’
+exportFromSeurat: no visible global function definition for ‘as’
+getEnrichedPathways: no visible global function definition for ‘:=’
+getMarkerGenes: no visible binding for global variable ‘.’
+getMarkerGenes: no visible global function definition for ‘:=’
+getMostExpressedGenes: no visible binding for global variable ‘.’
+getMostExpressedGenes: no visible binding for global variable ‘group’
+getMostExpressedGenes: no visible global function definition for ‘:=’
+launchCerebro: no visible binding for '<<-' assignment to
+  ‘Cerebro.options’
+launchCerebro: no visible binding for global variable ‘ui’
+launchCerebro: no visible binding for global variable ‘server’
+performGeneSetEnrichmentAnalysis: no visible binding for global
+  variable ‘.’
+performGeneSetEnrichmentAnalysis: no visible global function definition
+  for ‘:=’
+Undefined global functions or variables:
+  := . as assays colData group server ui
+Consider adding
+  importFrom("methods", "as")
+to your NAMESPACE file (and ensure that your DESCRIPTION Imports field
+contains 'methods').
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd cross-references ... WARNING
+Missing link(s) in Rd file 'getEnrichedPathways.Rd':
+  ‘getMarkerGenes()’
+
+See section 'Cross-references' in the 'Writing R Extensions' manual.
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking LazyData ... INFO
+  'LazyData' is specified without a 'data' directory
+* checking files in ‘vignettes’ ... WARNING
+Files in the 'vignettes' directory but no files in 'inst/doc':
+  ‘Cerebro_interface.Rmd’ ‘cerebroApp_workflow_Seurat.Rmd’
+  ‘control_access_to_cerebro_with_a_login_page.Rmd’
+  ‘create_expression_matrix_in_h5_format.Rmd’
+  ‘export_a_data_set_in_SCE_format.Rmd’
+  ‘export_and_visualize_custom_tables_and_plots.Rmd’
+  ‘host_cerebro_on_shinyapps.Rmd’
+  ‘launch_cerebro_with_pre-loaded_data_set.Rmd’ ‘logo_Cerebro.png’
+  ‘overview_of_cerebro.Rmd’ ‘release_notes.Rmd’
+* checking examples ... SKIPPED
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes ... WARNING
+Directory 'inst/doc' does not exist.
+Package vignettes without corresponding single PDF/HTML:
+  ‘Cerebro_interface.Rmd’
+  ‘cerebroApp_workflow_Seurat.Rmd’
+  ‘control_access_to_cerebro_with_a_login_page.Rmd’
+  ‘create_expression_matrix_in_h5_format.Rmd’
+  ‘export_a_data_set_in_SCE_format.Rmd’
+  ‘export_and_visualize_custom_tables_and_plots.Rmd’
+  ‘host_cerebro_on_shinyapps.Rmd’
+  ‘launch_cerebro_with_pre-loaded_data_set.Rmd’
+  ‘overview_of_cerebro.Rmd’
+  ‘release_notes.Rmd’
+* checking running R code from vignettes ... SKIPPED
+* checking re-building of vignette outputs ... SKIPPED
+* checking PDF version of manual ... WARNING
+LaTeX errors when creating PDF version.
+This typically indicates Rd problems.
+* checking PDF version of manual without index ... ERROR
+Re-running with no redirection of stdout/stderr.
+* DONE
+Status: 1 ERROR, 7 WARNINGs, 2 NOTEs
