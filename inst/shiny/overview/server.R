@@ -2,7 +2,7 @@
 ## Tab: Overview
 ##----------------------------------------------------------------------------##
 files_to_load <- list.files(
-  paste0(Cerebro.options[["cerebro_root"]], "/shiny/v1.4/overview"),
+  paste0(Cerebro.options[["cerebro_root"]], "/shiny/overview"),
   pattern = "func_|obj_|UI_|out_|event_",
   full.names = TRUE
 )

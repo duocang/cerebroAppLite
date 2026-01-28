@@ -40,8 +40,8 @@
 #' No data returned.
 #'
 #' @examples
-#' pbmc <- readRDS(system.file("extdata/v1.3/pbmc_SCE.rds",
-#'   package = "cerebroApp"))
+#' pbmc <- readRDS(system.file("extdata/pbmc_SCE.rds",
+#'   package = "cerebroAppLite"))
 #' exportFromSCE(
 #'   object = pbmc,
 #'   file = 'pbmc_SCE.crb',
@@ -177,7 +177,7 @@ exportFromSCE <- function(
   }
 
   ## create new Cerebro object
-  export <- Cerebro_v1.3$new()
+  export <- Cerebro$new()
 
   ## add experiment name
   export$addExperiment('experiment_name', experiment_name)

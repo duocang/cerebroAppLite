@@ -4,18 +4,18 @@ setOldClass(Classes = 'package_version')
 #' R6 class in which data sets will be stored for visualization in Cerebro.
 #'
 #' @description
-#' A \code{Cerebro_v1.3} object is an R6 class that contains several types of
+#' A \code{Cerebro} object is an R6 class that contains several types of
 #' data that can be visualized in Cerebro.
-#' 
+#'
 #' @return
-#' A new \code{Cerebro_v1.3} object.
+#' A new \code{Cerebro} object.
 #'
 #' @importFrom R6 R6Class
-#'
+#
 #' @export
-#'
-Cerebro_v1.3 <- R6::R6Class(
-  'Cerebro_v1.3',
+#
+Cerebro <- R6::R6Class(
+  'Cerebro',
 
   ## public fields and methods
   public = list(
@@ -97,10 +97,10 @@ Cerebro_v1.3 <- R6::R6Class(
     ##------------------------------------------------------------------------##
 
     #' @description
-    #' Create a new \code{Cerebro_v1.3} object.
+    #' Create a new \code{Cerebro} object.
     #'
     #' @return
-    #' A new \code{Cerebro_v1.3} object.
+    #' A new \code{Cerebro} object.
     initialize = function() {
       self$experiment <- list(
         experiment_name = NULL,
@@ -122,7 +122,7 @@ Cerebro_v1.3 <- R6::R6Class(
     #' @description
     #' Get the version of \code{cerebroApp} that was used to generate this
     #' object.
-    #' 
+    #'
     #' @return
     #' Version as \code{package_version} class.
     getVersion = function() {
@@ -635,14 +635,13 @@ Cerebro_v1.3 <- R6::R6Class(
     },
 
     #' @description
-    #' Retrieve table of most expressed genes for a grouping variable.
+    #' Retrieve table of most expressed genes for a specific grouping variable.
     #'
-    #' @param group_name Grouping variable for which most expressed genes should
-    #' be retrieved.
+    #' @param group_name Name of grouping variable for which to retrieve most
+    #' expressed genes.
     #'
     #' @return
-    #' \code{data.frame} that contains most expressed genes for group levels of
-    #' the specified grouping variable.
+    #' \code{data.frame} containing the most expressed genes.
     getMostExpressedGenes = function(group_name) {
       self$checkIfGroupExists(group_name)
       self$checkIfColumnExistsInMetadata(group_name)
@@ -652,440 +651,204 @@ Cerebro_v1.3 <- R6::R6Class(
     #' @description
     #' Add table of marker genes.
     #'
-    #' @param method Name of method that was used to generate the marker genes.
-    #' @param name Name of table. This name will be used to select the table in
-    #' Cerebro. It is recommended to use the grouping variable, e.g.
-    #' \code{sample}.
+    #' @param method Name of method that was used to calculate marker genes.
+    #' @param group_name Name of grouping variable that the marker genes belong
+    #' to. Must be registered in the \code{groups} field.
     #' @param table \code{data.frame} that contains the marker genes.
-    addMarkerGenes = function(method, name, table) {
-      # self$checkIfGroupExists(group_name)
-      # self$checkIfColumnExistsInMetadata(group_name)
-      if ( method %in% names(self$marker_genes) == FALSE ) {
-        self$marker_genes[[method]] <- list()
-      }
-      self$marker_genes[[method]][[name]] <- table
+    addMarkerGenes = function(method, group_name, table) {
+      self$checkIfGroupExists(group_name)
+      self$checkIfColumnExistsInMetadata(group_name)
+      self$marker_genes[[method]][[group_name]] <- table
     },
 
     #' @description
-    #' Retrieve names of methods that were used to generate marker genes.
+    #' Retrieve names of methods for which marker genes are available.
     #'
     #' @return
-    #' \code{vector} of names of methods that were used to generate marker
-    #' genes.
-    getMethodsForMarkerGenes = function() {
+    #' \code{vector} of methods for which marker genes are available.
+    getMethodsWithMarkerGenes = function() {
       return(names(self$marker_genes))
     },
 
     #' @description
-    #' Retrieve grouping variables for which marker genes were generated using
-    #' a specified method.
+    #' Retrieve names of grouping variables for which marker genes are
+    #' available for a specific method.
     #'
-    #' @param method Name of method.
+    #' @param method Name of method for which to retrieve grouping variables.
     #'
     #' @return
-    #' \code{vector} of grouping variables for which marker genes were
-    #' calculated using the specified method.
+    #' \code{vector} of grouping variables for which marker genes are available.
     getGroupsWithMarkerGenes = function(method) {
-      return(names(self$marker_genes[[method]]))
+      if ( method %in% self$getMethodsWithMarkerGenes() == FALSE ) {
+        stop(glue::glue('Method `{method}` is not available.'), call. = FALSE)
+      } else {
+        return(names(self$marker_genes[[method]]))
+      }
     },
 
     #' @description
-    #' Retrieve table of marker genes for specific method and grouping variable.
+    #' Retrieve table of marker genes for a specific method and grouping
+    #' variable.
     #'
-    #' @param method Name of method.
-    #' @param name Name of table.
+    #' @param method Name of method for which to retrieve marker genes.
+    #' @param group_name Name of grouping variable for which to retrieve marker
+    #' genes.
     #'
     #' @return
-    #' \code{data.frame} that contains marker genes for the specified
-    #' combination of method and grouping variable.
-    getMarkerGenes = function(method, name) {
-      # self$checkIfGroupExists(group_name)
-      # self$checkIfColumnExistsInMetadata(group_name)
-      if ( method %in% names(self$marker_genes) == FALSE ) {
-        stop(glue::glue('Method `{method}` is not available for marker genes.'), call. = FALSE)
+    #' \code{data.frame} containing the marker genes.
+    getMarkerGenes = function(method, group_name) {
+      if ( method %in% self$getMethodsWithMarkerGenes() == FALSE ) {
+        stop(glue::glue('Method `{method}` is not available.'), call. = FALSE)
+      } else {
+        if ( group_name %in% self$getGroupsWithMarkerGenes(method) == FALSE ) {
+          stop(
+            glue::glue('Group `{group_name}` is not available for method `{method}`.'),
+            call. = FALSE
+          )
+        } else {
+          return(self$marker_genes[[method]][[group_name]])
+        }
       }
-      if ( name %in% names(self$marker_genes[[method]]) == FALSE ) {
-        stop(glue::glue('A marker gene table with name `{name}` is not available for method `{method}`.'), call. = FALSE)
-      }
-      return(self$marker_genes[[method]][[name]])
     },
 
     #' @description
     #' Add table of enriched pathways.
     #'
-    #' @param method Name of method that was used to generate the enriched
+    #' @param method Name of method that was used to calculate enriched
     #' pathways.
-    #' @param name Name of table. This name will be used to select the table in
-    #' Cerebro. It is recommended to use the grouping variable, e.g.
-    #' \code{sample}.
+    #' @param group_name Name of grouping variable that the enriched pathways
+    #' belong to. Must be registered in the \code{groups} field.
     #' @param table \code{data.frame} that contains the enriched pathways.
-    addEnrichedPathways = function(method, name, table) {
-      # self$checkIfGroupExists(group_name)
-      # self$checkIfColumnExistsInMetadata(group_name)
-      if ( method %in% names(self$enriched_pathways) == FALSE ) {
-        self$enriched_pathways[[method]] <- list()
-      }
-      self$enriched_pathways[[method]][[name]] <- table
+    addEnrichedPathways = function(method, group_name, table) {
+      self$checkIfGroupExists(group_name)
+      self$checkIfColumnExistsInMetadata(group_name)
+      self$enriched_pathways[[method]][[group_name]] <- table
     },
 
     #' @description
-    #' Retrieve names of methods that were used to generate enriched pathways.
+    #' Retrieve names of methods for which enriched pathways are available.
     #'
     #' @return
-    #' \code{vector} of names of methods that were used to generate enriched
-    #' pathways.
-    getMethodsForEnrichedPathways = function() {
+    #' \code{vector} of methods for which enriched pathways are available.
+    getMethodsWithEnrichedPathways = function() {
       return(names(self$enriched_pathways))
     },
 
     #' @description
-    #' Retrieve grouping variables for which enriched pathways were generated
-    #' using a specified method.
+    #' Retrieve names of grouping variables for which enriched pathways are
+    #' available for a specific method.
     #'
-    #' @param method Name of method.
+    #' @param method Name of method for which to retrieve grouping variables.
     #'
     #' @return
-    #' \code{vector} of grouping variables for which enriched pathways were
-    #' calculated using the specified method.
+    #' \code{vector} of grouping variables for which enriched pathways are
+    #' available.
     getGroupsWithEnrichedPathways = function(method) {
-      return(names(self$enriched_pathways[[method]]))
+      if ( method %in% self$getMethodsWithEnrichedPathways() == FALSE ) {
+        stop(glue::glue('Method `{method}` is not available.'), call. = FALSE)
+      } else {
+        return(names(self$enriched_pathways[[method]]))
+      }
     },
 
     #' @description
-    #' Retrieve table of enriched pathways for specific method and grouping
+    #' Retrieve table of enriched pathways for a specific method and grouping
     #' variable.
     #'
-    #' @param method Name of method.
-    #' @param name Grouping variable.
+    #' @param method Name of method for which to retrieve enriched pathways.
+    #' @param group_name Name of grouping variable for which to retrieve enriched
+    #' pathways.
     #'
     #' @return
-    #' \code{data.frame} that contains enriched pathways for the specified
-    #' combination of method and grouping variable.
-    getEnrichedPathways = function(method, name) {
-      # self$checkIfGroupExists(group_name)
-      # self$checkIfColumnExistsInMetadata(group_name)
-      if ( method %in% names(self$enriched_pathways) == FALSE ) {
-        stop(glue::glue('Method `{method}` is not available for enriched pathways.'), call. = FALSE)
+    #' \code{data.frame} containing the enriched pathways.
+    getEnrichedPathways = function(method, group_name) {
+      if ( method %in% self$getMethodsWithEnrichedPathways() == FALSE ) {
+        stop(glue::glue('Method `{method}` is not available.'), call. = FALSE)
+      } else {
+        if ( group_name %in% self$getGroupsWithEnrichedPathways(method) == FALSE ) {
+          stop(
+            glue::glue('Group `{group_name}` is not available for method `{method}`.'),
+            call. = FALSE
+          )
+        } else {
+          return(self$enriched_pathways[[method]][[group_name]])
+        }
       }
-      if ( name %in% names(self$enriched_pathways[[method]]) == FALSE ) {
-        stop(glue::glue('A pathway enrichment table with name `{name}` is not available for method `{method}`.'), call. = FALSE)
-      }
-      return(self$enriched_pathways[[method]][[name]])
     },
 
     #' @description
-    #' Add trajectory.
+    #' Add trajectory to \code{trajectories} field.
     #'
-    #' @param method Name of method that was used to generate the trajectory.
-    #' @param name Name of the trajectory. This name will be used later in
-    #' Cerebro to select the trajectory.
-    #' @param content Relevant data for the trajectory, depending on the method
-    #' this could be a \code{list} holding edges, cell positions, pseudotime,
-    #' etc.
-    addTrajectory = function(method, name, content) {
-      self$trajectories[[method]][[name]] <- content
+    #' @param method Name of method that was used to calculate trajectory.
+    #' @param trajectory_name Name of trajectory.
+    #' @param trajectory Trajectory data as \code{data.frame} or \code{list}.
+    addTrajectory = function(method, trajectory_name, trajectory) {
+      self$trajectories[[method]][[trajectory_name]] <- trajectory
     },
 
     #' @description
-    #' Retrieve names of methods that were used to generate trajectories.
+    #' Retrieve names of methods for which trajectories are available.
     #'
     #' @return
-    #' \code{vector} of names of methods that were used to generate
-    #' trajectories.
-    getMethodsForTrajectories = function() {
+    #' \code{vector} of methods for which trajectories are available.
+    getMethodsWithTrajectories = function() {
       return(names(self$trajectories))
     },
 
     #' @description
-    #' Retrieve names of available trajectories for a specified method.
+    #' Retrieve names of trajectories for a specific method.
     #'
-    #' @param method Name of method.
-    #'
-    #' @return
-    #' \code{vector} of available trajectory for the specified method.
-    getNamesOfTrajectories = function(method) {
-      return(names(self$trajectories[[method]]))
-    },
-
-    #' @description
-    #' Retrieve data for a specific trajectory.
-    #'
-    #' @param method Name of method.
-    #' @param name Name of trajectory.
+    #' @param method Name of method for which to retrieve trajectories.
     #'
     #' @return
-    #' The type of data depends on the method that was used to generate the
-    #' trajectory.
-    getTrajectory = function(method, name) {
-      return(self$trajectories[[method]][[name]])
+    #' \code{vector} of trajectories for the specified method.
+    getTrajectories = function(method) {
+      if ( method %in% self$getMethodsWithTrajectories() == FALSE ) {
+        stop(glue::glue('Method `{method}` is not available.'), call. = FALSE)
+      } else {
+        return(names(self$trajectories[[method]]))
+      }
     },
 
     #' @description
-    #' Add content to extra material field.
+    #' Retrieve trajectory data for a specific method and trajectory name.
     #'
-    #' @param category Name of category. At the moment, only \code{tables} and
-    #' \code{plots} are valid categories. Tables must be in \code{data.frame}
-    #' format and plots must be created with \code{ggplot2}.
-    #' @param name Name of material, will be used to select it in Cerebro.
-    #' @param content Data that should be added.
-    addExtraMaterial = function(category, name, content) {
-
-      ## valid categories
-      valid_categories <- c('tables','plots')
-
-      ## proceed only if specified category is valid
-      if ( category %in% valid_categories == FALSE ) {
-        stop(
-          glue::glue(
-            'Category `{category}` is not one of the valid categories ',
-            '({paste0(valid_categories, collapse = ", ")}).'
-          ),
-          call. = FALSE
-        )
-      }
-
-      ## call function to add table
-      if ( category == 'tables' ) {
-        self$addExtraTable(name, content)
-      }
-
-      ## call function to add table
-      if ( category == 'plots' ) {
-        self$addExtraPlot(name, content)
-      }
-    },
-
-    #' @description
-    #' Add table to `extra_material` slot.
-    #' 
-    #' @param name Name of material, will be used to select it in Cerebro.
-    #' @param table Table that should be added, must be \code{data.frame}.
-    addExtraTable = function(name, table) {
-
-      ## stop if table is not a data frame
-      if ( !is.data.frame(table) ) {
-        if ( 'DFrame' %in% class(table) ) {
-          table <- as.data.frame(table)
-        } else {
+    #' @param method Name of method for which to retrieve trajectory.
+    #' @param trajectory_name Name of trajectory to retrieve.
+    #'
+    #' @return
+    #' Trajectory data as \code{data.frame} or \code{list}.
+    getTrajectory = function(method, trajectory_name) {
+      if ( method %in% self$getMethodsWithTrajectories() == FALSE ) {
+        stop(glue::glue('Method `{method}` is not available.'), call. = FALSE)
+      } else {
+        if ( trajectory_name %in% self$getTrajectories(method) == FALSE ) {
           stop(
-            glue::glue(
-              'Cannot add table `{name}` because it is not a data frame.'
-            ),
+            glue::glue('Trajectory `{trajectory_name}` is not available for method `{method}`.'),
             call. = FALSE
           )
+        } else {
+          return(self$trajectories[[method]][[trajectory_name]])
         }
       }
-
-      ## stop if `name` is already used
-      if (
-        !is.null(self$extra_material) &&
-        !is.null(self$extra_material$tables) &&
-        is.list(self$extra_material$tables) &&
-        name %in% names(self$extra_material$tables)
-      ) {
-        stop(
-          glue::glue(
-            'A table with name `{name}` already exists in the extra material.'
-          ),
-          call. = FALSE
-        )
-
-      ## add table
-      } else {
-        self$extra_material$tables[[ name ]] <- table
-      }
     },
 
     #' @description
-    #' Add plot to `extra_material` slot.
-    #' 
-    #' @param name Name of material, will be used to select it in Cerebro.
-    #' @param plot Plot that should be added, must be created with
-    #' \code{ggplot2} (class: \code{ggplot}).
-    addExtraPlot = function(name, plot) {
-
-      ## stop if table is not a data frame
-      if ( "ggplot" %in% class(plot) == FALSE ) {
-        stop(
-          glue::glue(
-            'Cannot add plot `{name}` because it is not of class "ggplot".'
-          ),
-          call. = FALSE
-        )
-      }
-
-      ## stop if `name` is already used
-      if (
-        !is.null(self$extra_material) &&
-        !is.null(self$extra_material$plots) &&
-        is.list(self$extra_material$plots) &&
-        name %in% names(self$extra_material$plots)
-      ) {
-        stop(
-          glue::glue(
-            'A plot with name `{name}` already exists in the extra material.'
-          ),
-          call. = FALSE
-        )
-
-      ## add table
-      } else {
-        self$extra_material$plots[[ name ]] <- plot
-      }
+    #' Add extra material to \code{extra_material} field.
+    #'
+    #' @param name Name of the extra material.
+    #' @param content Content of the extra material.
+    addExtraMaterial = function(name, content) {
+      self$extra_material[[name]] <- content
     },
 
     #' @description
-    #' Get names of categories for which extra material is available.
+    #' Retrieve extra material from \code{extra_material} field.
     #'
     #' @return
-    #' \code{vector} with names of available categories.
-    getExtraMaterialCategories = function() {
-      return(names(self$extra_material))
-    },
-
-    #' @description
-    #' Check whether there are tables in the extra materials.
-    #'
-    #' @return
-    #' \code{logical} indicating whether there are tables in the extra
-    #' materials.
-    checkForExtraTables = function() {
-      return(!is.null(self$extra_material$tables))
-    },
-
-    #' @description
-    #' Get names of tables in extra materials.
-    #'
-    #' @return
-    #' \code{vector} containing names of tables in extra materials.
-    getNamesOfExtraTables = function() {
-      return(names(self$extra_material$tables))
-    },
-
-    #' @description
-    #' Get table from extra materials.
-    #'
-    #' @param name Name of table.
-    #'
-    #' @return
-    #' Requested table in \code{data.frame} format.
-    getExtraTable = function(name) {
-      return(self$extra_material$table[[ name ]])
-    },
-
-    #' @description
-    #' Check whether there are plots in the extra materials.
-    #'
-    #' @return
-    #' \code{logical} indicating whether there are plots in the extra
-    #' materials.
-    checkForExtraPlots = function() {
-      return(!is.null(self$extra_material$plots))
-    },
-
-    #' @description
-    #' Get names of plots in extra materials.
-    #'
-    #' @return
-    #' \code{vector} containing names of plots in extra materials.
-    getNamesOfExtraPlots = function() {
-      return(names(self$extra_material$plots))
-    },
-
-    #' @description
-    #' Get plot from extra materials.
-    #'
-    #' @param name Name of plot.
-    #'
-    #' @return
-    #' Requested plot made with \code{ggplot2}.
-    getExtraPlot = function(name) {
-      return(self$extra_material$plots[[ name ]])
-    },
-
-    #' @description
-    #' Show overview of object and the data it contains.
-    print = function() {
-      message(
-        paste0(
-          'class: Cerebro_v1.3', '\n',
-          'cerebroApp version: ', self$getVersion(), '\n',
-          'experiment name: ', self$getExperiment()$experiment_name, '\n',
-          'organism: ', self$getExperiment()$organism, '\n',
-          'date of analysis: ', self$getExperiment()$date_of_analysis, '\n',
-          'date of export: ', self$getExperiment()$date_of_export, '\n',
-          'number of cells: ', format(ncol(self$expression), big.mark = ','), '\n',
-          'number of genes: ', format(nrow(self$expression), big.mark = ','), '\n',
-          'grouping variables (', length(self$getGroups()), '): ',
-            paste0(self$getGroups(), collapse = ', '), '\n',
-          'cell cycle variables (', length(self$cell_cycle), '): ',
-            paste0(self$cell_cycle, collapse = ', '), '\n',
-          'projections (', length(self$availableProjections()),'): ',
-            paste0(self$availableProjections(), collapse = ', '), '\n',
-          'trees (', length(self$trees),'): ',
-            paste0(names(self$trees), collapse = ', '), '\n',
-          'most expressed genes: ',
-            paste0(names(self$most_expressed_genes), collapse = ', '), '\n',
-          'marker genes:', private$showMarkerGenes(), '\n',
-          'enriched pathways:', private$showEnrichedPathways(), '\n',
-          'trajectories:', private$showTrajectories(), '\n',
-          'extra material:', private$showExtraMaterial(), '\n'
-        )
-      )
-    }
-  ),
-
-  ## private fields and methods
-  private = list(
-
-    #' Print overview of available marker gene results for \code{self$print()}
-    #' function.
-    showMarkerGenes = function() {
-      text <- list()
-      for ( method in names(self$marker_genes) ) {
-        text[[method]] <- paste0(
-          '\n  - ', method, ' (', length(names(self$marker_genes[[method]])), '): ',
-          paste0(names(self$marker_genes[[method]]), collapse = ', ')
-        )
-      }
-      paste0(text, collapse = ', ')
-    },
-
-    #' Print overview of available enriched pathway results for
-    #' \code{self$print()} function.
-    showEnrichedPathways = function() {
-      text <- list()
-      for ( method in names(self$enriched_pathways) ) {
-        text[[method]] <- paste0(
-          '\n  - ', method, ' (', length(names(self$enriched_pathways[[method]])), '): ',
-          paste0(names(self$enriched_pathways[[method]]), collapse = ', ')
-        )
-      }
-      paste0(text, collapse = ', ')
-    },
-
-    #' Print overview of available trajectories for \code{self$print()} function.
-    showTrajectories = function() {
-      text <- list()
-      for ( method in names(self$trajectories) ) {
-        text[[method]] <- paste0(
-          '\n  - ', method, ' (', length(names(self$trajectories[[method]])), '): ',
-          paste0(names(self$trajectories[[method]]), collapse = ', ')
-        )
-      }
-      paste0(text, collapse = ', ')
-    },
-
-    #' Print overview of extra material for \code{self$print()} function.
-    showExtraMaterial = function() {
-      text <- list()
-      for ( category in names(self$extra_material) ) {
-        text[[category]] <- paste0(
-          '\n  - ', category, ' (', length(names(self$extra_material[[category]])), '): ',
-          paste0(names(self$extra_material[[category]]), collapse = ', ')
-        )
-      }
-      paste0(text, collapse = ', ')
+    #' \code{list} of all entries in the \code{extra_material} field.
+    getExtraMaterial = function() {
+      return(self$extra_material)
     }
   )
 )

@@ -1,5 +1,5 @@
 ---
-title: "Testing procedure for v1.3"
+title: "Testing procedure"
 author: "Roman Hillje"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -9,12 +9,12 @@ output:
     self_contained: yes
     mode: selfcontained
 vignette: >
-  %\VignetteIndexEntry{Testing procedure for v1.3}
+  %\VignetteIndexEntry{Testing procedure}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-# Prepararation
+# Preparation
 
 ## Load packages
 
@@ -26,7 +26,7 @@ library(shinydashboard)
 
 ```{r eval=FALSE}
 library(Seurat)
-library(cerebroApp)
+library(cerebroAppLite)
 ```
 
 ## Classes
@@ -145,8 +145,6 @@ tree <- Tree$new(
 tree
 ```
 
-### `Monocle_v2`
-
 ## Load data
 
 ```{r eval=FALSE}
@@ -203,27 +201,10 @@ pbmc_Seurat <- BuildClusterTree(
 pbmc_Seurat@misc$trees$cell_type_singler_blueprintencode_main <- pbmc_Seurat@tools$BuildClusterTree
 ```
 
-## Most expressed genes
-
-```{r eval=FALSE}
-source('~/Research/GitHub/cerebroApp_v1.3/R/getMostExpressedGenes.R')
-```
-
-```{r eval=FALSE}
-pbmc_Seurat@misc$most_expressed_genes$by_sample <- NULL
-pbmc_Seurat@misc$most_expressed_genes$by_cluster <- NULL
-
-pbmc_Seurat <- getMostExpressedGenes(
-  pbmc_Seurat,
-  assay = 'RNA',
-  groups = c('sample','seurat_clusters','cell_type_singler_blueprintencode_main')
-)
-```
-
 ## Marker genes
 
 ```{r eval=FALSE}
-source('~/Research/GitHub/cerebroApp_v1.3/R/getMarkerGenes.R')
+source('~/Research/GitHub/cerebroAppLite/R/getMarkerGenes.R')
 ```
 
 ```{r eval=FALSE}
@@ -246,69 +227,20 @@ pbmc_Seurat <- getMarkerGenes(
 )
 ```
 
-## Enriched pathways
-
-```{r eval=FALSE}
-source('~/Research/GitHub/cerebroApp_v1.3/R/send_enrichr_query.r')
-source('~/Research/GitHub/cerebroApp_v1.3/R/getEnrichedPathways.R')
-```
-
-```{r eval=FALSE}
-pbmc_Seurat@misc$enriched_pathways$enrichr <- NULL
-
-pbmc_Seurat <- getEnrichedPathways(
-  pbmc_Seurat,
-  marker_genes_input = 'cerebro_seurat',
-  adj_p_cutoff = 0.01,
-  max_terms = 100
-)
-```
-
-## Gene set enrichment
-
-```{r eval=FALSE}
-source('~/Research/GitHub/cerebroApp_v1.3/R/read_GMT_file.R')
-source('~/Research/GitHub/cerebroApp_v1.3/R/performGeneSetEnrichmentAnalysis.R')
-```
-
-```{r eval=FALSE}
-pbmc_Seurat@misc$enriched_pathways$GSVA <- NULL
-
-example_gene_set <- system.file("extdata/example_gene_set.gmt", package = "cerebroApp")
-
-pbmc_Seurat <- performGeneSetEnrichmentAnalysis(
-  pbmc_Seurat,
-  assay = 'RNA',
-  GMT_file = example_gene_set,
-  groups = c('sample','seurat_clusters','cell_type_singler_blueprintencode_main')
-)
-```
-
 ## Meta data
 
 ```{r eval=FALSE}
-pbmc_Seurat@misc$technical_info$cerebroApp_version <- utils::packageVersion('cerebroApp')
+pbmc_Seurat@misc$technical_info$cerebroApp_version <- utils::packageVersion('cerebroAppLite')
 pbmc_Seurat@misc$technical_info$Seurat <- utils::packageVersion('Seurat')
-```
-
-## Trajectory
-
-```{r eval=FALSE}
-source('~/Research/GitHub/cerebroApp_v1.3/R/extractMonocleTrajectory.R')
-```
-
-```{r eval=FALSE}
-monocle <- readRDS('~/Dropbox/GSE_stuff/data/monocle.rds')
-pbmc_Seurat <- extractMonocleTrajectory(monocle, pbmc_Seurat, 'highly_variable_genes')
 ```
 
 # Export data
 
 ```{r eval=FALSE}
-source('~/Research/GitHub/cerebroApp_v1.3/R/class-Cerebro_v1.3.R')
+source('~/Research/GitHub/cerebroAppLite/R/class-Cerebro.R')
 
-source('~/Research/GitHub/cerebroApp_v1.3/R/exportFromSeurat.R')
-source('~/Research/GitHub/cerebroApp_v1.3/R/exportFromSCE.R')
+source('~/Research/GitHub/cerebroAppLite/R/exportFromSeurat.R')
+source('~/Research/GitHub/cerebroAppLite/R/exportFromSCE.R')
 ```
 
 ## `dgCMatrix`
@@ -351,13 +283,34 @@ exportFromSeurat(
 )
 ```
 
+## BPCells (Seurat v5)
+
+```{r eval=FALSE}
+exportFromSeurat(
+  pbmc_Seurat,
+  assay = 'RNA',
+  slot = 'data',
+  file = '~/Dropbox/Cerebro_development/pbmc_Seurat_BPCells.crb',
+  experiment_name = 'pbmc_Seurat',
+  organism = 'hg',
+  groups = c('sample','seurat_clusters','cell_type_singler_blueprintencode_main'),
+  cell_cycle = c('cell_cycle_seurat'),
+  nUMI = 'nCount_RNA',
+  nGene = 'nFeature_RNA',
+  add_all_meta_data = TRUE,
+  use_delayed_array = FALSE,
+  expression_matrix_BPCells = TRUE,
+  verbose = TRUE
+)
+```
+
 # Load data to check
 
 ```{r eval=FALSE}
 cerebro_seurat <- readRDS('~/Dropbox/Cerebro_development/pbmc_Seurat_dgCMatrix.crb')
 cerebro_seurat
-# class: Cerebro_v1.3
-# cerebroApp version: 1.3.0
+# class: Cerebro
+# cerebroAppLite version: 1.5.0
 # experiment name: pbmc_Seurat
 # organism: hg
 # date of analysis: 2020-02-19
@@ -368,15 +321,9 @@ cerebro_seurat
 # cell cycle variables (1): cell_cycle_seurat
 # projections (2): UMAP, UMAP_3D
 # trees (3): sample, seurat_clusters, cell_type_singler_blueprintencode_main
-# most expressed genes: sample, seurat_clusters, cell_type_singler_blueprintencode_main
 # marker genes:
 #   - cerebro_seurat (3): sample, seurat_clusters, cell_type_singler_blueprintencode_main, 
 #   - test (1): sample
-# enriched pathways:
-#   - cerebro_seurat_enrichr (3): sample, seurat_clusters, cell_type_singler_blueprintencode_main, 
-#   - cerebro_GSVA (3): sample, seurat_clusters, cell_type_singler_blueprintencode_main
-# trajectories:
-#   - monocle2 (1): highly_variable_genes
 ```
 
 # Launch Cerebro
@@ -389,7 +336,7 @@ cerebro_seurat
 Cerebro.options <- list(
   "mode" = "open",
   "crb_file_to_load" = "~/Dropbox/Cerebro_development/pbmc_Seurat_dgCMatrix.crb",
-  "cerebro_root" = "~/Research/GitHub/cerebroApp_v1.3/inst/"
+  "cerebro_root" = "~/Research/GitHub/cerebroAppLite/inst/"
 )
 ```
 
@@ -399,7 +346,17 @@ Cerebro.options <- list(
 Cerebro.options <- list(
   "mode" = "open",
   "crb_file_to_load" = "~/Dropbox/Cerebro_development/pbmc_Seurat_RleMatrix.crb",
-  "cerebro_root" = "~/Research/GitHub/cerebroApp_v1.3/inst/"
+  "cerebro_root" = "~/Research/GitHub/cerebroAppLite/inst/"
+)
+```
+
+### Pre-load with BPCells (Seurat v5)
+
+```{r eval=FALSE}
+Cerebro.options <- list(
+  "mode" = "open",
+  "crb_file_to_load" = "~/Dropbox/Cerebro_development/pbmc_Seurat_BPCells.crb",
+  "cerebro_root" = "~/Research/GitHub/cerebroAppLite/inst/"
 )
 ```
 
@@ -408,8 +365,8 @@ Cerebro.options <- list(
 ```{r eval=FALSE}
 Cerebro.options <- list(
   "mode" = "open",
-  "crb_file_to_load" = "~/Research/GitHub/cerebroApp_v1.3/inst/extdata/v1.3/example.crb",
-  "cerebro_root" = "~/Research/GitHub/cerebroApp_v1.3/inst"
+  "crb_file_to_load" = "~/Research/GitHub/cerebroAppLite/inst/extdata/example.crb",
+  "cerebro_root" = "~/Research/GitHub/cerebroAppLite/inst"
 )
 ```
 
@@ -418,7 +375,7 @@ Cerebro.options <- list(
 ```{r eval=FALSE}
 Cerebro.options <- list(
   "mode" = "open",
-  "cerebro_root" = "~/Research/GitHub/cerebroApp_v1.3/inst"
+  "cerebro_root" = "~/Research/GitHub/cerebroAppLite/inst"
 )
 ```
 
@@ -429,8 +386,8 @@ Cerebro.options <- list(
 ```{r eval=FALSE}
 options(shiny.maxRequestSize = 800 * 1024^2)
 
-source("~/Research/GitHub/cerebroApp_v1.3/inst/shiny/v1.3/shiny_UI.R")
-source("~/Research/GitHub/cerebroApp_v1.3/inst/shiny/v1.3/shiny_server.R")
+source("~/Research/GitHub/cerebroAppLite/inst/shiny/shiny_UI.R")
+source("~/Research/GitHub/cerebroAppLite/inst/shiny/shiny_server.R")
 
 shiny::shinyApp(ui = ui, server = server)
 ```
@@ -440,8 +397,8 @@ shiny::shinyApp(ui = ui, server = server)
 ```{r eval=FALSE}
 options(shiny.maxRequestSize = 800 * 1024^2)
 
-source("~/Research/GitHub/cerebroApp_v1.3/inst/shiny/v1.3/shiny_UI.R")
-source("~/Research/GitHub/cerebroApp_v1.3/inst/shiny/v1.3/shiny_server.R")
+source("~/Research/GitHub/cerebroAppLite/inst/shiny/shiny_UI.R")
+source("~/Research/GitHub/cerebroAppLite/inst/shiny/shiny_server.R")
 
 profvis::profvis(shiny::runApp(shiny::shinyApp(ui = ui, server = server)))
 ```
@@ -455,8 +412,8 @@ reactlog_enable()
 
 options(shiny.maxRequestSize = 800 * 1024^2)
 
-source("~/Research/GitHub/cerebroApp_v1.3/inst/shiny/v1.3/shiny_UI.R")
-source("~/Research/GitHub/cerebroApp_v1.3/inst/shiny/v1.3/shiny_server.R")
+source("~/Research/GitHub/cerebroAppLite/inst/shiny/shiny_UI.R")
+source("~/Research/GitHub/cerebroAppLite/inst/shiny/shiny_server.R")
 
 shiny::shinyApp(ui = ui, server = server)
 ```
@@ -465,7 +422,7 @@ shiny::shinyApp(ui = ui, server = server)
 shiny::reactlogShow()
 ```
 
-# Install `cerebroApp`
+# Install `cerebroAppLite`
 
 ```{r eval=FALSE}
 devtools::document()
@@ -478,8 +435,7 @@ devtools::install_local(
   build_vignettes = FALSE
 )
 
-cerebroApp::launchCerebro(
-  version = "v1.3",
+cerebroAppLite::launchCerebro(
   crb_file_to_load = "~/Dropbox/Cerebro_development/pbmc_Seurat_dgCMatrix.crb"
 )
 ```
