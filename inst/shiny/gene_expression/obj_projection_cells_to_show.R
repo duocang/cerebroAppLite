@@ -15,7 +15,9 @@ expression_projection_cells_to_show <- reactive({
     group_filters[[i]] <- input[[paste0("expression_projection_group_filter_", i)]]
   }
   ## get cell meta data
-  cells_df <- getMetaData() %>%
+  meta_data <- getMetaData()
+  req(!is.null(meta_data))
+  cells_df <- meta_data %>%
     dplyr::mutate(row_id = row_number())
   for ( i in getGroups() ) {
     ## make sure that group exists in meta data (as column) and that selected

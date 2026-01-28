@@ -2,33 +2,46 @@
 ## UI elements to set additional parameters for the projection.
 ##----------------------------------------------------------------------------##
 output[["overview_projection_additional_parameters_UI"]] <- renderUI({
+
+  default_point_size <- preferences[["scatter_plot_point_size"]][["default"]]
+
+  if (
+    exists("Cerebro.options") &&
+    !is.null(Cerebro.options[["point_size"]]) &&
+    is.list(Cerebro.options[["point_size"]]) &&
+    !is.null(Cerebro.options[["point_size"]][["overview_projection_point_size"]])
+  ) {
+    default_point_size <- Cerebro.options[["point_size"]][["overview_projection_point_size"]]
+  }
+
   tagList(
     sliderInput(
       "overview_projection_point_size",
       label = "Point size",
-      min = preferences[["overview_plot_point_size"]][["min"]],
-      max = preferences[["overview_plot_point_size"]][["max"]],
-      step = preferences[["overview_plot_point_size"]][["step"]],
-      value = preferences[["overview_plot_point_size"]][["default"]]
+      min = preferences[["scatter_plot_point_size"]][["min"]],
+      max = preferences[["scatter_plot_point_size"]][["max"]],
+      step = preferences[["scatter_plot_point_size"]][["step"]],
+      value = default_point_size
     ),
     sliderInput(
       "overview_projection_point_opacity",
       label = "Point opacity",
-      min = preferences[["overview_plot_point_opacity"]][["min"]],
-      max = preferences[["overview_plot_point_opacity"]][["max"]],
-      step = preferences[["overview_plot_point_opacity"]][["step"]],
-      value = preferences[["overview_plot_point_opacity"]][["default"]]
+      min = preferences[["scatter_plot_point_opacity"]][["min"]],
+      max = preferences[["scatter_plot_point_opacity"]][["max"]],
+      step = preferences[["scatter_plot_point_opacity"]][["step"]],
+      value = preferences[["scatter_plot_point_opacity"]][["default"]]
     ),
     sliderInput(
       "overview_projection_percentage_cells_to_show",
       label = "Show % of cells",
-      min = preferences[["overview_plot_percentage_cells_to_show"]][["min"]],
-      max = preferences[["overview_plot_percentage_cells_to_show"]][["max"]],
-      step = preferences[["overview_plot_percentage_cells_to_show"]][["step"]],
-      value = preferences[["overview_plot_percentage_cells_to_show"]][["default"]]
+      min = preferences[["scatter_plot_percentage_cells_to_show"]][["min"]],
+      max = preferences[["scatter_plot_percentage_cells_to_show"]][["max"]],
+      step = preferences[["scatter_plot_percentage_cells_to_show"]][["step"]],
+      value = preferences[["scatter_plot_percentage_cells_to_show"]][["default"]]
     )
   )
 })
+
 
 ## make sure elements are loaded even though the box is collapsed
 outputOptions(
