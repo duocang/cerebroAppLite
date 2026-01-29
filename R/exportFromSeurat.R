@@ -270,7 +270,6 @@ exportFromSeurat <- function(
       '[', format(Sys.time(), '%H:%M:%S'), '] Adding expression data...'
     )
   )
-  print(expression_data[1:5, 1:5])
   export$setExpression(expression_data)
 
   ##--------------------------------------------------------------------------##
@@ -623,7 +622,6 @@ exportFromSeurat <- function(
       )
     )
     expression_data <- spatial_data$expression
-    print(expression_data[1:5, 1:5])
   }
 
   ##--------------------------------------------------------------------------##
@@ -672,9 +670,6 @@ exportFromSeurat <- function(
       )
     }
 
-    print("‘fadsfasdfadsfasd放大啊扥阿东发动发动发腮发发森阿赛")
-    print(names(object@misc$most_expressed_genes))
-    print(groups)
     for ( i in seq_along(object@misc$most_expressed_genes) ) {
       group <- names(object@misc$most_expressed_genes)[i]
       if ( group %in% groups ) {

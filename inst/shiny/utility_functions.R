@@ -957,51 +957,60 @@ getTrajectory <- function(method, name) {
   }
 }
 getBCR <- function() {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getBCR())
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("getBCR", envir = ds) ) {
+    return(ds$getBCR())
   }
 }
 getTCR <- function() {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getTCR())
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("getTCR", envir = ds) ) {
+    return(ds$getTCR())
   }
 }
 .has_scRepertoire <- function() {
   requireNamespace("scRepertoire", quietly = TRUE)
 }
 getExtraMaterialCategories <- function() {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getExtraMaterialCategories())
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("getExtraMaterialCategories", envir = ds) ) {
+    return(ds$getExtraMaterialCategories())
   }
 }
 checkForExtraTables <- function() {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$checkForExtraTables())
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("checkForExtraTables", envir = ds) ) {
+    return(ds$checkForExtraTables())
   }
 }
 getNamesOfExtraTables <- function() {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getNamesOfExtraTables())
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("getNamesOfExtraTables", envir = ds) ) {
+    return(ds$getNamesOfExtraTables())
   }
 }
 getExtraTable <- function(name) {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getExtraTable(name))
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("getExtraTable", envir = ds) ) {
+    return(ds$getExtraTable(name))
   }
 }
 checkForExtraPlots <- function() {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$checkForExtraPlots())
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("checkForExtraPlots", envir = ds) ) {
+    return(ds$checkForExtraPlots())
   }
 }
 getNamesOfExtraPlots <- function() {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getNamesOfExtraPlots())
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("getNamesOfExtraPlots", envir = ds) ) {
+    return(ds$getNamesOfExtraPlots())
   }
 }
 getExtraPlot <- function(name) {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getExtraPlot(name))
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("getExtraPlot", envir = ds) ) {
+    return(ds$getExtraPlot(name))
   }
 }
 
