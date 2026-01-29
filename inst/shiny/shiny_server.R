@@ -99,8 +99,68 @@ server <- function(input, output, session) {
           ## if no names, set to NULL
           available_crb_files$names <- NULL
         }
+        ##----------------------------------------------------------------------
+        ## Check for dataset specified in URL (query string or path)
+        ##----------------------------------------------------------------------
+
+        url_dataset <- NULL
+
+        ## 1. Check Query String (?dataset=...)
+        query <- parseQueryString(session$clientData$url_search)
+        if (!is.null(query$dataset)) {
+          url_dataset <- query$dataset
+        }
+
+        ## 2. Check Pathname (e.g. /dataset_name)
+        ## Only if not found in query string
+        if (is.null(url_dataset) && !is.null(session$clientData$url_pathname)) {
+          path_val <- session$clientData$url_pathname
+          ## remove leading slash
+          if (nchar(path_val) > 1) {
+             ## remove leading slash
+             path_val <- substring(path_val, 2)
+             ## remove trailing slash if present
+             path_val <- gsub("/$", "", path_val)
+
+             if (nchar(path_val) > 0) {
+               url_dataset <- path_val
+             }
+          }
+        }
+
+        ## Try to match url_dataset to available files
+        if (!is.null(url_dataset)) {
+
+            ## Case A: Match by Name (if names exist)
+            if (!is.null(available_crb_files$names) && url_dataset %in% available_crb_files$names) {
+                path_to_load <- file_to_load[[url_dataset]]
+            } else {
+                ## Case B: Match by Filename (basename)
+                basenames <- basename(available_crb_files$files)
+                ## Check exact basename match
+                idx <- which(basenames == url_dataset)
+
+                ## If no exact match, check without extension
+                if (length(idx) == 0) {
+                   basenames_no_ext <- tools::file_path_sans_ext(basenames)
+                   idx <- which(basenames_no_ext == url_dataset)
+                }
+
+                if (length(idx) > 0) {
+                    ## pick the first match
+                    path_to_load <- available_crb_files$files[[idx[1]]]
+                }
+            }
+
+            if (path_to_load != '') {
+              print(glue::glue("[{Sys.time()}] Dataset selected via URL: {url_dataset} -> {path_to_load}"))
+            }
+        }
+
         ## if a file is already selected, use it; otherwise use the smallest one by file size
-        if (!is.null(available_crb_files$selected)) {
+        if (path_to_load != '') {
+          ## already set by URL logic, do nothing
+        } else if (!is.null(available_crb_files$selected)) {
           path_to_load <- available_crb_files$selected
         } else {
           ## determine which file to select by default
