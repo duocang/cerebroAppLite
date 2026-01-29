@@ -325,3 +325,11 @@ shinyjs.expressionProjectionUpdatePlot3D = function (params) {
 
   Plotly.react('expression_projection', data, layout_here);
 };
+
+// clear selection
+shinyjs.expressionProjectionClearSelection = function() {
+  const element = document.getElementById('expression_projection');
+  if (element) {
+    Plotly.restyle(element, {selectedpoints: [null]});
+  }
+};
