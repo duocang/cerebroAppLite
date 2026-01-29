@@ -306,3 +306,28 @@ shinyjs.updatePlot3DCategorical = function (params) {
 
   Plotly.react('overview_projection', data, layout_here);
 };
+
+// Clear selection on the overview projection plot
+shinyjs.overviewClearSelection = function () {
+  const plotContainer = document.getElementById('overview_projection');
+  if (plotContainer && plotContainer.data) {
+    // Use Plotly.update to reset both data selection and layout in one call
+    // Setting selectedpoints to null for all traces restores full opacity
+    const numTraces = plotContainer.data.length;
+    const restyleUpdate = {};
+    for (let i = 0; i < numTraces; i++) {
+      restyleUpdate.selectedpoints = restyleUpdate.selectedpoints || [];
+      restyleUpdate.selectedpoints.push(null);
+    }
+
+    // Combine restyle and relayout in one update call
+    Plotly.update(
+      'overview_projection',
+      { selectedpoints: null }, // Reset selected points for all traces
+      { selections: [], dragmode: 'select' } // Clear selection box, keep select mode
+    ).then(function () {
+      // Emit deselect event after update completes
+      plotContainer.emit('plotly_deselect');
+    });
+  }
+};

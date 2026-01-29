@@ -676,10 +676,10 @@ shinyjs.updatePlot2DContinuousSpatial = function (params) {
     hoverinfo: params.hover.hoverinfo,
   });
   shinyjs.createContinuousLegend(params.meta.color_variable, colorMin, colorMax, colorscale);
-  
+
   // Use deep clone to avoid mutating global layout
   const layout_here = JSON.parse(JSON.stringify(spatial_projection_layout_2D));
-  
+
   if (params.data.reset_axes) {
     layout_here.xaxis['autorange'] = true;
     layout_here.yaxis['autorange'] = true;
@@ -755,10 +755,10 @@ shinyjs.updatePlot3DContinuousSpatial = function (params) {
     showlegend: false,
   });
   shinyjs.createContinuousLegend(params.meta.color_variable, colorMin, colorMax, colorscale);
-  
+
   // Use deep clone
   const layout_here = JSON.parse(JSON.stringify(spatial_projection_layout_3D));
-  
+
   if (params.container && params.container.width && params.container.height) {
     layout_here.width = params.container.width;
     layout_here.height = params.container.height;
@@ -793,7 +793,7 @@ shinyjs.updatePlot2DCategoricalSpatial = function (params) {
 
   shinyjs.removeContinuousLegend();
   shinyjs.createCustomLegend(params.meta.traces, params.data.color);
-  
+
   // Optimization: Use map instead of loop push
   const data = params.data.x.map((xVal, i) => ({
     x: xVal,
@@ -839,7 +839,7 @@ shinyjs.updatePlot2DCategoricalSpatial = function (params) {
       showlegend: false,
     });
   }
-  
+
   // Use deep clone
   const layout_here = JSON.parse(JSON.stringify(spatial_projection_layout_2D));
 
@@ -888,7 +888,7 @@ shinyjs.updatePlot3DCategoricalSpatial = function (params) {
   params = shinyjs.getParams(params, spatial_projection_default_params);
   shinyjs.removeContinuousLegend();
   shinyjs.createCustomLegend(params.meta.traces, params.data.color);
-  
+
   // Optimization: Use map
   const data = params.data.x.map((xVal, i) => ({
     x: xVal,
@@ -936,10 +936,10 @@ shinyjs.updatePlot3DCategoricalSpatial = function (params) {
       showlegend: false,
     });
   }
-  
+
   // Use deep clone
   const layout_here = JSON.parse(JSON.stringify(spatial_projection_layout_3D));
-  
+
   if (params.container && params.container.width && params.container.height) {
     layout_here.width = params.container.width;
     layout_here.height = params.container.height;
@@ -1008,3 +1008,28 @@ $(document).ready(function () {
 
   observer.observe(document.body, { childList: true, subtree: true });
 });
+
+// Clear selection on the spatial projection plot
+shinyjs.spatialClearSelection = function () {
+  const plotContainer = document.getElementById('spatial_projection');
+  if (plotContainer && plotContainer.data) {
+    // Use Plotly.update to reset both data selection and layout in one call
+    // Setting selectedpoints to null for all traces restores full opacity
+    const numTraces = plotContainer.data.length;
+    const restyleUpdate = {};
+    for (let i = 0; i < numTraces; i++) {
+      restyleUpdate.selectedpoints = restyleUpdate.selectedpoints || [];
+      restyleUpdate.selectedpoints.push(null);
+    }
+
+    // Combine restyle and relayout in one update call
+    Plotly.update(
+      'spatial_projection',
+      { selectedpoints: null }, // Reset selected points for all traces
+      { selections: [], dragmode: 'select' } // Clear selection box, keep select mode
+    ).then(function () {
+      // Emit deselect event after update completes
+      plotContainer.emit('plotly_deselect');
+    });
+  }
+};
