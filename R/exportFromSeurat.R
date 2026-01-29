@@ -925,12 +925,8 @@ exportFromSeurat <- function(
     )
   )
 
-  ## DEBUG info
-  message(paste0("DEBUG: export object is of class: ", paste(class(export), collapse = ", ")))
-
   ## print object
-  ## use print(export) instead of export$print() because R6 objects don't have a print member by default
-  print(export)
+  export$print()
 
   ##--------------------------------------------------------------------------##
   ## save Cerebro object to disk

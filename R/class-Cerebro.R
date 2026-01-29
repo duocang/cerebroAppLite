@@ -92,6 +92,15 @@ Cerebro <- R6::R6Class(
     #' format in a named \code{list} called `tables`
     extra_material = list(),
 
+    #' @field bcr_data \code{list} that contains BCR data.
+    bcr_data = list(),
+
+    #' @field tcr_data \code{list} that contains TCR data.
+    tcr_data = list(),
+
+    #' @field spatial \code{list} that contains spatial data (coordinates and expression).
+    spatial = list(),
+
     ##------------------------------------------------------------------------##
     ## methods to interact with the object
     ##------------------------------------------------------------------------##
@@ -834,13 +843,177 @@ Cerebro <- R6::R6Class(
     },
 
     #' @description
-    #' Add extra material to \code{extra_material} field.
+    #' Retrieve BCR data
     #'
-    #' @param category Category of the extra material (e.g. 'tables', 'plots').
-    #' @param name Name of the extra material.
-    #' @param content Content of the extra material.
+    #' @return
+    #' BCR data stored in the object.
+    getBCR = function() {
+      return(self$bcr_data)
+    },
+
+    #' @description
+    #' Retrieve TCR data
+    #'
+    #' @return
+    #' TCR data stored in the object.
+    getTCR = function() {
+      return(self$tcr_data)
+    },
+
+    #' @description
+    #' Add BCR data.
+    #'
+    #' @param data \code{list} that contains BCR data.
+    addBCRData = function(data) {
+      self$bcr_data <- data
+    },
+
+    #' @description
+    #' Add TCR data.
+    #'
+    #' @param data \code{list} that contains TCR data.
+    addTCRData = function(data) {
+      self$tcr_data <- data
+    },
+
+    #' @description
+    #' Add spatial data.
+    #'
+    #' @param name Name of the spatial data entry (e.g. image name).
+    #' @param data \code{list} containing 'coordinates' (data.frame) and 'expression' (sparse matrix).
+    addSpatialData = function(name, data) {
+      if ( !is.list(data) || !all(c("coordinates", "expression") %in% names(data)) ) {
+        stop("Spatial data must be a list containing 'coordinates' and 'expression'.")
+      }
+      self$spatial[[name]] <- data
+    },
+
+    #' @description
+    #' Retrieve spatial data.
+    #'
+    #' @param name Name of the spatial data entry.
+    #'
+    #' @return
+    #' \code{list} containing 'coordinates' and 'expression'.
+    getSpatialData = function(name) {
+      if ( name %in% names(self$spatial) == FALSE ) {
+        stop(glue::glue('Spatial data `{name}` is not available.'), call. = FALSE)
+      }
+      return(self$spatial[[name]])
+    },
+
+    #' @description
+    #' Add content to extra material field.
+    #'
+    #' @param category Name of category. At the moment, only \code{tables} and
+    #' \code{plots} are valid categories. Tables must be in \code{data.frame}
+    #' format and plots must be created with \code{ggplot2}.
+    #' @param name Name of material, will be used to select it in Cerebro.
+    #' @param content Data that should be added.
     addExtraMaterial = function(category, name, content) {
-      self$extra_material[[category]][[name]] <- content
+
+      ## valid categories
+      valid_categories <- c('tables','plots')
+
+      ## proceed only if specified category is valid
+      if ( category %in% valid_categories == FALSE ) {
+        stop(
+          glue::glue(
+            'Category `{category}` is not one of the valid categories ',
+            '({paste0(valid_categories, collapse = ", ")}).'
+          ),
+          call. = FALSE
+        )
+      }
+
+      ## call function to add table
+      if ( category == 'tables' ) {
+        self$addExtraTable(name, content)
+      }
+
+      ## call function to add table
+      if ( category == 'plots' ) {
+        self$addExtraPlot(name, content)
+      }
+    },
+
+    #' @description
+    #' Add table to `extra_material` slot.
+    #'
+    #' @param name Name of material, will be used to select it in Cerebro.
+    #' @param table Table that should be added, must be \code{data.frame}.
+    addExtraTable = function(name, table) {
+
+      ## stop if table is not a data frame
+      if ( !is.data.frame(table) ) {
+        if ( 'DFrame' %in% class(table) ) {
+          table <- as.data.frame(table)
+        } else {
+          stop(
+            glue::glue(
+              'Cannot add table `{name}` because it is not a data frame.'
+            ),
+            call. = FALSE
+          )
+        }
+      }
+
+      ## stop if `name` is already used
+      if (
+        !is.null(self$extra_material) &&
+        !is.null(self$extra_material$tables) &&
+        is.list(self$extra_material$tables) &&
+        name %in% names(self$extra_material$tables)
+      ) {
+        stop(
+          glue::glue(
+            'A table with name `{name}` already exists in the extra material.'
+          ),
+          call. = FALSE
+        )
+
+      ## add table
+      } else {
+        self$extra_material$tables[[ name ]] <- table
+      }
+    },
+
+    #' @description
+    #' Add plot to `extra_material` slot.
+    #'
+    #' @param name Name of material, will be used to select it in Cerebro.
+    #' @param plot Plot that should be added, must be created with
+    #' \code{ggplot2} (class: \code{ggplot}).
+    addExtraPlot = function(name, plot) {
+
+      ## stop if table is not a data frame
+      if ( "ggplot" %in% class(plot) == FALSE ) {
+        stop(
+          glue::glue(
+            'Cannot add plot `{name}` because it is not of class "ggplot".'
+          ),
+          call. = FALSE
+        )
+      }
+
+      ## stop if `name` is already used
+      if (
+        !is.null(self$extra_material) &&
+        !is.null(self$extra_material$plots) &&
+        is.list(self$extra_material$plots) &&
+        name %in% names(self$extra_material$plots)
+      ) {
+        stop(
+          glue::glue(
+            'A plot with name `{name}` already exists in the extra material.'
+          ),
+          call. = FALSE
+        )
+
+      ## add table
+      } else {
+        self$extra_material$plots[[ name ]] <- plot
+      }
     },
 
     #' @description
@@ -853,82 +1026,159 @@ Cerebro <- R6::R6Class(
     },
 
     #' @description
-    #' Retrieve categories of extra material.
+    #' Get names of categories for which extra material is available.
     #'
     #' @return
-    #' \code{vector} of categories in the \code{extra_material} field.
+    #' \code{vector} with names of available categories.
     getExtraMaterialCategories = function() {
       return(names(self$extra_material))
     },
 
     #' @description
-    #' Check if extra tables are available.
+    #' Check whether there are tables in the extra materials.
     #'
     #' @return
-    #' \code{TRUE} if extra tables are available, \code{FALSE} otherwise.
+    #' \code{logical} indicating whether there are tables in the extra
+    #' materials.
     checkForExtraTables = function() {
-      return("tables" %in% names(self$extra_material))
+      return(!is.null(self$extra_material$tables))
     },
 
     #' @description
-    #' Retrieve names of extra tables.
+    #' Get names of tables in extra materials.
     #'
     #' @return
-    #' \code{vector} of names of extra tables.
+    #' \code{vector} containing names of tables in extra materials.
     getNamesOfExtraTables = function() {
-      if ( self$checkForExtraTables() ) {
-        return(names(self$extra_material$tables))
-      } else {
-        return(NULL)
-      }
+      return(names(self$extra_material$tables))
     },
 
     #' @description
-    #' Retrieve a specific extra table.
+    #' Get table from extra materials.
     #'
-    #' @param name Name of the extra table to retrieve.
+    #' @param name Name of table.
     #'
     #' @return
-    #' \code{data.frame} containing the extra table.
+    #' Requested table in \code{data.frame} format.
     getExtraTable = function(name) {
-      if ( self$checkForExtraTables() && name %in% self$getNamesOfExtraTables() ) {
-        return(self$extra_material$tables[[name]])
-      }
+      return(self$extra_material$table[[ name ]])
     },
 
     #' @description
-    #' Check if extra plots are available.
+    #' Check whether there are plots in the extra materials.
     #'
     #' @return
-    #' \code{TRUE} if extra plots are available, \code{FALSE} otherwise.
+    #' \code{logical} indicating whether there are plots in the extra
+    #' materials.
     checkForExtraPlots = function() {
-      return("plots" %in% names(self$extra_material))
+      return(!is.null(self$extra_material$plots))
     },
 
     #' @description
-    #' Retrieve names of extra plots.
+    #' Get names of plots in extra materials.
     #'
     #' @return
-    #' \code{vector} of names of extra plots.
+    #' \code{vector} containing names of plots in extra materials.
     getNamesOfExtraPlots = function() {
-      if ( self$checkForExtraPlots() ) {
-        return(names(self$extra_material$plots))
-      } else {
-        return(NULL)
-      }
+      return(names(self$extra_material$plots))
     },
 
     #' @description
-    #' Retrieve a specific extra plot.
+    #' Get plot from extra materials.
     #'
-    #' @param name Name of the extra plot to retrieve.
+    #' @param name Name of plot.
     #'
     #' @return
-    #' The extra plot content.
+    #' Requested plot made with \code{ggplot2}.
     getExtraPlot = function(name) {
-      if ( self$checkForExtraPlots() && name %in% self$getNamesOfExtraPlots() ) {
-        return(self$extra_material$plots[[name]])
+      return(self$extra_material$plots[[ name ]])
+    },
+
+    #' @description
+    #' Show overview of object and the data it contains.
+    print = function() {
+      message(
+        paste0(
+          'class: Cerebro_v1.3', '\n',
+          'cerebroApp version: ', self$getVersion(), '\n',
+          'experiment name: ', self$getExperiment()$experiment_name, '\n',
+          'organism: ', self$getExperiment()$organism, '\n',
+          'date of analysis: ', self$getExperiment()$date_of_analysis, '\n',
+          'date of export: ', self$getExperiment()$date_of_export, '\n',
+          'number of cells: ', format(ncol(self$expression), big.mark = ','), '\n',
+          'number of genes: ', format(nrow(self$expression), big.mark = ','), '\n',
+          'grouping variables (', length(self$getGroups()), '): ',
+            paste0(self$getGroups(), collapse = ', '), '\n',
+          'cell cycle variables (', length(self$cell_cycle), '): ',
+            paste0(self$cell_cycle, collapse = ', '), '\n',
+          'projections (', length(self$availableProjections()),'): ',
+            paste0(self$availableProjections(), collapse = ', '), '\n',
+          'trees (', length(self$trees),'): ',
+            paste0(names(self$trees), collapse = ', '), '\n',
+          'most expressed genes: ',
+            paste0(names(self$most_expressed_genes), collapse = ', '), '\n',
+          'marker genes:', private$showMarkerGenes(), '\n',
+          'enriched pathways:', private$showEnrichedPathways(), '\n',
+          'trajectories:', private$showTrajectories(), '\n',
+          'extra material:', private$showExtraMaterial(), '\n',
+          'Names of BCR data:', names(self$bcr_data), '\n',
+          'Names of TCR data:', names(self$tcr_data), '\n'
+        )
+      )
+    }
+  ),
+
+  ## private fields and methods
+  private = list(
+
+    #' Print overview of available marker gene results for \code{self$print()}
+    #' function.
+    showMarkerGenes = function() {
+      text <- list()
+      for ( method in names(self$marker_genes) ) {
+        text[[method]] <- paste0(
+          '\n  - ', method, ' (', length(names(self$marker_genes[[method]])), '): ',
+          paste0(names(self$marker_genes[[method]]), collapse = ', ')
+        )
       }
+      paste0(text, collapse = ', ')
+    },
+
+    #' Print overview of available enriched pathway results for
+    #' \code{self$print()} function.
+    showEnrichedPathways = function() {
+      text <- list()
+      for ( method in names(self$enriched_pathways) ) {
+        text[[method]] <- paste0(
+          '\n  - ', method, ' (', length(names(self$enriched_pathways[[method]])), '): ',
+          paste0(names(self$enriched_pathways[[method]]), collapse = ', ')
+        )
+      }
+      paste0(text, collapse = ', ')
+    },
+
+    #' Print overview of available trajectories for \code{self$print()} function.
+    showTrajectories = function() {
+      text <- list()
+      for ( method in names(self$trajectories) ) {
+        text[[method]] <- paste0(
+          '\n  - ', method, ' (', length(names(self$trajectories[[method]])), '): ',
+          paste0(names(self$trajectories[[method]]), collapse = ', ')
+        )
+      }
+      paste0(text, collapse = ', ')
+    },
+
+    #' Print overview of extra material for \code{self$print()} function.
+    showExtraMaterial = function() {
+      text <- list()
+      for ( category in names(self$extra_material) ) {
+        text[[category]] <- paste0(
+          '\n  - ', category, ' (', length(names(self$extra_material[[category]])), '): ',
+          paste0(names(self$extra_material[[category]]), collapse = ', ')
+        )
+      }
+      paste0(text, collapse = ', ')
     }
   )
 )
