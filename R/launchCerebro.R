@@ -10,9 +10,9 @@
 #' \code{open}.
 #' @param maxFileSize Maximum size of input file; defaults to \code{800}
 #' (800 MB).
-#' @param crb_file_to_load Path to \code{.crb} file to load on launch of
-#' Cerebro. Useful when using/hosting Cerebro in \code{closed} mode. Defaults to
-#' \code{NULL}.
+#' @param crb_file_to_load Path to file to load on launch of Cerebro. Supported
+#' formats are .crb, .rds, and .qs. Useful when using/hosting Cerebro in
+#' \code{closed} mode. Defaults to \code{NULL}.
 #' @param expression_matrix_mode  Mode of expression matrix. Can be either
 #' crb, h5, or BPCells. Default is crb.
 #' @param expression_matrix_h5 Optional: Path to \code{.h5} file containing an expression

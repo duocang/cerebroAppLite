@@ -69,7 +69,7 @@ output[["crb_file_selector_UI"]] <- renderUI({
           ## try to load the file and get experiment_name
           tryCatch({
             if (file.exists(f)) {
-              data <- readRDS(f)
+              data <- read_cerebro_file(f)
             } else if (exists(f)) {
               data <- get(f)
             } else {

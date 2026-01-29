@@ -913,7 +913,7 @@ getMostExpressedGenes <- function(group) {
 }
 getMethodsForMarkerGenes <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getMethodsForMarkerGenes())
+    return(data_set()$getMethodsWithMarkerGenes())
   }
 }
 getGroupsWithMarkerGenes <- function(method) {
@@ -928,7 +928,7 @@ getMarkerGenes <- function(method, group) {
 }
 getMethodsForEnrichedPathways <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getMethodsForEnrichedPathways())
+    return(data_set()$getMethodsWithEnrichedPathways())
   }
 }
 getGroupsWithEnrichedPathways <- function(method) {
@@ -943,12 +943,12 @@ getEnrichedPathways <- function(method, group) {
 }
 getMethodsForTrajectories <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getMethodsForTrajectories())
+    return(data_set()$getMethodsWithTrajectories())
   }
 }
 getNamesOfTrajectories <- function(method) {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getNamesOfTrajectories(method))
+    return(data_set()$getTrajectories(method))
   }
 }
 getTrajectory <- function(method, name) {
@@ -979,36 +979,108 @@ getTCR <- function() {
 }
 getExtraMaterialCategories <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getExtraMaterialCategories())
+    if ( is.function(data_set()$getExtraMaterialCategories) ) {
+      return(data_set()$getExtraMaterialCategories())
+    } else {
+      return(names(data_set()$extra_material))
+    }
   }
 }
 checkForExtraTables <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$checkForExtraTables())
+    if ( is.function(data_set()$checkForExtraTables) ) {
+      return(data_set()$checkForExtraTables())
+    } else {
+      return("tables" %in% names(data_set()$extra_material))
+    }
   }
 }
 getNamesOfExtraTables <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getNamesOfExtraTables())
+    if ( is.function(data_set()$getNamesOfExtraTables) ) {
+      return(data_set()$getNamesOfExtraTables())
+    } else {
+      if ( "tables" %in% names(data_set()$extra_material) ) {
+        return(names(data_set()$extra_material$tables))
+      } else {
+        return(NULL)
+      }
+    }
   }
 }
 getExtraTable <- function(name) {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getExtraTable(name))
+    if ( is.function(data_set()$getExtraTable) ) {
+      return(data_set()$getExtraTable(name))
+    } else {
+      if ( "tables" %in% names(data_set()$extra_material) && name %in% names(data_set()$extra_material$tables) ) {
+        return(data_set()$extra_material$tables[[name]])
+      }
+    }
   }
 }
 checkForExtraPlots <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$checkForExtraPlots())
+    if ( is.function(data_set()$checkForExtraPlots) ) {
+      return(data_set()$checkForExtraPlots())
+    } else {
+      return("plots" %in% names(data_set()$extra_material))
+    }
   }
 }
 getNamesOfExtraPlots <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getNamesOfExtraPlots())
+    if ( is.function(data_set()$getNamesOfExtraPlots) ) {
+      return(data_set()$getNamesOfExtraPlots())
+    } else {
+      if ( "plots" %in% names(data_set()$extra_material) ) {
+        return(names(data_set()$extra_material$plots))
+      } else {
+        return(NULL)
+      }
+    }
   }
 }
 getExtraPlot <- function(name) {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getExtraPlot(name))
+    if ( is.function(data_set()$getExtraPlot) ) {
+      return(data_set()$getExtraPlot(name))
+    } else {
+      if ( "plots" %in% names(data_set()$extra_material) && name %in% names(data_set()$extra_material$plots) ) {
+        return(data_set()$extra_material$plots[[name]])
+      }
+    }
   }
+}
+
+##----------------------------------------------------------------------------##
+## Function to read Cerebro files (supports .rds and .qs formats).
+##----------------------------------------------------------------------------##
+read_cerebro_file <- function(file) {
+  # Try to read as RDS first (backward compatibility)
+  tryCatch({
+    return(readRDS(file))
+  }, error = function(e_rds) {
+    # If RDS fails, try to read as qs
+    if (requireNamespace("qs", quietly = TRUE)) {
+      tryCatch({
+        return(qs::qread(file))
+      }, error = function(e_qs) {
+        stop(
+          paste0(
+            "Could not read file as RDS or qs format.\n",
+            "RDS error: ", e_rds$message, "\n",
+            "qs error: ", e_qs$message
+          )
+        )
+      })
+    } else {
+      stop(
+        paste0(
+          "Could not read file as RDS. To read qs files, please install the 'qs' package.\n",
+          "RDS error: ", e_rds$message
+        )
+      )
+    }
+  })
 }

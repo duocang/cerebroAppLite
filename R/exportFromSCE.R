@@ -25,6 +25,8 @@
 #' number of expressed genes per cell; defaults to \code{nGene}.
 #' @param add_all_meta_data If set to \code{TRUE}, all further meta data columns
 #' will be extracted as well.
+#' @param format Format of output file. Can be either \code{"qs"} or
+#' \code{"rds"}. Defaults to \code{"qs"}.
 #' @param use_delayed_array When set to \code{TRUE}, the expression matrix will
 #' be stored as an \code{RleMatrix} (see \code{DelayedArray} package). This can
 #' be useful for very large data sets, as the matrix won't be loaded into memory
@@ -71,12 +73,17 @@ exportFromSCE <- function(
   nGene = 'nGene',
   add_all_meta_data = TRUE,
   use_delayed_array = FALSE,
+  format = "qs",
   verbose = FALSE
 ) {
 
   ##--------------------------------------------------------------------------##
   ## safety checks before starting to do anything
   ##--------------------------------------------------------------------------##
+
+  if ( !format %in% c("qs", "rds") ) {
+    stop("Invalid format. Must be 'qs' or 'rds'.")
+  }
 
   ## check if provided object is of class "SingleCellExperiment"
   if ( class(object) != "SingleCellExperiment" ) {
@@ -186,7 +193,7 @@ exportFromSCE <- function(
   export$addExperiment('organism', organism)
 
   ## add cerebroApp version
-  export$setVersion(utils::packageVersion('cerebroApp'))
+  export$setVersion(utils::packageVersion('cerebroAppLite'))
 
   ##--------------------------------------------------------------------------##
   ## add transcript counts
@@ -716,7 +723,8 @@ exportFromSCE <- function(
       'Overview of Cerebro object:\n'
     )
   )
-  export$print()
+  ## use print(export) instead of export$print() because R6 objects don't have a print member by default
+  print(export)
 
   ##--------------------------------------------------------------------------##
   ## save Cerebro object to disk
@@ -741,7 +749,11 @@ exportFromSCE <- function(
   )
 
   ## save file
-  saveRDS(export, file)
+  if ( format == "qs" ) {
+    qs::qsave(export, file)
+  } else {
+    saveRDS(export, file)
+  }
 
   ## log message
   ## ... writing to file was successful

@@ -162,7 +162,7 @@ sce@metadata$parameters$filtering <- list(
   genes_max = Inf
 )
 
-sce@metadata$technical_info$cerebroApp_version <- utils::packageVersion('cerebroApp')
+sce@metadata$technical_info$cerebroApp_version <- utils::packageVersion('cerebroAppLite')
 sce@metadata$technical_info$scran <- utils::packageVersion('scran')
 sce@metadata$technical_info$scater <- utils::packageVersion('scater')
 sce@metadata$technical_info <- list(
