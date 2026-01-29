@@ -183,6 +183,7 @@ createTraditionalShinyApp <- function(cerebro_data,
                                       auth_passphrase = "123123",
                                       crb_pick_smallest_file = TRUE,
                                       show_upload_ui = TRUE,
+                                      welcome_message = "Welcome to Cerebro App!",
                                       point_size = list(
                                         overview_projection_point_size = NULL,
                                         trajectory_point_size = NULL,
@@ -458,6 +459,7 @@ createTraditionalShinyApp <- function(cerebro_data,
   if (!is.null(spatial_images_flip_y)) cerebro_options[["spatial_images_flip_y"]] <- spatial_images_flip_y
   if (!is.null(spatial_images_scale_x)) cerebro_options[["spatial_images_scale_x"]] <- spatial_images_scale_x
   if (!is.null(spatial_images_scale_y)) cerebro_options[["spatial_images_scale_y"]] <- spatial_images_scale_y
+  if (!is.null(welcome_message)) cerebro_options[["welcome_message"]] <- welcome_message
 
   # Save configuration to RDS
   saveRDS(cerebro_options, file.path(result_dir, "cerebro_config.rds"))
