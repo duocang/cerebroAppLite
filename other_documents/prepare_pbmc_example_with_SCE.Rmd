@@ -1,6 +1,6 @@
 ---
-title: "How to generate the SCE PBMC example data set used in the examples parts of cerebroApp function"
-author: "Roman Hillje"
+title: 'How to generate the SCE PBMC example data set used in the examples parts of cerebroApp function'
+author: 'Roman Hillje'
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document:
@@ -20,7 +20,7 @@ Run this.
 library(dplyr)
 library(scran)
 library(scater)
-library(cerebroApp)
+library(cerebroAppLite)
 
 ## load counts
 pbmc_counts <- read.table(

@@ -28,6 +28,8 @@
 #' about number of expressed genes per cell; defaults to \code{nGene}.
 #' @param add_all_meta_data If set to \code{TRUE}, all further meta data columns
 #' will be extracted as well.
+#' @param format Format of output file. Can be either \code{"qs"} or
+#' \code{"rds"}. Defaults to \code{"qs"}.
 #' @param use_delayed_array When set to \code{TRUE}, the expression matrix will
 #' be stored as an \code{RleMatrix} (see \code{DelayedArray} package). This can
 #' be useful for very large data sets, as the matrix won't be loaded into memory
@@ -44,7 +46,7 @@
 #'
 #' @examples
 #' pbmc <- readRDS(system.file("extdata/pbmc_seurat.rds",
-#'   package = "cerebroApp"))
+#'   package = "cerebroAppLite"))
 #' exportFromSeurat(
 #'   object = pbmc,
 #'   file = 'pbmc_Seurat.crb',
@@ -76,12 +78,17 @@ exportFromSeurat <- function(
   nGene = 'nGene',
   add_all_meta_data = TRUE,
   use_delayed_array = FALSE,
+  format = "qs",
   verbose = FALSE
 ) {
 
   ##--------------------------------------------------------------------------##
   ## safety checks before starting to do anything
   ##--------------------------------------------------------------------------##
+
+  if ( !format %in% c("qs", "rds") ) {
+    stop("Invalid format. Must be 'qs' or 'rds'.")
+  }
 
   ## check if Seurat is installed
   if ( !requireNamespace("Seurat", quietly = TRUE) ) {
@@ -223,7 +230,7 @@ exportFromSeurat <- function(
   export$addExperiment('organism', organism)
 
   ## add cerebroApp version
-  export$setVersion(utils::packageVersion('cerebroApp'))
+  export$setVersion(utils::packageVersion('cerebroAppLite'))
 
   ##--------------------------------------------------------------------------##
   ## add transcript counts
@@ -664,11 +671,18 @@ exportFromSeurat <- function(
         )
       )
     }
+
+    print("‘fadsfasdfadsfasd放大啊扥阿东发动发动发腮发发森阿赛")
+    print(names(object@misc$most_expressed_genes))
+    print(groups)
     for ( i in seq_along(object@misc$most_expressed_genes) ) {
-      export$addMostExpressedGenes(
-        names(object@misc$most_expressed_genes)[i],
-        object@misc$most_expressed_genes[[i]]
-      )
+      group <- names(object@misc$most_expressed_genes)[i]
+      if ( group %in% groups ) {
+        export$addMostExpressedGenes(
+          group,
+          object@misc$most_expressed_genes[[i]]
+        )
+      }
     }
   }
 
@@ -742,11 +756,15 @@ exportFromSeurat <- function(
       for ( j in seq_along(object@misc$marker_genes[[method]]) ) {
         if ( is.list(object@misc$marker_genes[[method]][j]) ) {
           group <- names(object@misc$marker_genes[[method]])[j]
-          export$addMarkerGenes(
-            method,
-            group,
-            object@misc$marker_genes[[method]][[group]]
-          )
+
+          ## only add marker genes if group is present in `groups`
+          if ( group %in% groups ) {
+            export$addMarkerGenes(
+              method,
+              group,
+              object@misc$marker_genes[[method]][[group]]
+            )
+          }
         }
       }
     }
@@ -778,11 +796,15 @@ exportFromSeurat <- function(
       for ( j in seq_along(object@misc$enriched_pathways[[method]]) ) {
         if ( is.list(object@misc$enriched_pathways[[method]][j]) ) {
           group <- names(object@misc$enriched_pathways[[method]])[j]
-          export$addEnrichedPathways(
-            method,
-            group,
-            object@misc$enriched_pathways[[method]][[group]]
-          )
+
+          ## only add enriched pathways if group is present in `groups`
+          if ( group %in% groups ) {
+            export$addEnrichedPathways(
+              method,
+              group,
+              object@misc$enriched_pathways[[method]][[group]]
+            )
+          }
         }
       }
     }
@@ -902,7 +924,13 @@ exportFromSeurat <- function(
       'Overview of Cerebro object:\n'
     )
   )
-  export$print()
+
+  ## DEBUG info
+  message(paste0("DEBUG: export object is of class: ", paste(class(export), collapse = ", ")))
+
+  ## print object
+  ## use print(export) instead of export$print() because R6 objects don't have a print member by default
+  print(export)
 
   ##--------------------------------------------------------------------------##
   ## save Cerebro object to disk
@@ -927,7 +955,11 @@ exportFromSeurat <- function(
   )
 
   ## save file
-  saveRDS(export, file)
+  if ( format == "qs" ) {
+    qs::qsave(export, file)
+  } else {
+    saveRDS(export, file)
+  }
 
   ## log message
   ## ... writing to file was successful

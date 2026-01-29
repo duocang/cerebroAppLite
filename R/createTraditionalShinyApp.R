@@ -144,8 +144,8 @@ formatRObject <- function(obj, indent = 0) {
 #' Cerebro data. It copies the necessary Shiny source files, data files, and
 #' creates an app.R file configured to launch the Cerebro visualization interface.
 #'
-#' @param cerebro_data Character vector. Path(s) to the Cerebro .crb file(s) to be visualized.
-#'   Can be a single path or a named vector for multiple datasets.
+#' @param cerebro_data Character vector. Path(s) to the Cerebro data file(s) to be visualized.
+#'   Supported formats are .crb, .rds, and .qs. Can be a single path or a named vector for multiple datasets.
 #' @param result_dir Character. Directory where the Shiny app structure will be
 #'   created. Default is "result/20_cerebro_shinyapp".
 #' @param max_request_size Numeric. Maximum file upload size in MB. Default is 8000.
@@ -265,8 +265,8 @@ createTraditionalShinyApp <- function(cerebro_data,
     stop("Cerebro data file(s) not found: ", paste(missing, collapse = ", "), call. = FALSE)
   }
 
-  if (!all(grepl("\\.crb$", cerebro_data))) {
-    warning("Some input files do not have .crb extension. Make sure they are valid Cerebro files.")
+  if (!all(grepl("\\.(crb|rds|qs)$", cerebro_data, ignore.case = TRUE))) {
+    warning("Some input files do not have .crb, .rds or .qs extension. Make sure they are valid Cerebro files.")
   }
 
   # Enforce named list/vector for cerebro_data

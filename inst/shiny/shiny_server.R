@@ -138,7 +138,7 @@ server <- function(input, output, session) {
     }
     ## assign path to example file if none of the above apply
     if (path_to_load=='') {
-      path_to_load <- system.file("extdata/example.crb", package = "cerebroApp")
+      path_to_load <- system.file("extdata/example.crb", package = "cerebroAppLite")
     }
     ## set reactive value to selected file path
     if (is.null(available_crb_files$selected) || available_crb_files$selected != path_to_load) {
@@ -166,10 +166,12 @@ server <- function(input, output, session) {
       ## log message
       print(glue::glue("[{Sys.time()}] File to load: {dataset_to_load}"))
       ## read the file
-      data <- readRDS(dataset_to_load)
+      data <- read_cerebro_file(dataset_to_load)
     }
     ## log message
-    message(data$print())
+    # message(data$print())
+    ## use print(data) instead of data$print() because R6 objects don't have a print member by default
+    print(data)
     ## check if 'expression' slot exists and print log message with its format
     ## if it does
     if ( !is.null(data$expression) ) {
@@ -294,7 +296,6 @@ server <- function(input, output, session) {
 
   show_marker_genes_tab <- reactive({
     req(!is.null(data_set()))
-    print(getMethodsForMarkerGenes())
     if (
       !is.null(getMethodsForMarkerGenes()) &&
       length(getMethodsForMarkerGenes()) > 0

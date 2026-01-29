@@ -115,7 +115,7 @@ addPercentMtRibo <- function(
         paste0(
           'extdata/genes_mt_', organism, '_', gene_nomenclature, '.tsv.gz'
         ),
-        package = 'cerebroApp'
+        package = 'cerebroAppLite'
       ),
       col_types = readr::cols(),
       col_names = FALSE
@@ -128,7 +128,7 @@ addPercentMtRibo <- function(
         paste0(
           'extdata/genes_ribo_', organism, '_', gene_nomenclature, '.tsv.gz'
         ),
-        package = 'cerebroApp'
+        package = 'cerebroAppLite'
       ),
       col_types = readr::cols(),
       col_names = FALSE

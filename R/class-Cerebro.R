@@ -836,10 +836,11 @@ Cerebro <- R6::R6Class(
     #' @description
     #' Add extra material to \code{extra_material} field.
     #'
+    #' @param category Category of the extra material (e.g. 'tables', 'plots').
     #' @param name Name of the extra material.
     #' @param content Content of the extra material.
-    addExtraMaterial = function(name, content) {
-      self$extra_material[[name]] <- content
+    addExtraMaterial = function(category, name, content) {
+      self$extra_material[[category]][[name]] <- content
     },
 
     #' @description
@@ -849,6 +850,85 @@ Cerebro <- R6::R6Class(
     #' \code{list} of all entries in the \code{extra_material} field.
     getExtraMaterial = function() {
       return(self$extra_material)
+    },
+
+    #' @description
+    #' Retrieve categories of extra material.
+    #'
+    #' @return
+    #' \code{vector} of categories in the \code{extra_material} field.
+    getExtraMaterialCategories = function() {
+      return(names(self$extra_material))
+    },
+
+    #' @description
+    #' Check if extra tables are available.
+    #'
+    #' @return
+    #' \code{TRUE} if extra tables are available, \code{FALSE} otherwise.
+    checkForExtraTables = function() {
+      return("tables" %in% names(self$extra_material))
+    },
+
+    #' @description
+    #' Retrieve names of extra tables.
+    #'
+    #' @return
+    #' \code{vector} of names of extra tables.
+    getNamesOfExtraTables = function() {
+      if ( self$checkForExtraTables() ) {
+        return(names(self$extra_material$tables))
+      } else {
+        return(NULL)
+      }
+    },
+
+    #' @description
+    #' Retrieve a specific extra table.
+    #'
+    #' @param name Name of the extra table to retrieve.
+    #'
+    #' @return
+    #' \code{data.frame} containing the extra table.
+    getExtraTable = function(name) {
+      if ( self$checkForExtraTables() && name %in% self$getNamesOfExtraTables() ) {
+        return(self$extra_material$tables[[name]])
+      }
+    },
+
+    #' @description
+    #' Check if extra plots are available.
+    #'
+    #' @return
+    #' \code{TRUE} if extra plots are available, \code{FALSE} otherwise.
+    checkForExtraPlots = function() {
+      return("plots" %in% names(self$extra_material))
+    },
+
+    #' @description
+    #' Retrieve names of extra plots.
+    #'
+    #' @return
+    #' \code{vector} of names of extra plots.
+    getNamesOfExtraPlots = function() {
+      if ( self$checkForExtraPlots() ) {
+        return(names(self$extra_material$plots))
+      } else {
+        return(NULL)
+      }
+    },
+
+    #' @description
+    #' Retrieve a specific extra plot.
+    #'
+    #' @param name Name of the extra plot to retrieve.
+    #'
+    #' @return
+    #' The extra plot content.
+    getExtraPlot = function(name) {
+      if ( self$checkForExtraPlots() && name %in% self$getNamesOfExtraPlots() ) {
+        return(self$extra_material$plots[[name]])
+      }
     }
   )
 )

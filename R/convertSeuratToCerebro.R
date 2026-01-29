@@ -96,6 +96,8 @@
 #'   the number of expressed genes per cell; default: \code{"nFeature_RNA"}.
 #' @param add_all_meta_data Logical indicating whether to include all metadata
 #'   columns in the export; default: \code{TRUE}.
+#' @param format Format of output file. Can be either \code{"qs"} or
+#' \code{"rds"}. Defaults to \code{"qs"}.
 #' @param use_delayed_array Logical indicating whether to convert expression
 #'   data to DelayedArray format for memory efficiency; default: \code{FALSE}.
 #' @param verbose Logical indicating whether to print progress messages; default:
@@ -184,7 +186,8 @@ convertSeuratToCerebro <- function(seurat_file,
                                     add_most_expressed_genes = TRUE,
                                     most_expressed_genes = NULL,
                                     bcr_file = NULL,
-                                    tcr_file = NULL) {
+                                    tcr_file = NULL,
+                                    format = "qs") {
   if (!file.exists(seurat_file)) {
     stop("seurat_file not found: ", seurat_file, call. = FALSE)
   }
@@ -551,7 +554,8 @@ convertSeuratToCerebro <- function(seurat_file,
       nGene = nGene,
       add_all_meta_data = add_all_meta_data,
       verbose = verbose,
-      use_delayed_array = use_delayed_array
+      use_delayed_array = use_delayed_array,
+      format = format
     )
     cat("Successfully exported:", file_name, "\n")
   }, error = function(e) {
