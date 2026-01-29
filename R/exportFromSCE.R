@@ -723,8 +723,7 @@ exportFromSCE <- function(
       'Overview of Cerebro object:\n'
     )
   )
-  ## use print(export) instead of export$print() because R6 objects don't have a print member by default
-  print(export)
+  export$print()
 
   ##--------------------------------------------------------------------------##
   ## save Cerebro object to disk
