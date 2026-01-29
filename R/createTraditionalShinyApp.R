@@ -67,75 +67,6 @@ dedent <- function(string) {
   paste(dedented, collapse = "\n")
 }
 
-#' Format R Object to String with Pretty Printing
-#'
-#' Convert an R object to a nicely formatted string representation.
-#'
-#' @param obj An R object to format
-#' @param indent Number of spaces for base indentation. Default is 0.
-#'
-#' @return A character string with formatted R code
-#'
-#' @keywords internal
-#' @noRd
-formatRObject <- function(obj, indent = 0) {
-  indent_str <- strrep(" ", indent)
-
-  if (is.list(obj) && !is.data.frame(obj)) {
-    if (length(obj) == 0) {
-      return("list()")
-    }
-
-    items <- character(length(obj))
-    for (i in seq_along(obj)) {
-      name <- names(obj)[i]
-      value <- obj[[i]]
-
-      # Format value recursively
-      if (is.list(value) && !is.data.frame(value)) {
-        value_str <- formatRObject(value, indent + 2)
-      } else if (is.character(value) && length(value) > 0) {
-        # Format named character vectors nicely
-        if (!is.null(names(value))) {
-          pairs <- paste0('"', names(value), '" = "', value, '"')
-          if (length(pairs) > 3) {
-            # Multi-line for long vectors
-            value_str <- paste0("c(\n",
-                               paste0(strrep(" ", indent + 4), pairs, collapse = ",\n"),
-                               "\n", strrep(" ", indent + 2), ")")
-          } else {
-            value_str <- paste0("c(", paste(pairs, collapse = ", "), ")")
-          }
-        } else {
-          value_str <- deparse(value, width.cutoff = 500)
-        }
-      } else {
-        value_str <- deparse(value, width.cutoff = 500)
-      }
-
-      # Format the list item
-      if (!is.null(name) && nzchar(name)) {
-        items[i] <- paste0("`", name, "` = ", value_str)
-      } else {
-        items[i] <- value_str
-      }
-    }
-
-    # Assemble list
-    if (length(items) > 2 || any(grepl("\n", items))) {
-      # Multi-line format
-      result <- paste0("list(\n",
-                      paste0(strrep(" ", indent + 2), items, collapse = ",\n"),
-                      "\n", strrep(" ", indent), ")")
-    } else {
-      # Single-line format
-      result <- paste0("list(", paste(items, collapse = ", "), ")")
-    }
-    return(result)
-  } else {
-    return(deparse(obj, width.cutoff = 500))
-  }
-}
 
 
 #' Create Traditional Shiny Application
@@ -503,213 +434,33 @@ createTraditionalShinyApp <- function(cerebro_data,
   # Create app.R file ---------------------------------------------------------##
   if (verbose) cat("Generating app.R file...\n")
 
-  # Generate colors code if provided
-  colors_code <- ""
-  if (!is.null(colors)) {
-    colors_formatted <- formatRObject(colors, indent = 0)
-    colors_code <- paste0("colors <- ", colors_formatted, "\n")
-  }
+  # 1. Build configuration list and save to RDS
+  # Generate crb_file_to_load configuration (named vector)
+  crb_files <- setNames(
+    paste0("data/", basename(cerebro_data)),
+    names(cerebro_data)
+  )
 
-  # Generate crb_file_to_load configuration
-  # Multiple files or named vector (names are enforced now)
-  file_vector <- sapply(seq_along(cerebro_data), function(i) {
-    sprintf('`%s` = "data/%s"', names(cerebro_data)[i], basename(cerebro_data[i]))
-  })
-  crb_load_code <- paste0("c(", paste(file_vector, collapse = ",\n                          "), ")")
-  crb_files_code <- ""
+  # Populate cerebro_options
+  cerebro_options[["mode"]] <- "open"
+  cerebro_options[["crb_file_to_load"]] <- crb_files
+  cerebro_options[["cerebro_root"]] <- "."
 
-  # Generate additional Cerebro options
-  if (!is.null(crb_pick_smallest_file)) {
-    cerebro_options[["crb_pick_smallest_file"]] <- crb_pick_smallest_file
-  }
-  if (!is.null(show_upload_ui)) {
-    cerebro_options[["show_upload_ui"]] <- show_upload_ui
-  }
-  if (!is.null(point_size) && length(point_size) > 0) {
-    cerebro_options[["point_size"]] <- point_size
-  }
-  extra_options <- ""
-  if (length(cerebro_options) > 0) {
-    for (opt_name in names(cerebro_options)) {
-      opt_value <- cerebro_options[[opt_name]]
-      if (is.logical(opt_value) && length(opt_value) == 1) {
-        extra_options <- paste0(extra_options, ',\n  ', opt_name, ' = ', toupper(as.character(opt_value)))
-      } else if (is.character(opt_value) && length(opt_value) == 1) {
-        extra_options <- paste0(extra_options, ',\n  ', opt_name, ' = "', opt_value, '"')
-      } else if (is.list(opt_value)) {
-        # Calculate indentation: 2 spaces (for indentation) + name length + 3 chars (" = ")
-        indent_len <- 2 + nchar(opt_name) + 3
-        indent_spaces <- strrep(" ", indent_len)
+  if (!is.null(crb_pick_smallest_file)) cerebro_options[["crb_pick_smallest_file"]] <- crb_pick_smallest_file
+  if (!is.null(show_upload_ui)) cerebro_options[["show_upload_ui"]] <- show_upload_ui
+  if (!is.null(point_size)) cerebro_options[["point_size"]] <- point_size
 
-        val_str <- formatRObject(opt_value, indent = 0)
-        # Indent subsequent lines
-        if (grepl("\n", val_str)) {
-          val_str <- gsub("\n", paste0("\n", indent_spaces), val_str)
-        }
-        extra_options <- paste0(extra_options, ',\n  ', opt_name, ' = ', val_str)
-      } else {
-        # Handle other types (including vectors) safely
-        val_str <- paste(deparse(opt_value), collapse = "\n")
-        # Indent if multiline
-        if (grepl("\n", val_str)) {
-          indent_len <- 2 + nchar(opt_name) + 3
-          indent_spaces <- strrep(" ", indent_len)
-          val_str <- gsub("\n", paste0("\n", indent_spaces), val_str)
-        }
-        extra_options <- paste0(extra_options, ',\n  ', opt_name, ' = ', val_str)
-      }
-    }
-  }
+  # Add complex objects directly to the list
+  if (!is.null(colors)) cerebro_options[["colors"]] <- colors
+  if (!is.null(spatial_images)) cerebro_options[["spatial_images"]] <- spatial_images
+  if (!is.null(spatial_plot_rotation)) cerebro_options[["spatial_plot_rotation"]] <- spatial_plot_rotation
+  if (!is.null(spatial_images_flip_x)) cerebro_options[["spatial_images_flip_x"]] <- spatial_images_flip_x
+  if (!is.null(spatial_images_flip_y)) cerebro_options[["spatial_images_flip_y"]] <- spatial_images_flip_y
+  if (!is.null(spatial_images_scale_x)) cerebro_options[["spatial_images_scale_x"]] <- spatial_images_scale_x
+  if (!is.null(spatial_images_scale_y)) cerebro_options[["spatial_images_scale_y"]] <- spatial_images_scale_y
 
-  # Add colors to cerebro_options if provided
-  colors_option <- if (!is.null(colors)) ',\n  "colors" = colors' else ''
-
-  # Add spatial_images to cerebro_options if provided
-  spatial_images_option <- ""
-  if (!is.null(spatial_images)) {
-    # Calculate alignment indentation for: '  "spatial_images" = list('
-    # 2 spaces + 16 chars + 3 chars + 5 chars = 26 spaces
-    indent_spaces <- strrep(" ", 26)
-
-    items <- vapply(names(spatial_images), function(n) {
-      val <- spatial_images[[n]]
-      # Use formatRObject with 0 indent, then shift all lines to match current indentation
-      val_str <- formatRObject(val, indent = 0)
-      if (grepl("\n", val_str)) {
-        val_str <- gsub("\n", paste0("\n", indent_spaces), val_str)
-      }
-      paste0('"', n, '" = ', val_str)
-    }, character(1))
-
-    spatial_images_option <- paste0(',\n  "spatial_images" = list(',
-                                    paste(items, collapse = paste0(",\n", indent_spaces)),
-                                    ")")
-  }
-
-  # Add spatial_plot_rotation to cerebro_options if provided
-  spatial_plot_rotation_option <- ""
-  if (!is.null(spatial_plot_rotation)) {
-    is_list <- is.list(spatial_plot_rotation)
-    wrapper <- if (is_list) "list(" else "c("
-    # Calculate alignment indentation for: '  "spatial_plot_rotation" = '
-    # 2 spaces + 26 chars + 3 chars = 31 spaces
-    # Plus wrapper length
-    indent_len <- 31 + nchar(wrapper)
-    indent_spaces <- strrep(" ", indent_len)
-
-    items <- vapply(names(spatial_plot_rotation), function(n) {
-      val <- spatial_plot_rotation[[n]]
-      val_str <- formatRObject(val, indent = 0)
-      if (grepl("\n", val_str)) {
-        val_str <- gsub("\n", paste0("\n", indent_spaces), val_str)
-      }
-      paste0('"', n, '" = ', val_str)
-    }, character(1))
-
-    spatial_plot_rotation_option <- paste0(',\n  "spatial_plot_rotation" = ', wrapper,
-                                      paste(items, collapse = paste0(",\n", indent_spaces)),
-                                      ")")
-  }
-
-  # Add spatial_images_flip_x to cerebro_options if provided
-  spatial_images_flip_x_option <- ""
-  if (!is.null(spatial_images_flip_x)) {
-    is_list <- is.list(spatial_images_flip_x)
-    wrapper <- if (is_list) "list(" else "c("
-    # Calculate alignment indentation for: '  "spatial_images_flip_x" = '
-    # 2 spaces + 24 chars + 3 chars = 29 spaces
-    # Plus wrapper length
-    indent_len <- 29 + nchar(wrapper)
-    indent_spaces <- strrep(" ", indent_len)
-
-    items <- vapply(names(spatial_images_flip_x), function(n) {
-      val <- spatial_images_flip_x[[n]]
-      val_str <- formatRObject(val, indent = 0)
-      if (grepl("\n", val_str)) {
-        val_str <- gsub("\n", paste0("\n", indent_spaces), val_str)
-      }
-      paste0('"', n, '" = ', val_str)
-    }, character(1))
-
-    spatial_images_flip_x_option <- paste0(',\n  "spatial_images_flip_x" = ', wrapper,
-                                           paste(items, collapse = paste0(",\n", indent_spaces)),
-                                           ")")
-  }
-
-  # Add spatial_images_flip_y to cerebro_options if provided
-  spatial_images_flip_y_option <- ""
-  if (!is.null(spatial_images_flip_y)) {
-    is_list <- is.list(spatial_images_flip_y)
-    wrapper <- if (is_list) "list(" else "c("
-    # Calculate alignment indentation for: '  "spatial_images_flip_y" = '
-    # 2 spaces + 24 chars + 3 chars = 29 spaces
-    # Plus wrapper length
-    indent_len <- 29 + nchar(wrapper)
-    indent_spaces <- strrep(" ", indent_len)
-
-    items <- vapply(names(spatial_images_flip_y), function(n) {
-      val <- spatial_images_flip_y[[n]]
-      val_str <- formatRObject(val, indent = 0)
-      if (grepl("\n", val_str)) {
-        val_str <- gsub("\n", paste0("\n", indent_spaces), val_str)
-      }
-      paste0('"', n, '" = ', val_str)
-    }, character(1))
-
-    spatial_images_flip_y_option <- paste0(',\n  "spatial_images_flip_y" = ', wrapper,
-                                           paste(items, collapse = paste0(",\n", indent_spaces)),
-                                           ")")
-  }
-
-  # Add spatial_images_scale_x to cerebro_options if provided
-  spatial_images_scale_x_option <- ""
-  if (!is.null(spatial_images_scale_x)) {
-    is_list <- is.list(spatial_images_scale_x)
-    wrapper <- if (is_list) "list(" else "c("
-    # Calculate alignment indentation for: '  "spatial_images_scale_x" = '
-    # 2 spaces + 25 chars + 3 chars = 30 spaces
-    # Plus wrapper length
-    indent_len <- 30 + nchar(wrapper)
-    indent_spaces <- strrep(" ", indent_len)
-
-    items <- vapply(names(spatial_images_scale_x), function(n) {
-      val <- spatial_images_scale_x[[n]]
-      val_str <- formatRObject(val, indent = 0)
-      if (grepl("\n", val_str)) {
-        val_str <- gsub("\n", paste0("\n", indent_spaces), val_str)
-      }
-      paste0('"', n, '" = ', val_str)
-    }, character(1))
-
-    spatial_images_scale_x_option <- paste0(',\n  "spatial_images_scale_x" = ', wrapper,
-                                            paste(items, collapse = paste0(",\n", indent_spaces)),
-                                            ")")
-  }
-
-  # Add spatial_images_scale_y to cerebro_options if provided
-  spatial_images_scale_y_option <- ""
-  if (!is.null(spatial_images_scale_y)) {
-    is_list <- is.list(spatial_images_scale_y)
-    wrapper <- if (is_list) "list(" else "c("
-    # Calculate alignment indentation for: '  "spatial_images_scale_y" = '
-    # 2 spaces + 25 chars + 3 chars = 30 spaces
-    # Plus wrapper length
-    indent_len <- 30 + nchar(wrapper)
-    indent_spaces <- strrep(" ", indent_len)
-
-    items <- vapply(names(spatial_images_scale_y), function(n) {
-      val <- spatial_images_scale_y[[n]]
-      val_str <- formatRObject(val, indent = 0)
-      if (grepl("\n", val_str)) {
-        val_str <- gsub("\n", paste0("\n", indent_spaces), val_str)
-      }
-      paste0('"', n, '" = ', val_str)
-    }, character(1))
-
-    spatial_images_scale_y_option <- paste0(',\n  "spatial_images_scale_y" = ', wrapper,
-                                            paste(items, collapse = paste0(",\n", indent_spaces)),
-                                            ")")
-  }
+  # Save configuration to RDS
+  saveRDS(cerebro_options, file.path(result_dir, "cerebro_config.rds"))
 
   # Generate authentication code if enabled
   auth_code <- ""
@@ -760,17 +511,20 @@ library(shiny)
 library(shinydashboard)
 library(shinyWidgets)
 
-{colors_code}
 # 定义结果保存目录
 cerebro_root <- "."
-{crb_files_code}
 
-## 设置参数
-Cerebro.options <<- list(
-  "mode" = "open",
-  "crb_file_to_load" = {crb_load_code},
-  "cerebro_root" = cerebro_root{colors_option}{spatial_images_option}{spatial_plot_rotation_option}{spatial_images_flip_x_option}{spatial_images_flip_y_option}{spatial_images_scale_x_option}{spatial_images_scale_y_option}{extra_options}
-)
+## 加载配置
+if (file.exists("cerebro_config.rds")) {{
+  Cerebro.options <<- readRDS("cerebro_config.rds")
+}} else {{
+  stop("cerebro_config.rds not found!")
+}}
+
+# 兼容旧代码：如果有 colors 选项，设置为全局变量
+if (!is.null(Cerebro.options$colors)) {{
+  colors <- Cerebro.options$colors
+}}
 
 shiny_options <- list(
   maxRequestSize = {max_request_size} * 1024^2,

@@ -60,6 +60,60 @@
   return(data)
 }
 
+#' @keywords internal
+#' @noRd
+.readMarkerFile <- function(marker_file, marker_method, verbose = TRUE) {
+  ext <- tolower(tools::file_ext(marker_file))
+  markers_list <- NULL
+
+  # Read file based on extension
+  if (ext %in% c("xls", "xlsx")) {
+    if (!requireNamespace("readxl", quietly = TRUE)) {
+      stop("Package 'readxl' is required to read Excel files (xls/xlsx).", call. = FALSE)
+    }
+    sheet_names <- readxl::excel_sheets(marker_file)
+    if (length(sheet_names) > 1) {
+      markers_list <- lapply(sheet_names, function(sheet_name) {
+        df <- readxl::read_excel(marker_file, sheet = sheet_name)
+        as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
+      })
+      names(markers_list) <- sheet_names
+    } else {
+      markers <- readxl::read_excel(marker_file, sheet = sheet_names[1])
+      markers <- as.data.frame(markers, stringsAsFactors = FALSE, check.names = FALSE)
+    }
+  } else if (ext == "csv") {
+    markers <- utils::read.csv(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
+  } else if (ext %in% c("tsv", "txt", "tab")) {
+    markers <- utils::read.delim(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
+  } else {
+    stop("Unsupported marker_file format: .", ext, ". Supported: xls, xlsx, csv, tsv, txt, tab.", call. = FALSE)
+  }
+
+  # Process single table if markers_list is not yet set
+  if (is.null(markers_list)) {
+    if (nrow(markers) == 0) stop("marker_file read produced an empty table.", call. = FALSE)
+
+    group_col <- names(markers)[1] # First column is grouping
+    if (length(names(markers)) >= 1) {
+       if (is.factor(markers[[group_col]])) markers[[group_col]] <- as.character(markers[[group_col]])
+       markers[[group_col]][is.na(markers[[group_col]])] <- "N/A"
+       markers_list <- split(markers, markers[[group_col]], drop = TRUE)
+    } else {
+       markers_list <- list(custom = markers)
+    }
+  }
+
+  if (verbose) {
+       total_rows <- sum(vapply(markers_list, nrow, integer(1)))
+       message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] Loaded marker_file (",
+                      total_rows, " rows) as method '", marker_method,
+                      "' with ", length(markers_list), " group(s)."))
+  }
+
+  return(markers_list)
+}
+
 #' @title
 #' Convert Seurat Object to Cerebro Format
 #'
@@ -300,98 +354,7 @@ convertSeuratToCerebro <- function(seurat_file,
       stop("marker_file not found: ", marker_file, call. = FALSE)
     }
 
-    ext <- tolower(tools::file_ext(marker_file))
-    markers_list <- NULL
-
-    if (ext %in% c("xls", "xlsx")) {
-      if (!requireNamespace("readxl", quietly = TRUE)) {
-        stop("Package 'readxl' is required to read Excel files (xls/xlsx).", call. = FALSE)
-      }
-      # Check number of sheets
-      sheet_names <- readxl::excel_sheets(marker_file)
-      if (length(sheet_names) > 1) {
-        # Multiple sheets: each sheet becomes a list element
-        markers_list <- lapply(sheet_names, function(sheet_name) {
-          df <- readxl::read_excel(marker_file, sheet = sheet_name)
-          as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
-        })
-        names(markers_list) <- sheet_names
-        total_rows <- sum(vapply(markers_list, nrow, integer(1)))
-        if (verbose) {
-          message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] Loaded marker_file (",
-                         total_rows, " rows across ", length(sheet_names), " sheet(s)) as method '",
-                         marker_method, "'."))
-        }
-      } else {
-        # Single sheet: apply group-based splitting logic
-        markers <- readxl::read_excel(marker_file, sheet = sheet_names[1])
-        markers <- as.data.frame(markers, stringsAsFactors = FALSE, check.names = FALSE)
-        # Apply grouping logic
-        group_col <- names(markers)
-        if (length(group_col) >= 1) {
-          group_col <- group_col[1]
-          if (is.factor(markers[[group_col]])) {
-            markers[[group_col]] <- as.character(markers[[group_col]])
-          }
-          markers[[group_col]][is.na(markers[[group_col]])] <- "N/A"
-          markers_list <- split(markers, markers[[group_col]], drop = TRUE)
-        } else {
-          markers_list <- list(custom = markers)
-        }
-        if (verbose) {
-          message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] Loaded marker_file (",
-                         nrow(markers), " rows) as method '", marker_method,
-                         "' with ", length(markers_list), " group(s)."))
-        }
-      }
-    } else if (ext %in% c("csv")) {
-      markers <- utils::read.csv(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
-      if (nrow(markers) == 0) {
-        stop("marker_file read produced an empty table.", call. = FALSE)
-      }
-      # Apply grouping logic
-      group_col <- names(markers)
-      if (length(group_col) >= 1) {
-        group_col <- group_col[1]
-        if (is.factor(markers[[group_col]])) {
-          markers[[group_col]] <- as.character(markers[[group_col]])
-        }
-        markers[[group_col]][is.na(markers[[group_col]])] <- "N/A"
-        markers_list <- split(markers, markers[[group_col]], drop = TRUE)
-      } else {
-        markers_list <- list(custom = markers)
-      }
-      if (verbose) {
-        message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] Loaded marker_file (",
-                       nrow(markers), " rows) as method '", marker_method,
-                       "' with ", length(markers_list), " group(s)."))
-      }
-    } else if (ext %in% c("tsv", "txt", "tab")) {
-      markers <- utils::read.delim(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
-      if (nrow(markers) == 0) {
-        stop("marker_file read produced an empty table.", call. = FALSE)
-      }
-      # Apply grouping logic
-      group_col <- names(markers)
-      if (length(group_col) >= 1) {
-        group_col <- group_col[1]
-        if (is.factor(markers[[group_col]])) {
-          markers[[group_col]] <- as.character(markers[[group_col]])
-        }
-        markers[[group_col]][is.na(markers[[group_col]])] <- "N/A"
-        markers_list <- split(markers, markers[[group_col]], drop = TRUE)
-      } else {
-        markers_list <- list(custom = markers)
-      }
-      if (verbose) {
-        message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] Loaded marker_file (",
-                       nrow(markers), " rows) as method '", marker_method,
-                       "' with ", length(markers_list), " group(s)."))
-      }
-    } else {
-      stop("Unsupported marker_file format: .", ext,
-           ". Supported: xls, xlsx, csv, tsv, txt, tab.", call. = FALSE)
-    }
+    markers_list <- .readMarkerFile(marker_file, marker_method, verbose)
 
     # Attach to Seurat object under misc$marker_genes
     if (!is.null(markers_list) && length(markers_list) > 0) {
@@ -553,6 +516,7 @@ convertSeuratToCerebro <- function(seurat_file,
       nUMI = nUMI,
       nGene = nGene,
       add_all_meta_data = add_all_meta_data,
+      cell_cycle = cell_cycle,
       verbose = verbose,
       use_delayed_array = use_delayed_array,
       format = format

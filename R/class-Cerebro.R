@@ -259,7 +259,16 @@ Cerebro <- R6::R6Class(
     #' number of rows must be equal to the number of rows of projections and
     #' the number of columns in the transcript count matrix.
     setMetaData = function(table) {
-      ## TODO: add checks for nrow() and type of input
+      if (!is.data.frame(table) && !inherits(table, "DFrame")) {
+        stop("Meta data must be a data frame or DFrame.")
+      }
+      if (inherits(table, "DFrame")) table <- as.data.frame(table)
+
+      if (!is.null(self$expression)) {
+        if (nrow(table) != ncol(self$expression)) {
+           stop(glue::glue("Number of rows in meta data ({nrow(table)}) must match number of columns in expression matrix ({ncol(self$expression)})."))
+        }
+      }
       self$meta_data <- table
     },
 
@@ -297,7 +306,14 @@ Cerebro <- R6::R6Class(
     #' for cells in the data set. Number of columns must be equal to the number
     #' of rows in the \code{meta_data} field.
     setExpression = function(counts) {
-      ## TODO: check type?
+      if ( !inherits(counts, c("matrix", "dgCMatrix", "RleMatrix", "DelayedMatrix")) ) {
+        warning("Expression data should ideally be a matrix-like object (matrix, dgCMatrix, RleMatrix, etc).")
+      }
+      if (!is.null(self$meta_data) && nrow(self$meta_data) > 0) {
+        if (ncol(counts) != nrow(self$meta_data)) {
+          stop(glue::glue("Number of columns in expression matrix ({ncol(counts)}) must match number of rows in meta data ({nrow(self$meta_data)})."))
+        }
+      }
       self$expression <- counts
     },
 
@@ -331,27 +347,11 @@ Cerebro <- R6::R6Class(
     #' mean expression across all cells in the data set.
     getMeanExpressionForGenes = function(genes) {
 
-      ## check what kind of matrix the transcription counts are stored as
-      ## ... DelayedArray / RleMatrix
-      if ( class(self$expression) == 'RleMatrix' ) {
+      ## extract dense matrix using helper
+      mat <- private$extractExpression(cells = NULL, genes = genes)
 
-        ## get indices of specified genes
-        gene_indices <- match(genes, rownames(self$expression))
-
-        ## calculate mean expression per gene
-        mean_expression <- Matrix::rowMeans(
-          DelayedArray::extract_array(
-            self$expression,
-            list(gene_indices, NULL)
-          )
-        )
-
-      ## ... anything else
-      } else {
-
-        ## calculate mean expression per gene
-        mean_expression <- Matrix::rowMeans(self$expression[genes , , drop = FALSE])
-      }
+      ## calculate mean expression per gene
+      mean_expression <- Matrix::rowMeans(mat)
 
       ##
       return(
@@ -376,62 +376,12 @@ Cerebro <- R6::R6Class(
     #' each specified cell.
     getMeanExpressionForCells = function(cells = NULL, genes = NULL) {
 
-      ## check what kind of matrix the transcription counts are stored as
-      ## ... DelayedArray / RleMatrix
-      if ( class(self$expression) == 'RleMatrix' ) {
+      ## extract dense matrix using helper
+      mat <- private$extractExpression(cells = cells, genes = genes)
 
-        ## if cell names were provided, get their indices
-        if (
-          !is.null(cells) &&
-          is.character(cells)
-        ) {
-          cell_names <- cells
-          cell_indices <- match(cells, colnames(self$expression))
-        } else if ( is.null(cells) ) {
-          cell_names <- colnames(self$expression)
-          cell_indices <- NULL
-        }
+      ## calculate mean expression per cell (colMeans)
+      mean_expression <- Matrix::colMeans(mat)
 
-        ## if gene names were provided, get their indices
-        if (
-          !is.null(genes) &&
-          is.character(genes)
-        ) {
-          gene_names <- genes
-          gene_indices <- match(genes, rownames(self$expression))
-        } else if ( is.null(genes) ) {
-          gene_names <- rownames(self$expression)
-          gene_indices <- NULL
-        }
-
-        ## extract (dense) matrix of requested cells and genes and make sure it
-        ## stays in matrix format, even if it has only a single row or column
-        mean_expression <- Matrix::colMeans(
-          DelayedArray::extract_array(
-            self$expression,
-            list(gene_indices, cell_indices)
-          )
-        )
-
-      ## ... anything else
-      } else {
-
-        ## if cell names were not provided, extract names of all cells
-        if ( is.null(cells) ) {
-          cells <- colnames(self$expression)
-        }
-
-        ## if genes names were not provided, extract names of all genes
-        if ( is.null(genes) ) {
-          genes <- rownames(self$expression)
-        }
-
-        ## return (dense) matrix for requested cells and genes and make sure it
-        ## stays in matrix format, even if it has only a single row or column
-        mean_expression <- Matrix::colMeans(self$expression[genes, cells, drop = FALSE])
-      }
-
-      ##
       return(mean_expression)
     },
 
@@ -446,72 +396,7 @@ Cerebro <- R6::R6Class(
     #' @return
     #' Dense transcript count matrix for specified cells and genes.
     getExpressionMatrix = function(cells = NULL, genes = NULL) {
-
-      ## check what kind of matrix the transcription counts are stored as
-      ## ... DelayedArray / RleMatrix
-      if ( class(self$expression) == 'RleMatrix' ) {
-
-        ## if cell names were provided, get their indices
-        if (
-          !is.null(cells) &&
-          is.character(cells)
-        ) {
-          cell_names <- cells
-          cell_indices <- match(cells, colnames(self$expression))
-        } else if ( is.null(cells) ) {
-          cell_names <- colnames(self$expression)
-          cell_indices <- NULL
-        }
-
-        ## if gene names were provided, get their indices
-        if (
-          !is.null(genes) &&
-          is.character(genes)
-        ) {
-          gene_names <- genes
-          gene_indices <- match(genes, rownames(self$expression))
-        } else if ( is.null(genes) ) {
-          gene_names <- rownames(self$expression)
-          gene_indices <- NULL
-        }
-
-        ## extract (dense) matrix of requested cells and genes and make sure it
-        ## stays in matrix format, even if it has only a single row or column
-        matrix <- as.matrix(
-          DelayedArray::extract_array(
-            self$expression,
-            list(gene_indices, cell_indices)
-          )
-        )
-
-        ## assign column and row names
-        colnames(matrix) <- cell_names
-        rownames(matrix) <- gene_names
-
-        ## return matrix
-        return(matrix)
-
-      ## ... anything else
-      } else {
-
-        ## if cell names were not provided, extract names of all cells
-        if ( is.null(cells) ) {
-          cells <- colnames(self$expression)
-        }
-
-        ## if genes names were not provided, extract names of all genes
-        if ( is.null(genes) ) {
-          genes <- rownames(self$expression)
-        }
-
-        ## return (dense) matrix for requested cells and genes and make sure it
-        ## stays in matrix format, even if it has only a single row or column
-        return(
-          as.matrix(
-            self$expression[genes, cells, drop = FALSE]
-          )
-        )
-      }
+      return(private$extractExpression(cells = cells, genes = genes))
     },
 
     #' @description
@@ -548,27 +433,30 @@ Cerebro <- R6::R6Class(
     #' @param projection \code{data.frame} containing positions of cells in
     #' projection.
     addProjection = function(name, projection) {
-      # ## check if projection with same name already exists
-      # if ( name %in% names(self$projections) ) {
-      #   stop(
-      #     glue::glue(
-      #       'A projection with the name `{name}` already exists. ',
-      #       'Please use a different name.'
-      #     ),
-      #     call. = FALSE
-      #   )
-      # }
-      # ## check if provided projection is a data frame
-      # if ( is.data.frame(projection) == FALSE ) {
-      #   stop(
-      #     glue::glue(
-      #       'Provided projection is of type `{class(projection)}` but should ',
-      #       'be a data frame. Please convert it.'
-      #     ),
-      #     call. = FALSE
-      #   )
-      # }
-      ## TODO: check dimensions?
+      ## check if projection with same name already exists
+      if ( name %in% names(self$projections) ) {
+        stop(
+          glue::glue(
+            'A projection with the name `{name}` already exists. ',
+            'Please use a different name.'
+          ),
+          call. = FALSE
+        )
+      }
+      ## check if provided projection is a data frame
+      if ( !is.data.frame(projection) ) {
+        stop(
+          glue::glue(
+            'Provided projection is of type `{class(projection)}` but should ',
+            'be a data frame. Please convert it.'
+          ),
+          call. = FALSE
+        )
+      }
+      ## check dimensions
+      if ( !is.null(self$expression) && nrow(projection) != ncol(self$expression) ) {
+         stop(glue::glue("Number of rows in projection ({nrow(projection)}) must match number of cells ({ncol(self$expression)})."))
+      }
       self$projections[[name]] <- projection
     },
 
@@ -1130,6 +1018,59 @@ Cerebro <- R6::R6Class(
 
   ## private fields and methods
   private = list(
+
+    #' Extract expression matrix (helper)
+    #'
+    #' @param cells Names/barcodes of cells to extract; NULL for all.
+    #' @param genes Names of genes to extract; NULL for all.
+    #' @return Dense matrix.
+    extractExpression = function(cells = NULL, genes = NULL) {
+
+      ## check what kind of matrix the transcription counts are stored as
+      ## ... DelayedArray / RleMatrix
+      if ( inherits(self$expression, 'RleMatrix') ) {
+
+        ## resolve cell indices
+        if ( !is.null(cells) ) {
+          cell_indices <- match(cells, colnames(self$expression))
+        } else {
+          cell_indices <- NULL
+          cells <- colnames(self$expression)
+        }
+
+        ## resolve gene indices
+        if ( !is.null(genes) ) {
+          gene_indices <- match(genes, rownames(self$expression))
+        } else {
+          gene_indices <- NULL
+          genes <- rownames(self$expression)
+        }
+
+        ## extract (dense) matrix
+        mat <- as.matrix(
+          DelayedArray::extract_array(
+            self$expression,
+            list(gene_indices, cell_indices)
+          )
+        )
+
+        ## assign names (extract_array might lose them or not return them for indices)
+        colnames(mat) <- cells
+        rownames(mat) <- genes
+
+        return(mat)
+
+      } else {
+
+        ## standard matrix logic
+        if ( is.null(cells) ) cells <- colnames(self$expression)
+        if ( is.null(genes) ) genes <- rownames(self$expression)
+
+        return(
+          as.matrix(self$expression[genes, cells, drop = FALSE])
+        )
+      }
+    },
 
     #' Print overview of available marker gene results for \code{self$print()}
     #' function.
