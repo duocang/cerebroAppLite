@@ -7,7 +7,7 @@
 output[["spatial_details_selected_cells_plot"]] <- plotly::renderPlotly({
   req(
     input[["spatial_projection_to_display"]],
-    input[["spatial_projection_to_display"]] %in% availableProjections(),
+    input[["spatial_projection_to_display"]] %in% availableSpatial(),
     input[["spatial_selected_cells_plot_select_variable"]],
     spatial_projection_data_to_plot()
   )
