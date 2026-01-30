@@ -519,10 +519,9 @@ createTraditionalShinyApp <- function(cerebro_data,
   app_server_code <- "server"
 
   if (auth_enabled && auth_use_custom) {
-    # Custom authentication system
+    # Custom authentication system with static preloaded login page
     auth_code <- glue::glue('
 # Custom Authentication Setup
-source(file.path(cerebro_root, "shiny/auth/login_ui.R"))
 source(file.path(cerebro_root, "shiny/auth/login_server.R"))
 
 credentials_path <- file.path(cerebro_root, "credentials.rds")
@@ -531,37 +530,104 @@ login_welcome_message <- "{welcome_message}"
 ')
 
     auth_wrapper_code <- glue::glue('
-# Custom login wrapper UI
+# Static preloaded login page
+#==============================================================================
+# 静态预加载登录页面
+# 从 shiny/auth/static_login.html 读取，支持 WELCOME_MESSAGE 占位符替换
+#==============================================================================
+static_preload_login_ui <- function(welcome_message = \"\") {{
+  html_path <- file.path(cerebro_root, \"shiny\", \"auth\", \"login_ui_static.html\")
+  if (!file.exists(html_path)) {{
+    stop(\"Static login page not found: \", html_path)
+  }}
+  html_content <- paste(readLines(html_path, warn = FALSE), collapse = \"\\n\")
+  html_content <- gsub(\"\\\\{{\\\\{{WELCOME_MESSAGE\\\\}}\\\\}}\", welcome_message, html_content)
+  HTML(html_content)
+}}
+
+#==============================================================================
+# 主应用
+#==============================================================================
+## Start Shiny App
 login_wrapper_ui <- function() {{
   fluidPage(
     shinyjs::useShinyjs(),
-    uiOutput("main_app_ui")
+    # 静态预加载登录页 (内联 HTML，立即渲染)
+    static_preload_login_ui(login_welcome_message),
+    # Shiny 动态内容 (登录后渲染)
+    uiOutput(\"main_app_ui\")
   )
 }}
+
 ')
     app_ui_code <- "login_wrapper_ui()"
     app_server_code <- glue::glue('function(input, output, session) {{
   # Authentication state
-  auth_result <- login_server(input, output, session, credentials_path, auth_salt)
+  auth_state <- reactiveValues(
+    logged_in = FALSE,
+    user = NULL,
+    admin = FALSE
+  )
+
+  # Load credentials 加载凭据
+  credentials <- tryCatch({{
+    load_credentials(credentials_path)
+  }}, error = function(e) {{
+    message(\"Error loading credentials: \", e$message)
+    data.frame(user = character(), password_hash = character(), admin = logical())
+  }})
+
+  # Handle static page login request  处理静态页面的登录请求
+  observeEvent(input$static_login_request, {{
+    req(input$static_login_request)
+
+    username <- input$static_login_request$username
+    password <- input$static_login_request$password
+
+    # Verify credentials
+    result <- check_user_credentials(username, password, credentials, auth_salt)
+
+    if (result$success) {{
+      # Login successful
+      auth_state$logged_in <- TRUE
+      auth_state$user <- result$user
+      auth_state$admin <- result$admin
+
+      message(sprintf(\"[%s] User %s logged in successfully\", Sys.time(), username))
+
+      # Send success response to frontend
+      session$sendCustomMessage(\"static_login_response\", list(success = TRUE))
+    }} else {{
+      # Login failed
+      message(sprintf(\"[%s] Failed login attempt for user %s\", Sys.time(), username))
+
+      # Send failure response to frontend
+      session$sendCustomMessage(\"static_login_response\", list(
+        success = FALSE,
+        message = result$message
+      ))
+    }}
+  }})
 
   # Handle logout
   logout_server(input, session)
 
   # Render main UI based on login state
   output$main_app_ui <- renderUI({{
-    if (auth_result()$logged_in) {{
+    if (auth_state$logged_in) {{
       tagList(
         logout_button_ui(),
-        div(class = "app-fade-in", ui)
+        div(class = \"app-fade-in\", ui)
       )
     }} else {{
-      login_page_ui(login_welcome_message)
+      # Hidden backup login page (in case static page is bypassed)
+      div(style = \"display: none;\")
     }}
   }})
 
   # Run main server logic only when logged in
   observe({{
-    req(auth_result()$logged_in)
+    req(auth_state$logged_in)
     server(input, output, session)
   }})
 }}')
@@ -571,12 +637,12 @@ login_wrapper_ui <- function() {{
 # Authentication setup
 library(shinymanager)
 
-credentials_path <- file.path(cerebro_root, "credentials.sqlite")
-auth_passphrase <- "{auth_passphrase}"
+credentials_path <- file.path(cerebro_root, \"credentials.sqlite\")
+auth_passphrase <- \"{auth_passphrase}\"
 
 # Check if credentials database exists
 if (!file.exists(credentials_path)) {{
-  stop("Credentials database not found: ", credentials_path)
+  stop(\"Credentials database not found: \", credentials_path)
 }}
 
 # Initialize credentials check
@@ -602,7 +668,9 @@ secure_ui <- shinymanager::secure_app(ui)
 
   app_content <- glue::glue('
 #==============================================================================
-# Cerebro Shiny App Builder - RStudio 自动生成的应用程序
+# Cerebro Shiny App - 静态登录页优化版
+# 用户打开页面立即显示静态登录表单，Shiny 在后台加载
+# 登录验证通过后无缝切换到主应用，无需跳转
 #==============================================================================
 
 library(dplyr)
@@ -638,13 +706,14 @@ shiny_options <- list(
   display.mode = "{display_mode}"
 )
 
-{auth_code}
+## Expose data directory for spatial images
+shiny::addResourcePath("data", file.path(cerebro_root, "data"))
+
 ## 加载服务器和界面函数
 source(file.path(cerebro_root, "shiny/shiny_UI.R"))
 source(file.path(cerebro_root, "shiny/shiny_server.R"))
 
-## Expose data directory for spatial images
-shiny::addResourcePath("data", file.path(cerebro_root, "data"))
+{auth_code}
 
 ## Start Shiny App
 {auth_wrapper_code}
