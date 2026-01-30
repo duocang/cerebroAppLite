@@ -202,7 +202,8 @@ logout_button_ui <- function(position = "top-right") {
     "header" = "display: inline-block; margin-left: 10px;"
   )
 
-  style <- positions[[position]] %||% positions[["top-right"]]
+  # style <- positions[[position]] %||% positions[["top-right"]]
+  style <- if (!is.null(positions[[position]])) positions[[position]] else positions[["top-right"]]
 
   div(
     style = style,
