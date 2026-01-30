@@ -329,8 +329,10 @@ server <- function(input, output, session) {
 
   show_spatial_tab <- reactive({
     req(!is.null(data_set()))
-    spatial_projections <- grep("^Spatial_", availableProjections(), value = TRUE)
-    if (length(spatial_projections) > 0) {
+    spatial_data <- availableSpatial()
+    message(glue::glue("[{Sys.time()}] spatial_data = {spatial_data}"))
+
+    if (length(spatial_data) > 0) {
       return(TRUE)
     } else {
       return(FALSE)
