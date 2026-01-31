@@ -551,4 +551,36 @@ server <- function(input, output, session) {
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/trajectory/server.R"), local = TRUE)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/extra_material/server.R"), local = TRUE)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/analysis_info/server.R"), local = TRUE)
+
+  ##--------------------------------------------------------------------------##
+  ## Show/Hide Scroll Down Hint
+  ##--------------------------------------------------------------------------##
+  observe({
+    ## Check for selection in Overview
+    has_selection <- FALSE
+    
+    # Safe check for overview
+    if (exists("overview_projection_selected_cells")) {
+       res <- tryCatch(overview_projection_selected_cells(), error = function(e) NULL)
+       if (!is.null(res) && nrow(res) > 0) has_selection <- TRUE
+    }
+    
+    # Safe check for spatial
+    if (!has_selection && exists("spatial_projection_selected_cells")) {
+       res <- tryCatch(spatial_projection_selected_cells(), error = function(e) NULL)
+       if (!is.null(res) && nrow(res) > 0) has_selection <- TRUE
+    }
+    
+    # Safe check for trajectory
+    if (!has_selection && exists("trajectory_projection_selected_cells")) {
+       res <- tryCatch(trajectory_projection_selected_cells(), error = function(e) NULL)
+       if (!is.null(res) && nrow(res) > 0) has_selection <- TRUE
+    }
+    
+    if (has_selection) {
+      shinyjs::show("scroll_down_hint")
+    } else {
+      shinyjs::hide("scroll_down_hint")
+    }
+  })
 }
