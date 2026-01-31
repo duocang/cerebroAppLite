@@ -74,8 +74,6 @@ const spatial_projection_layout_2D = {
       border: 1px solid #E2E8F0;
       border-radius: 8px;
       padding: 12px;
-      max-height: 300px;
-      overflow-y: auto;
       z-index: 1000;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -419,18 +417,59 @@ shinyjs.createCustomLegend = function (traces, colors) {
   legendContainer.innerHTML = '';
   legendContainer.style.display = 'block';
 
+  // Calculate scaling based on number of traces
+  const count = traces.length;
+  let fontSize = 13;
+  let itemMargin = 6;
+  let itemPadding = 4; // top/bottom padding
+  let itemPaddingX = 6; // left/right padding
+  let boxSize = 16;
+
+  if (count > 10) {
+    if (count <= 20) {
+      fontSize = 12;
+      itemMargin = 4;
+      itemPadding = 3;
+      boxSize = 14;
+    } else if (count <= 30) {
+      fontSize = 11;
+      itemMargin = 3;
+      itemPadding = 2;
+      boxSize = 12;
+    } else if (count <= 50) {
+      fontSize = 10;
+      itemMargin = 2;
+      itemPadding = 1;
+      boxSize = 10;
+    } else {
+      fontSize = 9;
+      itemMargin = 1;
+      itemPadding = 0;
+      boxSize = 8;
+    }
+  }
+
   // Create legend items
   traces.forEach((traceName, index) => {
     const item = document.createElement('div');
     item.className = 'custom-legend-item';
 
+    // Apply dynamic styles
+    item.style.marginBottom = itemMargin + 'px';
+    item.style.padding = itemPadding + 'px ' + itemPaddingX + 'px';
+
     const colorBox = document.createElement('span');
     colorBox.className = 'legend-color-box';
     colorBox.style.backgroundColor = colors[index];
+    // Apply dynamic box size
+    colorBox.style.width = boxSize + 'px';
+    colorBox.style.height = boxSize + 'px';
 
     const text = document.createElement('span');
     text.className = 'legend-text';
     text.innerText = traceName;
+    // Apply dynamic font size
+    text.style.fontSize = fontSize + 'px';
 
     item.appendChild(colorBox);
     item.appendChild(text);
