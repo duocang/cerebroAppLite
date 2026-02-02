@@ -211,9 +211,148 @@ const spatial_projection_layout_2D = {
       pointer-events: none;
       transform-origin: center center;
     }
+
+    /* Scroll Down Arrow Indicator */
+    .scroll-down-indicator {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: opacity 0.4s ease;
+    }
+    .scroll-down-indicator.hiding {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .scroll-down-arrow {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(49, 130, 206, 0.15);
+      border: 2px solid rgba(49, 130, 206, 0.4);
+      border-radius: 50%;
+      animation: scrollArrowBreathe 2s ease-in-out infinite;
+    }
+    .scroll-down-arrow svg {
+      width: 28px;
+      height: 28px;
+      fill: none;
+      stroke: #3182ce;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      animation: scrollArrowBounce 2s ease-in-out infinite;
+    }
+    .scroll-down-text {
+      font-size: 13px;
+      color: #3182ce;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px 12px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    @keyframes scrollArrowBreathe {
+      0%, 100% {
+        transform: scale(1);
+        background: rgba(49, 130, 206, 0.15);
+        border-color: rgba(49, 130, 206, 0.4);
+      }
+      50% {
+        transform: scale(1.1);
+        background: rgba(49, 130, 206, 0.25);
+        border-color: rgba(49, 130, 206, 0.6);
+      }
+    }
+    @keyframes scrollArrowBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
+    }
   `;
   document.head.appendChild(style);
 })();
+
+// Scroll down indicator functions
+shinyjs.showScrollDownIndicator = function (message) {
+  // Remove existing indicator if any
+  shinyjs.hideScrollDownIndicator();
+
+  const indicator = document.createElement('div');
+  indicator.id = 'scroll-down-indicator';
+  indicator.className = 'scroll-down-indicator';
+  indicator.innerHTML = `
+    <div class="scroll-down-arrow">
+      <svg viewBox="0 0 24 24">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
+    <div class="scroll-down-text">${message || 'Charts generated below'}</div>
+  `;
+
+  document.body.appendChild(indicator);
+
+  // Click indicator to scroll down and hide
+  indicator.onclick = function () {
+    window.scrollBy({ top: 300, behavior: 'smooth' });
+    shinyjs.hideScrollDownIndicator();
+  };
+
+  // Hide on scroll
+  let scrollTimeout;
+  const onScroll = function () {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(function () {
+      shinyjs.hideScrollDownIndicator();
+      window.removeEventListener('scroll', onScroll);
+    }, 100);
+  };
+  window.addEventListener('scroll', onScroll);
+
+  // Hide on any click outside the indicator
+  const onClickOutside = function (e) {
+    if (!indicator.contains(e.target)) {
+      shinyjs.hideScrollDownIndicator();
+      document.removeEventListener('click', onClickOutside);
+    }
+  };
+  // Delay adding click listener to avoid immediate trigger
+  setTimeout(function () {
+    document.addEventListener('click', onClickOutside);
+  }, 100);
+
+  // Store cleanup functions
+  indicator.dataset.cleanup = 'true';
+  indicator._onScroll = onScroll;
+  indicator._onClickOutside = onClickOutside;
+};
+
+shinyjs.hideScrollDownIndicator = function () {
+  const indicator = document.getElementById('scroll-down-indicator');
+  if (indicator) {
+    // Clean up event listeners
+    if (indicator._onScroll) {
+      window.removeEventListener('scroll', indicator._onScroll);
+    }
+    if (indicator._onClickOutside) {
+      document.removeEventListener('click', indicator._onClickOutside);
+    }
+    // Fade out animation
+    indicator.classList.add('hiding');
+    setTimeout(function () {
+      if (indicator.parentElement) {
+        indicator.remove();
+      }
+    }, 400);
+  }
+};
 
 shinyjs.detachModebar = function () {
   const plotContainer = document.getElementById('spatial_projection');

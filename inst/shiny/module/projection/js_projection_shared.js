@@ -286,9 +286,224 @@ const projection_layout_3D = {
       align-items: center !important;
       gap: 8px !important;
     }
+
+    /* Legend Header with Drag Handle */
+    .legend-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #E2E8F0;
+      cursor: grab;
+    }
+    .legend-header:active {
+      cursor: grabbing;
+    }
+    .legend-drag-handle {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-right: 8px;
+      opacity: 0.4;
+      transition: opacity 0.2s ease;
+    }
+    .projection-legend:hover .legend-drag-handle,
+    .projection-continuous-legend:hover .legend-drag-handle {
+      opacity: 0.7;
+    }
+    .legend-drag-handle-dots {
+      display: flex;
+      gap: 2px;
+    }
+    .legend-drag-handle-dot {
+      width: 3px;
+      height: 3px;
+      background-color: #718096;
+      border-radius: 50%;
+    }
+    .legend-title-text {
+      font-size: 12px;
+      color: #718096;
+      font-weight: 500;
+      flex-grow: 1;
+    }
+
+    /* Drag Tip Tooltip */
+    .legend-drag-tip {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100%);
+      background: #2D3748;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      white-space: nowrap;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+      z-index: 1001;
+      animation: legendTipFadeIn 0.3s ease;
+    }
+    .legend-drag-tip::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px 6px 0 6px;
+      border-style: solid;
+      border-color: #2D3748 transparent transparent transparent;
+    }
+    @keyframes legendTipFadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-90%); }
+      to { opacity: 1; transform: translateX(-50%) translateY(-100%); }
+    }
+    @keyframes legendTipFadeOut {
+      from { opacity: 1; transform: translateX(-50%) translateY(-100%); }
+      to { opacity: 0; transform: translateX(-50%) translateY(-90%); }
+    }
+
+    /* Scroll Down Arrow Indicator */
+    .scroll-down-indicator {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: opacity 0.4s ease;
+    }
+    .scroll-down-indicator.hiding {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .scroll-down-arrow {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(49, 130, 206, 0.15);
+      border: 2px solid rgba(49, 130, 206, 0.4);
+      border-radius: 50%;
+      animation: scrollArrowBreathe 2s ease-in-out infinite;
+    }
+    .scroll-down-arrow svg {
+      width: 28px;
+      height: 28px;
+      fill: none;
+      stroke: #3182ce;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      animation: scrollArrowBounce 2s ease-in-out infinite;
+    }
+    .scroll-down-text {
+      font-size: 13px;
+      color: #3182ce;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px 12px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    @keyframes scrollArrowBreathe {
+      0%, 100% {
+        transform: scale(1);
+        background: rgba(49, 130, 206, 0.15);
+        border-color: rgba(49, 130, 206, 0.4);
+      }
+      50% {
+        transform: scale(1.1);
+        background: rgba(49, 130, 206, 0.25);
+        border-color: rgba(49, 130, 206, 0.6);
+      }
+    }
+    @keyframes scrollArrowBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
+    }
   `;
   document.head.appendChild(style);
 })();
+
+// Scroll down indicator functions
+shinyjs.showScrollDownIndicator = function (message) {
+  // Remove existing indicator if any
+  shinyjs.hideScrollDownIndicator();
+
+  const indicator = document.createElement('div');
+  indicator.id = 'scroll-down-indicator';
+  indicator.className = 'scroll-down-indicator';
+  indicator.innerHTML = `
+    <div class="scroll-down-arrow">
+      <svg viewBox="0 0 24 24">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
+    <div class="scroll-down-text">${message || 'Charts generated below'}</div>
+  `;
+
+  document.body.appendChild(indicator);
+
+  // Click indicator to scroll down and hide
+  indicator.onclick = function () {
+    window.scrollBy({ top: 300, behavior: 'smooth' });
+    shinyjs.hideScrollDownIndicator();
+  };
+
+  // Hide on scroll
+  let scrollTimeout;
+  const onScroll = function () {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(function () {
+      shinyjs.hideScrollDownIndicator();
+      window.removeEventListener('scroll', onScroll);
+    }, 100);
+  };
+  window.addEventListener('scroll', onScroll);
+
+  // Hide on any click outside the indicator
+  const onClickOutside = function (e) {
+    if (!indicator.contains(e.target)) {
+      shinyjs.hideScrollDownIndicator();
+      document.removeEventListener('click', onClickOutside);
+    }
+  };
+  // Delay adding click listener to avoid immediate trigger
+  setTimeout(function () {
+    document.addEventListener('click', onClickOutside);
+  }, 100);
+
+  // Store cleanup functions
+  indicator.dataset.cleanup = 'true';
+  indicator._onScroll = onScroll;
+  indicator._onClickOutside = onClickOutside;
+};
+
+shinyjs.hideScrollDownIndicator = function () {
+  const indicator = document.getElementById('scroll-down-indicator');
+  if (indicator) {
+    // Clean up event listeners
+    if (indicator._onScroll) {
+      window.removeEventListener('scroll', indicator._onScroll);
+    }
+    if (indicator._onClickOutside) {
+      document.removeEventListener('click', indicator._onClickOutside);
+    }
+    // Fade out animation
+    indicator.classList.add('hiding');
+    setTimeout(function () {
+      if (indicator.parentElement) {
+        indicator.remove();
+      }
+    }, 400);
+  }
+};
 
 // Detach modebar from plot
 shinyjs.detachProjectionModebar = function (plotId) {
@@ -360,6 +575,17 @@ shinyjs.makeProjectionDraggable = function (el) {
     if (dx !== 0 || dy !== 0) {
       hasMoved = true;
       el.dataset.isDragging = 'true';
+
+      // Record that user has dragged a legend (first time)
+      if (!localStorage.getItem('cerebro_legend_dragged')) {
+        localStorage.setItem('cerebro_legend_dragged', 'true');
+        // Remove tip if it exists
+        const tip = el.querySelector('.legend-drag-tip');
+        if (tip) {
+          tip.style.animation = 'legendTipFadeOut 0.2s ease forwards';
+          setTimeout(() => tip.remove(), 200);
+        }
+      }
     }
 
     el.style.left = initialLeft + dx + 'px';
@@ -368,7 +594,7 @@ shinyjs.makeProjectionDraggable = function (el) {
 
   function onMouseUp(e) {
     isDragging = false;
-    el.style.cursor = 'move';
+    el.style.cursor = 'grab';
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
 
@@ -382,6 +608,64 @@ shinyjs.makeProjectionDraggable = function (el) {
     }
   }
 };
+
+// Helper: Create drag handle element
+function createLegendDragHandle() {
+  const handle = document.createElement('div');
+  handle.className = 'legend-drag-handle';
+  // Create 3 rows of 2 dots each
+  for (let i = 0; i < 3; i++) {
+    const row = document.createElement('div');
+    row.className = 'legend-drag-handle-dots';
+    for (let j = 0; j < 2; j++) {
+      const dot = document.createElement('div');
+      dot.className = 'legend-drag-handle-dot';
+      row.appendChild(dot);
+    }
+    handle.appendChild(row);
+  }
+  return handle;
+}
+
+// Helper: Create legend header with drag handle
+function createLegendHeader(titleText) {
+  const header = document.createElement('div');
+  header.className = 'legend-header';
+
+  const handle = createLegendDragHandle();
+  header.appendChild(handle);
+
+  if (titleText) {
+    const title = document.createElement('div');
+    title.className = 'legend-title-text';
+    title.innerText = titleText;
+    header.appendChild(title);
+  }
+
+  return header;
+}
+
+// Helper: Show first-time drag tip
+function showLegendDragTip(legendContainer) {
+  // Check if user has already dragged before
+  if (localStorage.getItem('cerebro_legend_dragged')) {
+    return;
+  }
+
+  // Create tip element
+  const tip = document.createElement('div');
+  tip.className = 'legend-drag-tip';
+  tip.innerHTML = '💡 Drag to reposition';
+  legendContainer.appendChild(tip);
+
+  // Auto-hide after 4 seconds
+  setTimeout(() => {
+    if (tip.parentElement) {
+      tip.style.animation = 'legendTipFadeOut 0.3s ease forwards';
+      setTimeout(() => tip.remove(), 300);
+    }
+  }, 4000);
+}
 
 // Create categorical custom legend
 shinyjs.createProjectionCustomLegend = function (plotId, traces, colors) {
@@ -411,6 +695,14 @@ shinyjs.createProjectionCustomLegend = function (plotId, traces, colors) {
   // Reset content
   legendContainer.innerHTML = '';
   legendContainer.style.display = 'block';
+  legendContainer.style.cursor = 'grab';
+
+  // Add header with drag handle
+  const header = createLegendHeader('Legend');
+  legendContainer.appendChild(header);
+
+  // Show first-time tip
+  showLegendDragTip(legendContainer);
 
   // Calculate scaling based on number of traces
   const count = traces.length;
@@ -518,11 +810,14 @@ shinyjs.createProjectionContinuousLegend = function (plotId, title, colorMin, co
   shinyjs.makeProjectionDraggable(legendContainer);
   legendContainer.innerHTML = '';
   legendContainer.style.display = 'block';
+  legendContainer.style.cursor = 'grab';
 
-  const titleEl = document.createElement('div');
-  titleEl.className = 'continuous-legend-title';
-  titleEl.innerText = title;
-  legendContainer.appendChild(titleEl);
+  // Add header with drag handle and title
+  const header = createLegendHeader(title);
+  legendContainer.appendChild(header);
+
+  // Show first-time tip
+  showLegendDragTip(legendContainer);
 
   const contentEl = document.createElement('div');
   contentEl.className = 'continuous-legend-content';

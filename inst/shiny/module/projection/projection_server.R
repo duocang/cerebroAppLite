@@ -557,13 +557,35 @@ projection_server <- function(id, projection_type = "projections") {
       return(result)
     })
 
+    ## Show/hide clear selection button and scroll indicator based on selection
+    observe({
+      if (!is.null(projection_selected_cells()) && nrow(projection_selected_cells()) > 0) {
+        shinyjs::show("clear_selection")
+        # Show scroll down indicator
+        shinyjs::js$showScrollDownIndicator("Charts generated below")
+      } else {
+        shinyjs::hide("clear_selection")
+        shinyjs::js$hideScrollDownIndicator()
+      }
+    })
+
+    ## Clear selection event
+    observeEvent(input[["clear_selection"]], {
+      # Hide scroll indicator first
+      shinyjs::js$hideScrollDownIndicator()
+      # Call JavaScript function to clear the selection
+      plot_id <- ns("projection")
+      shinyjs::js$projectionClearSelection(plot_id)
+    })
+
     output[["number_of_selected_cells"]] <- renderText({
       if ( is.null(projection_selected_cells()) ) {
         number_of_selected_cells <- 0
+        paste0("<b>Number of selected cells</b>: ", number_of_selected_cells)
       } else {
         number_of_selected_cells <- formatC(nrow(projection_selected_cells()), format = "f", big.mark = ",", digits = 0)
+        paste0("<b>Number of selected cells</b>: ", number_of_selected_cells)
       }
-      paste0("<b>Number of selected cells</b>: ", number_of_selected_cells)
     })
 
     ##--------------------------------------------------------------------------##
