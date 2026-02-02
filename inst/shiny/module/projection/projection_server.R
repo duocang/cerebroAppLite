@@ -48,6 +48,9 @@ projection_server <- function(id, projection_type = "projections") {
         }
       }
 
+      # Build namespaced input IDs for conditionalPanel
+      plot_type_id <- ns("plot_type")
+
       tagList(
         selectInput(
           ns("to_display"),
@@ -60,10 +63,28 @@ projection_server <- function(id, projection_type = "projections") {
           choices = c("ImageDimPlot", "ImageFeaturePlot"),
           selected = "ImageDimPlot"
         ),
-        selectInput(
-          ns("point_color"),
-          label = "Color cells by",
-          choices = metadata_cols
+        conditionalPanel(
+          condition = sprintf("input['%s'] == 'ImageDimPlot'", plot_type_id),
+          selectInput(
+            ns("point_color"),
+            label = "Color cells by",
+            choices = metadata_cols
+          )
+        ),
+        conditionalPanel(
+          condition = sprintf("input['%s'] == 'ImageFeaturePlot'", plot_type_id),
+          selectizeInput(
+            ns("feature_to_display"),
+            label = "Feature/Gene",
+            choices = getGeneNames(),
+            multiple = FALSE,
+            options = list(
+              maxOptions = 1000,
+              placeholder = 'Select a gene...',
+              create = FALSE,
+              loadThrottle = 300
+            )
+          )
         ),
         if (length(background_choices) > 1) {
           # Build the full namespaced input ID for conditionalPanel
@@ -206,12 +227,31 @@ projection_server <- function(id, projection_type = "projections") {
       if (!(input[["to_display"]] %in% get_available())) {
         return(NULL)
       }
-      if (is.null(input[["point_color"]])) {
+      if (is.null(input[["plot_type"]])) {
         return(NULL)
       }
-      if (!(input[["point_color"]] %in% colnames(getMetaData()))) {
-        return(NULL)
+
+      # Determine color_variable based on plot_type
+      plot_type <- input[["plot_type"]]
+      color_variable <- NULL
+      feature_to_display <- NULL
+
+      if (plot_type == "ImageDimPlot") {
+        if (is.null(input[["point_color"]])) {
+          return(NULL)
+        }
+        if (!(input[["point_color"]] %in% colnames(getMetaData()))) {
+          return(NULL)
+        }
+        color_variable <- input[["point_color"]]
+      } else if (plot_type == "ImageFeaturePlot") {
+        feature_to_display <- input[["feature_to_display"]]
+        if (is.null(feature_to_display) || feature_to_display == "") {
+          return(NULL)
+        }
+        color_variable <- feature_to_display
       }
+
       if (is.null(input[["point_size"]])) {
         return(NULL)
       }
@@ -266,7 +306,9 @@ projection_server <- function(id, projection_type = "projections") {
       parameters <- list(
         projection         = input[["to_display"]],
         n_dimensions       = ncol(get_data(input[["to_display"]])),
-        color_variable     = input[["point_color"]],
+        plot_type          = plot_type,
+        color_variable     = color_variable,
+        feature_to_display = feature_to_display,
         point_size         = input[["point_size"]],
         point_opacity      = input[["point_opacity"]],
         draw_border        = if (is.null(input[["point_border"]])) FALSE else input[["point_border"]],
@@ -391,17 +433,45 @@ projection_server <- function(id, projection_type = "projections") {
         return(NULL)
       }
 
-      if ( is.numeric(projection_parameters_plot()[['color_variable']]) ) {
+      metadata <- projection_data()
+      plot_parameters <- projection_parameters_plot()
+
+      ## Handle ImageFeaturePlot (add gene expression data)
+      if (!is.null(plot_parameters$plot_type) &&
+          plot_parameters$plot_type == 'ImageFeaturePlot' &&
+          !is.null(plot_parameters$feature_to_display)) {
+        gene <- plot_parameters$feature_to_display
+        if (gene %in% getGeneNames()) {
+          # Use cell_barcode column if available, otherwise fallback to rownames
+          if ("cell_barcode" %in% colnames(metadata)) {
+            cells_to_extract <- metadata$cell_barcode
+          } else {
+            cells_to_extract <- rownames(metadata)
+          }
+          # Access expression matrix safely
+          expression_data <- getExpressionMatrix()
+          if (!is.null(expression_data) && gene %in% rownames(expression_data)) {
+            expr_values <- as.vector(expression_data[gene, cells_to_extract])
+            metadata[[gene]] <- expr_values
+          }
+        }
+      }
+
+      ## Get colors for groups (if applicable)
+      if (
+        plot_parameters[['color_variable']] %in% colnames(metadata) &&
+        is.numeric(metadata[[ plot_parameters[['color_variable']] ]])
+      ) {
         color_assignments <- NA
       } else {
-        color_assignments <- assignColorsToGroups(projection_data(), projection_parameters_plot()[['color_variable']])
+        color_assignments <- assignColorsToGroups(metadata, plot_parameters[['color_variable']])
       }
 
       to_return <- list(
-        cells_df          = projection_data(),
+        cells_df          = metadata,
         coordinates       = projection_coordinates(),
         reset_axes        = isolate(parameters_other[['reset_axes']]),
-        plot_parameters   = projection_parameters_plot(),
+        plot_parameters   = plot_parameters,
         color_assignments = color_assignments,
         hover_info        = projection_hover_info()
       )

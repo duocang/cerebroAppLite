@@ -653,16 +653,20 @@ shinyjs.updateProjectionPlot2DContinuous = function (params) {
 
   const layout_here = JSON.parse(JSON.stringify(projection_layout_2D));
 
-  if (params.data.reset_axes) {
-    projection_uirevision = Date.now().toString();
-    layout_here.xaxis['autorange'] = true;
-    layout_here.yaxis['autorange'] = true;
-  } else {
-    layout_here.xaxis['autorange'] = false;
-    layout_here.xaxis['range'] = params.data.x_range;
-    layout_here.yaxis['autorange'] = false;
-    layout_here.yaxis['range'] = params.data.y_range;
-  }
+  // if (params.data.reset_axes) {
+  //   projection_uirevision = Date.now().toString();
+  //   layout_here.xaxis['autorange'] = true;
+  //   layout_here.yaxis['autorange'] = true;
+  // } else {
+  //   layout_here.xaxis['autorange'] = false;
+  //   layout_here.xaxis['range'] = params.data.x_range;
+  //   layout_here.xaxis['constrain'] = 'range';
+  //   layout_here.yaxis['autorange'] = false;
+  //   layout_here.yaxis['range'] = params.data.y_range;
+  //   layout_here.yaxis['constrain'] = 'range';
+  //   layout_here.yaxis['scaleanchor'] = 'x';
+  //   layout_here.yaxis['scaleratio'] = 1;
+  // }
   layout_here.uirevision = projection_uirevision;
 
   // Maximize plot area
@@ -816,16 +820,22 @@ shinyjs.updateProjectionPlot2DCategorical = function (params) {
 
   const layout_here = JSON.parse(JSON.stringify(projection_layout_2D));
 
-  if (params.data.reset_axes) {
-    projection_uirevision = Date.now().toString();
-    layout_here.xaxis['autorange'] = true;
-    layout_here.yaxis['autorange'] = true;
-  } else {
-    layout_here.xaxis['autorange'] = false;
-    layout_here.xaxis['range'] = params.data.x_range;
-    layout_here.yaxis['autorange'] = false;
-    layout_here.yaxis['range'] = params.data.y_range;
-  }
+  // if (params.data.reset_axes) {
+  //   projection_uirevision = Date.now().toString();
+  //   layout_here.xaxis['autorange'] = true;
+  //   layout_here.yaxis['autorange'] = true;
+  //   delete layout_here.xaxis.range;
+  //   delete layout_here.yaxis.range;
+  // } else {
+  //   layout_here.xaxis['autorange'] = false;
+  //   layout_here.xaxis['range'] = [...params.data.x_range];
+  //   layout_here.xaxis['constrain'] = 'range';
+  //   layout_here.yaxis['autorange'] = false;
+  //   layout_here.yaxis['range'] = [...params.data.y_range];
+  //   layout_here.yaxis['constrain'] = 'range';
+  //   layout_here.yaxis['scaleanchor'] = 'x';
+  //   layout_here.yaxis['scaleratio'] = 1;
+  // }
   layout_here.uirevision = projection_uirevision;
 
   // Maximize plot area
