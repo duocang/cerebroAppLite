@@ -4,12 +4,19 @@
 output[["details_selected_cells_plot"]] <- plotly::renderPlotly({
   req(
     projection_selected_cells(),
-    input[["selected_cells_plot_select_variable"]]
+    input[["selected_cells_plot_select_variable"]],
+    projection_data_to_plot()
   )
 
-  ## prepare data frame with cell barcodes and variable to color cells by
-  cells_df <- getMetaData() %>%
-    dplyr::select("cell_barcode", input[["selected_cells_plot_select_variable"]])
+  ## Use the actual plotted coordinates from projection_data_to_plot()
+  ## instead of get_data() to match the selection coordinates
+  plot_data <- projection_data_to_plot()
+
+  ## extract cells to plot - use the coordinates that were actually plotted
+  cells_df <- cbind(
+    plot_data$coordinates,
+    plot_data$cells_df
+  )
 
   ## check if selection has been made
   ## ... selection has not been made or there is no cell in it
@@ -21,8 +28,9 @@ output[["details_selected_cells_plot"]] <- plotly::renderPlotly({
   } else {
     ## create column where cells are marked as 'selected' or 'not selected'
     cells_df <- cells_df %>%
+      dplyr::rename(X1 = 1, X2 = 2) %>%
       dplyr::mutate(
-        identifier = paste0(get_data(input[["to_display"]])[ ,1], '-', get_data(input[["to_display"]])[ ,2]),
+        identifier = paste0(X1, '-', X2),
         group = ifelse(identifier %in% projection_selected_cells()$identifier, 'selected', 'not selected'),
         group = factor(group, levels = c('selected', 'not selected'))
       )

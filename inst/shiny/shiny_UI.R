@@ -116,18 +116,6 @@ ui <- dashboardPage(
   ),
   dashboardBody(
     shinyjs::useShinyjs(),
-    div(id = "scroll_down_hint", style = "display: none;",
-      icon("angle-double-down")
-    ),
-    tags$script(HTML('
-      $(document).ready(function() {
-        $(window).scroll(function() {
-          if ($(this).scrollTop() > 50) {
-            $("#scroll_down_hint").fadeOut();
-          }
-        });
-      });
-    ')),
     tags$head(
       # tags$link(rel = "stylesheet", type = "text/css", href = "custom.css"),
       includeCSS(file.path(Cerebro.options[["cerebro_root"]], "shiny/www/custom.css")),
