@@ -10,6 +10,9 @@ server <- function(input, output, session) {
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/plotting_functions.R"), local = TRUE)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/utility_functions.R"), local = TRUE)
 
+  ## Load module server
+  source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/module/projection/projection_server.R"), local = TRUE)
+
   ##--------------------------------------------------------------------------##
   ## Central parameters.
   ##--------------------------------------------------------------------------##
@@ -553,30 +556,35 @@ server <- function(input, output, session) {
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/analysis_info/server.R"), local = TRUE)
 
   ##--------------------------------------------------------------------------##
+  ## Call projection module for Test tab
+  ##--------------------------------------------------------------------------##
+  projection_server("test_projection", projection_type = "spatial")
+
+  ##--------------------------------------------------------------------------##
   ## Show/Hide Scroll Down Hint
   ##--------------------------------------------------------------------------##
   observe({
     ## Check for selection in Overview
     has_selection <- FALSE
-    
+
     # Safe check for overview
     if (exists("overview_projection_selected_cells")) {
        res <- tryCatch(overview_projection_selected_cells(), error = function(e) NULL)
        if (!is.null(res) && nrow(res) > 0) has_selection <- TRUE
     }
-    
+
     # Safe check for spatial
     if (!has_selection && exists("spatial_projection_selected_cells")) {
        res <- tryCatch(spatial_projection_selected_cells(), error = function(e) NULL)
        if (!is.null(res) && nrow(res) > 0) has_selection <- TRUE
     }
-    
+
     # Safe check for trajectory
     if (!has_selection && exists("trajectory_projection_selected_cells")) {
        res <- tryCatch(trajectory_projection_selected_cells(), error = function(e) NULL)
        if (!is.null(res) && nrow(res) > 0) has_selection <- TRUE
     }
-    
+
     if (has_selection) {
       shinyjs::show("scroll_down_hint")
     } else {
