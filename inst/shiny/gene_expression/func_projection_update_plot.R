@@ -91,39 +91,6 @@ expression_projection_update_plot <- function(input) {
       )
     })
   }
-  ## print details for debugging purposes
-  # if (
-  #   exists('mode_debugging') &&
-  #   mode_debugging == TRUE &&
-  #   length(hover_info) > 1
-  # ) {
-  #   random_cells <- c(10, 51, 79)
-  #   for (i in random_cells) {
-  #     current_cell <- gsub(hover_info[i], pattern = '<b>Cell</b>: ', replacement = '')
-  #     current_cell <- gsub(current_cell, pattern = '<br>.*', replacement = '')
-  #     current_cell <- unname(current_cell)
-  #     coordinates_shown <- coordinates[i,]
-  #     hover_shown <- hover_info[i]
-  #     expression_shown <- expression_levels[i]
-  #     position_of_current_cell_in_original_data <- which(getMetaData()$cell_barcode == current_cell)
-  #     coordinates_should <- data_set()$projections[[expression_projection_parameters_plot()$projection]][position_of_current_cell_in_original_data,]
-  #     expression_should <- unname(getMeanExpressionForCells(
-  #       cells = c(current_cell),
-  #       genes = expression_selected_genes()$genes_to_display_present
-  #     ))
-  #     if (is.na(expression_should)) {
-  #       expression_should <- 0
-  #     }
-  #     message(
-  #       glue::glue(
-  #         '{current_cell}: ',
-  #         'coords. {round(coordinates_shown[1], digits=2)}/{round(coordinates_should[1], digits=2)} // ',
-  #         '{round(coordinates_shown[2], digits=2)}/{round(coordinates_should[2], digits=2)}, ',
-  #         'expr. {round(expression_shown, digits=2)}/{round(expression_should, digits=2)}'
-  #       )
-  #     )
-  #   }
-  # }
   ## call JavaScript functions to update plot
   if (
     plot_parameters[['n_dimensions']] == 2 &&

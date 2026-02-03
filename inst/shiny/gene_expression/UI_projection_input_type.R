@@ -3,8 +3,11 @@
 ##----------------------------------------------------------------------------##
 output[["expression_projection_input_type_UI"]] <- renderUI({
   req(input[["expression_analysis_mode"]])
+
+  input_element <- NULL
+
   if ( input[["expression_analysis_mode"]] == "Gene(s)" ) {
-    selectizeInput(
+    input_element <- selectizeInput(
       'expression_genes_input',
       label = 'Gene(s)',
       choices = NULL,
@@ -17,13 +20,24 @@ output[["expression_projection_input_type_UI"]] <- renderUI({
       multiple = TRUE
     )
   } else if ( input[["expression_analysis_mode"]] == "Gene set" ) {
-    selectizeInput(
+    input_element <- selectizeInput(
       'expression_select_gene_set',
       label = 'Gene set',
       choices = c("-", msigdbr:::msigdbr_genesets$gs_name),
       multiple = FALSE
     )
   }
+
+  tagList(
+    input_element,
+    actionButton(
+      inputId = "expression_projection_update_button",
+      label = "Plot Expression",
+      icon = icon("play"),
+      style = "width: 100%; margin-top: 5px;",
+      class = "btn-primary"
+    )
+  )
 })
 
 ## update gene list on server side
