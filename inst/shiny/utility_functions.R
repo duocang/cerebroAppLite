@@ -1100,20 +1100,23 @@ getMeanExpression <- function(group) {
     return(data_set()$getMeanExpression(group))
   }
 }
-getMethodsForMarkerGenes <- function() {
+hasMarkerGenes <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getMethodsWithMarkerGenes())
+    return(data_set()$hasMarkerGenes())
+  }
+  return(FALSE)
+}
+getMarkerGenes <- function() {
+  if ( any(grepl('Cerebro', class(data_set()))) ) {
+    return(data_set()$getMarkerGenes())
   }
 }
-getGroupsWithMarkerGenes <- function(method) {
+getMarkerClusters <- function() {
+  if ( is.null(data_set()) ) return(NULL)
   if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getGroupsWithMarkerGenes(method))
+    return(data_set()$getMarkerClusters())
   }
-}
-getMarkerGenes <- function(method, group) {
-  if ( any(grepl('Cerebro', class(data_set()))) ) {
-    return(data_set()$getMarkerGenes(method, group))
-  }
+  return(NULL)
 }
 getMethodsForEnrichedPathways <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {

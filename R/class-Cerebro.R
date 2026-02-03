@@ -587,65 +587,68 @@ Cerebro <- R6::R6Class(
     },
 
     #' @description
-    #' Add table of marker genes.
+    #' Set marker genes table.
     #'
-    #' @param method Name of method that was used to calculate marker genes.
-    #' @param group_name Name of grouping variable that the marker genes belong
-    #' to. Must be registered in the \code{groups} field.
     #' @param table \code{data.frame} that contains the marker genes.
-    addMarkerGenes = function(method, group_name, table) {
-      self$checkIfGroupExists(group_name)
-      self$checkIfColumnExistsInMetadata(group_name)
-      self$marker_genes[[method]][[group_name]] <- table
-    },
-
-    #' @description
-    #' Retrieve names of methods for which marker genes are available.
-    #'
-    #' @return
-    #' \code{vector} of methods for which marker genes are available.
-    getMethodsWithMarkerGenes = function() {
-      return(names(self$marker_genes))
-    },
-
-    #' @description
-    #' Retrieve names of grouping variables for which marker genes are
-    #' available for a specific method.
-    #'
-    #' @param method Name of method for which to retrieve grouping variables.
-    #'
-    #' @return
-    #' \code{vector} of grouping variables for which marker genes are available.
-    getGroupsWithMarkerGenes = function(method) {
-      if ( method %in% self$getMethodsWithMarkerGenes() == FALSE ) {
-        stop(glue::glue('Method `{method}` is not available.'), call. = FALSE)
-      } else {
-        return(names(self$marker_genes[[method]]))
+    setMarkerGenes = function(table) {
+      if (!is.data.frame(table)) {
+        stop("Marker genes must be a data.frame.", call. = FALSE)
       }
+      self$marker_genes <- table
     },
 
     #' @description
-    #' Retrieve table of marker genes for a specific method and grouping
-    #' variable.
+    #' Check if marker genes are available.
     #'
-    #' @param method Name of method for which to retrieve marker genes.
-    #' @param group_name Name of grouping variable for which to retrieve marker
-    #' genes.
+    #' @return
+    #' \code{logical} indicating whether marker genes are available.
+    hasMarkerGenes = function() {
+      return(!is.null(self$marker_genes) && is.data.frame(self$marker_genes) && nrow(self$marker_genes) > 0)
+    },
+
+    #' @description
+    #' Retrieve marker genes table.
     #'
     #' @return
     #' \code{data.frame} containing the marker genes.
-    getMarkerGenes = function(method, group_name) {
-      if ( method %in% self$getMethodsWithMarkerGenes() == FALSE ) {
-        stop(glue::glue('Method `{method}` is not available.'), call. = FALSE)
-      } else {
-        if ( group_name %in% self$getGroupsWithMarkerGenes(method) == FALSE ) {
-          stop(
-            glue::glue('Group `{group_name}` is not available for method `{method}`.'),
-            call. = FALSE
-          )
-        } else {
-          return(self$marker_genes[[method]][[group_name]])
+    getMarkerGenes = function() {
+      return(self$marker_genes)
+    },
+
+    #' @description
+    #' Get unique cluster/group values from marker genes table.
+    #' Looks for common column names like "group", "cluster", "cell_type", etc.
+    #'
+    #' @return
+    #' \code{vector} of unique cluster/group values, or \code{NULL} if not found.
+    getMarkerClusters = function() {
+      if ( !self$hasMarkerGenes() ) {
+        return(NULL)
+      }
+      ## common column names for cluster/group information
+      possible_cols <- c("group", "cluster", "cell_type", "celltype", "identity", "ident")
+      ## find the first matching column (case-insensitive)
+      col_names <- colnames(self$marker_genes)
+      matched_col <- NULL
+      for (col in possible_cols) {
+        idx <- which(tolower(col_names) == tolower(col))
+        if (length(idx) > 0) {
+          matched_col <- col_names[idx[1]]
+          break
         }
+      }
+      ## if no match found, try the first column if it looks categorical
+      if (is.null(matched_col) && ncol(self$marker_genes) > 0) {
+        first_col <- self$marker_genes[[1]]
+        if (is.character(first_col) || is.factor(first_col)) {
+          matched_col <- col_names[1]
+        }
+      }
+      ## return unique values or NULL
+      if (!is.null(matched_col)) {
+        return(unique(self$marker_genes[[matched_col]]))
+      } else {
+        return(NULL)
       }
     },
 
