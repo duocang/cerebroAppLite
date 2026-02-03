@@ -20,12 +20,12 @@ output[["expression_projection_UI"]] <- renderUI({
           ),
           tagList(
             shinyWidgets::radioGroupButtons(
-               inputId = "expression_analysis_mode",
-               label = NULL,
-               choices = c("Gene(s)"),
-               status = "primary",
-               justified = TRUE,
-               width = "100%"
+              inputId = "expression_analysis_mode",
+              label = NULL,
+              choices = c("Gene(s)"),
+              status = "primary",
+              justified = TRUE,
+              width = "100%"
             ),
             uiOutput("expression_projection_input_type_UI"),
             uiOutput("expression_projection_select_projection_UI")

@@ -334,12 +334,7 @@ server <- function(input, output, session) {
     req(!is.null(data_set()))
     spatial_data <- availableSpatial()
     message(glue::glue("[{Sys.time()}] spatial_data = {spatial_data}"))
-
-    if (length(spatial_data) > 0) {
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
+    length(spatial_data) > 0
   })
 
   ## Use insertUI to dynamically add spatial tab
@@ -350,10 +345,17 @@ server <- function(input, output, session) {
       insertUI(
         selector = "#sidebar_item_spatial_placeholder",
         where = "afterEnd",
-        ui = menuItem("Spatial", tabName = "spatial", icon = icon("images")),
+        ui = tags$li(
+          id = "sidebar_item_spatial",
+          class = "treeview",
+          menuItem("Spatial", tabName = "spatial", icon = icon("images"))$children
+        ),
         immediate = TRUE
       )
       spatial_tab_inserted(TRUE)
+    } else if (!show_spatial_tab() && spatial_tab_inserted()) {
+      removeUI(selector = "#sidebar_item_spatial", immediate = TRUE)
+      spatial_tab_inserted(FALSE)
     }
   })
 
@@ -363,11 +365,8 @@ server <- function(input, output, session) {
 
   show_marker_genes_tab <- reactive({
     req(!is.null(data_set()))
-    if (hasMarkerGenes()) {
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
+    message(glue::glue("[{Sys.time()}] marker_genes_data = {hasMarkerGenes()}"))
+    hasMarkerGenes()
   })
 
   marker_genes_tab_inserted <- reactiveVal(FALSE)
@@ -376,10 +375,17 @@ server <- function(input, output, session) {
       insertUI(
         selector = "#sidebar_item_marker_genes_placeholder",
         where = "afterEnd",
-        ui = menuItem("Marker genes", tabName = "markerGenes", icon = icon("list-alt")),
+        ui = tags$li(
+          id = "sidebar_item_marker_genes",
+          class = "treeview",
+          menuItem("Marker genes", tabName = "markerGenes", icon = icon("list-alt"))$children
+        ),
         immediate = TRUE
       )
       marker_genes_tab_inserted(TRUE)
+    } else if (!show_marker_genes_tab() && marker_genes_tab_inserted()) {
+      removeUI(selector = "#sidebar_item_marker_genes", immediate = TRUE)
+      marker_genes_tab_inserted(FALSE)
     }
   })
 
@@ -390,11 +396,7 @@ server <- function(input, output, session) {
   show_bcr_tab <- reactive({
     req(!is.null(data_set()))
     bcr_data <- getBCR()
-    if (!is.null(bcr_data) && is.list(bcr_data) && length(bcr_data) > 0) {
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
+    !is.null(bcr_data) && is.list(bcr_data) && length(bcr_data) > 0
   })
 
   bcr_tab_inserted <- reactiveVal(FALSE)
@@ -403,10 +405,17 @@ server <- function(input, output, session) {
       insertUI(
         selector = "#sidebar_item_bcr_placeholder",
         where = "afterEnd",
-        ui = menuItem("BCR", tabName = "bcr", icon = icon("dna")),
+        ui = tags$li(
+          id = "sidebar_item_bcr",
+          class = "treeview",
+          menuItem("BCR", tabName = "bcr", icon = icon("dna"))$children
+        ),
         immediate = TRUE
       )
       bcr_tab_inserted(TRUE)
+    } else if (!show_bcr_tab() && bcr_tab_inserted()) {
+      removeUI(selector = "#sidebar_item_bcr", immediate = TRUE)
+      bcr_tab_inserted(FALSE)
     }
   })
 
@@ -417,11 +426,7 @@ server <- function(input, output, session) {
   show_tcr_tab <- reactive({
     req(!is.null(data_set()))
     tcr_data <- getTCR()
-    if (!is.null(tcr_data) && is.list(tcr_data) && length(tcr_data) > 0) {
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
+    !is.null(tcr_data) && is.list(tcr_data) && length(tcr_data) > 0
   })
 
   tcr_tab_inserted <- reactiveVal(FALSE)
@@ -430,10 +435,17 @@ server <- function(input, output, session) {
       insertUI(
         selector = "#sidebar_item_tcr_placeholder",
         where = "afterEnd",
-        ui = menuItem("TCR", tabName = "tcr", icon = icon("dna")),
+        ui = tags$li(
+          id = "sidebar_item_tcr",
+          class = "treeview",
+          menuItem("TCR", tabName = "tcr", icon = icon("dna"))$children
+        ),
         immediate = TRUE
       )
       tcr_tab_inserted(TRUE)
+    } else if (!show_tcr_tab() && tcr_tab_inserted()) {
+      removeUI(selector = "#sidebar_item_tcr", immediate = TRUE)
+      tcr_tab_inserted(FALSE)
     }
   })
 
@@ -443,14 +455,8 @@ server <- function(input, output, session) {
 
   show_enriched_pathways_tab <- reactive({
     req(!is.null(data_set()))
-    if (
-      !is.null(getMethodsForEnrichedPathways()) &&
-      length(getMethodsForEnrichedPathways()) > 0
-    ) {
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
+    methods <- getMethodsForEnrichedPathways()
+    !is.null(methods) && length(methods) > 0
   })
 
   enriched_pathways_tab_inserted <- reactiveVal(FALSE)
@@ -459,10 +465,17 @@ server <- function(input, output, session) {
       insertUI(
         selector = "#sidebar_item_enriched_pathways_placeholder",
         where = "afterEnd",
-        ui = menuItem("Enriched pathways", tabName = "enrichedPathways", icon = icon("sitemap")),
+        ui = tags$li(
+          id = "sidebar_item_enriched_pathways",
+          class = "treeview",
+          menuItem("Enriched pathways", tabName = "enrichedPathways", icon = icon("sitemap"))$children
+        ),
         immediate = TRUE
       )
       enriched_pathways_tab_inserted(TRUE)
+    } else if (!show_enriched_pathways_tab() && enriched_pathways_tab_inserted()) {
+      removeUI(selector = "#sidebar_item_enriched_pathways", immediate = TRUE)
+      enriched_pathways_tab_inserted(FALSE)
     }
   })
 
@@ -472,14 +485,8 @@ server <- function(input, output, session) {
 
   show_trajectory_tab <- reactive({
     req(!is.null(data_set()))
-    if (
-      !is.null(getMethodsForTrajectories()) &&
-      length(getMethodsForTrajectories()) > 0
-    ) {
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
+    methods <- getMethodsForTrajectories()
+    !is.null(methods) && length(methods) > 0
   })
 
   trajectory_tab_inserted <- reactiveVal(FALSE)
@@ -488,10 +495,17 @@ server <- function(input, output, session) {
       insertUI(
         selector = "#sidebar_item_trajectory_placeholder",
         where = "afterEnd",
-        ui = menuItem("Trajectory", tabName = "trajectory", icon = icon("random")),
+        ui = tags$li(
+          id = "sidebar_item_trajectory",
+          class = "treeview",
+          menuItem("Trajectory", tabName = "trajectory", icon = icon("random"))$children
+        ),
         immediate = TRUE
       )
       trajectory_tab_inserted(TRUE)
+    } else if (!show_trajectory_tab() && trajectory_tab_inserted()) {
+      removeUI(selector = "#sidebar_item_trajectory", immediate = TRUE)
+      trajectory_tab_inserted(FALSE)
     }
   })
 
@@ -501,14 +515,8 @@ server <- function(input, output, session) {
 
   show_extra_material_tab <- reactive({
     req(!is.null(data_set()))
-    if (
-      !is.null(getExtraMaterialCategories()) &&
-      length(getExtraMaterialCategories()) > 0
-    ) {
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
+    categories <- getExtraMaterialCategories()
+    !is.null(categories) && length(categories) > 0
   })
 
   extra_material_tab_inserted <- reactiveVal(FALSE)
@@ -517,10 +525,17 @@ server <- function(input, output, session) {
       insertUI(
         selector = "#sidebar_item_extra_material_placeholder",
         where = "afterEnd",
-        ui = menuItem("Extra material", tabName = "extra_material", icon = icon("gift")),
+        ui = tags$li(
+          id = "sidebar_item_extra_material",
+          class = "treeview",
+          menuItem("Extra material", tabName = "extra_material", icon = icon("gift"))$children
+        ),
         immediate = TRUE
       )
       extra_material_tab_inserted(TRUE)
+    } else if (!show_extra_material_tab() && extra_material_tab_inserted()) {
+      removeUI(selector = "#sidebar_item_extra_material", immediate = TRUE)
+      extra_material_tab_inserted(FALSE)
     }
   })
 
