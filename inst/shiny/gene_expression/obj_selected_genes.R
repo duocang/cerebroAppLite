@@ -3,7 +3,7 @@
 ##----------------------------------------------------------------------------##
 ## cannot use req() because it delays initialization and plot is updated only
 ## with button press so plot doesn't initialize at all
-expression_selected_genes <- reactive({
+expression_selected_genes <- eventReactive(input[["expression_projection_update_button"]], {
   req(
     input[["expression_analysis_mode"]],
     getGeneNames()
@@ -46,4 +46,4 @@ expression_selected_genes <- reactive({
   gene_sets[["genes_to_display_missing"]] <- gene_sets[["genes_to_display"]][ which(is.na(genes_to_display_here)) ]
   # message(str(gene_sets))
   return(gene_sets)
-})
+}, ignoreNULL = FALSE)
