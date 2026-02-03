@@ -772,7 +772,7 @@ centerOfGroups <- function(coordinates, df, n_dimensions, group) {
       y = coordinates[[2]],
       group = df[[ group ]]
     ) %>%
-    dplyr::group_by(group) %>%
+    dplyr::group_by(.data$group) %>%
     dplyr::summarise(
       x_median = median(x),
       y_median = median(y),
@@ -789,7 +789,7 @@ centerOfGroups <- function(coordinates, df, n_dimensions, group) {
       z = coordinates[[3]],
       group = df[[ group ]]
     ) %>%
-    dplyr::group_by(group) %>%
+    dplyr::group_by(.data$group) %>%
     dplyr::summarise(
       x_median = median(x),
       y_median = median(y),

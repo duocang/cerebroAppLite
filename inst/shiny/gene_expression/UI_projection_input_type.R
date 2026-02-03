@@ -8,10 +8,13 @@ output[["expression_projection_input_type_UI"]] <- renderUI({
       'expression_genes_input',
       label = 'Gene(s)',
       choices = NULL,
-      multiple = TRUE,
       options = list(
-        create = TRUE
-      )
+        maxOptions = 100,
+        placeholder = 'Select a gene...',
+        create = FALSE,
+        loadThrottle = 30
+      ),
+      multiple = TRUE
     )
   } else if ( input[["expression_analysis_mode"]] == "Gene set" ) {
     selectizeInput(
