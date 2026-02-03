@@ -101,7 +101,7 @@ output[["spatial_projection_UI"]] <- renderUI({
               htmlOutput("spatial_number_of_selected_cells")
             ),
             column(width = 4, style = "text-align: right;",
-              hidden(
+              shinyjs::hidden(
                 actionButton(
                   inputId = "spatial_projection_clear_selection",
                   label = "Clear selection",

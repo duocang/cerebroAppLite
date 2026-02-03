@@ -101,7 +101,7 @@ output[["overview_projection_UI"]] <- renderUI({
               htmlOutput("overview_number_of_selected_cells")
             ),
             column(width = 4, style = "text-align: right;",
-              hidden(
+              shinyjs::hidden(
                 actionButton(
                   inputId = "overview_projection_clear_selection",
                   label = "Clear selection",
