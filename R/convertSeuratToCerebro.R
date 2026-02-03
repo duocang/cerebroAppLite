@@ -416,19 +416,22 @@ convertSeuratToCerebro <- function(seurat_file,
     add_most_expressed_genes <- FALSE
   }
 
-  # Calculate most expressed genes from Seurat object ----------------------##
+  # Calculate most expressed genes and mean expression from Seurat object ---##
   if (add_most_expressed_genes) {
     if (verbose) {
       message(paste0("[", format(Sys.time(), "%H:%M:%S"),
-                     "] Calculating most expressed genes for each group..."))
+                     "] Calculating most expressed genes and mean expression for each group..."))
     }
 
     # Get expression matrix
     expr_matrix <- .getExpressionMatrix(seurat, assay = assay, slot = slot, join_samples = TRUE)
 
-    # Initialize list structure
+    # Initialize list structures
     if (is.null(seurat@misc$most_expressed_genes) || !is.list(seurat@misc$most_expressed_genes)) {
       seurat@misc$most_expressed_genes <- list()
+    }
+    if (is.null(seurat@misc$mean_expression) || !is.list(seurat@misc$mean_expression)) {
+      seurat@misc$mean_expression <- list()
     }
 
     # Calculate for each group
@@ -441,7 +444,8 @@ convertSeuratToCerebro <- function(seurat_file,
       group_values <- unique(seurat@meta.data[[group_name]])
       group_values <- group_values[!is.na(group_values)]
 
-      group_results <- list()
+      pct_results <- list()
+      expr_results <- list()
 
       for (group_value in group_values) {
         # Get cells belonging to this group value using cell names (more robust)
@@ -451,38 +455,62 @@ convertSeuratToCerebro <- function(seurat_file,
 
         if (length(cells_in_group) == 0) next
 
-        # Calculate percentage of cells expressing each gene
+        # Get expression subset for this group
         expr_subset <- expr_matrix[, cells_in_group, drop = FALSE]
+
+        # Calculate percentage of cells expressing each gene
         gene_pct <- Matrix::rowSums(expr_subset > 0) / length(cells_in_group) * 100
 
-        # Create data frame and sort by percentage
-        gene_df <- data.frame(
+        # Calculate mean expression per gene
+        gene_mean <- Matrix::rowMeans(expr_subset)
+
+        # Create data frame for percentage and sort
+        gene_pct_df <- data.frame(
           gene = names(gene_pct),
           pct = as.numeric(gene_pct),
           stringsAsFactors = FALSE
         )
-        gene_df[["cluster"]] = as.character(group_value)
-        gene_df <- gene_df[order(-gene_df$pct), ]
-        rownames(gene_df) <- NULL
+        gene_pct_df[["cluster"]] <- as.character(group_value)
+        gene_pct_df <- gene_pct_df[order(-gene_pct_df$pct), ]
+        rownames(gene_pct_df) <- NULL
 
-        group_results[[as.character(group_value)]] <- gene_df
+        # Create data frame for mean expression and sort
+        gene_expr_df <- data.frame(
+          gene = names(gene_mean),
+          mean_expr = as.numeric(gene_mean),
+          stringsAsFactors = FALSE
+        )
+        gene_expr_df[["cluster"]] <- as.character(group_value)
+        gene_expr_df <- gene_expr_df[order(-gene_expr_df$mean_expr), ]
+        rownames(gene_expr_df) <- NULL
+
+        pct_results[[as.character(group_value)]] <- gene_pct_df
+        expr_results[[as.character(group_value)]] <- gene_expr_df
       }
 
       # Merge all data frames into one and reorder columns with cluster first
-      if (length(group_results) > 0) {
-        group_results_df <- do.call(rbind, group_results)
-        rownames(group_results_df) <- NULL
-        # Reorder columns with cluster first
-        group_results_df <- group_results_df[, c("cluster", setdiff(names(group_results_df), "cluster"))]
-        seurat@misc$most_expressed_genes[[group_name]] <- group_results_df
+      if (length(pct_results) > 0) {
+        pct_results_df <- do.call(rbind, pct_results)
+        rownames(pct_results_df) <- NULL
+        pct_results_df <- pct_results_df[, c("cluster", setdiff(names(pct_results_df), "cluster"))]
+        seurat@misc$most_expressed_genes[[group_name]] <- pct_results_df
       } else {
         seurat@misc$most_expressed_genes[[group_name]] <- data.frame()
+      }
+
+      if (length(expr_results) > 0) {
+        expr_results_df <- do.call(rbind, expr_results)
+        rownames(expr_results_df) <- NULL
+        expr_results_df <- expr_results_df[, c("cluster", setdiff(names(expr_results_df), "cluster"))]
+        seurat@misc$mean_expression[[group_name]] <- expr_results_df
+      } else {
+        seurat@misc$mean_expression[[group_name]] <- data.frame()
       }
     }
 
     if (verbose) {
       message(paste0("[", format(Sys.time(), "%H:%M:%S"),
-                     "] Most expressed genes calculation completed."))
+                     "] Most expressed genes and mean expression calculation completed."))
     }
   }
 

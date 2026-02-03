@@ -64,6 +64,10 @@ Cerebro <- R6::R6Class(
     #' specified during the call to \code{\link{getMostExpressedGenes}}.
     most_expressed_genes = list(),
 
+    #' @field mean_expression \code{list} that contains a \code{data.frame}
+    #' holding the mean expression per gene for each grouping variable.
+    mean_expression = list(),
+
     #' @field marker_genes \code{list} that contains a \code{list} for every
     #' method that was used to calculate marker genes, and a \code{data.frame}
     #' for each grouping variable, e.g. those that were specified during the
@@ -543,6 +547,43 @@ Cerebro <- R6::R6Class(
       self$checkIfGroupExists(group_name)
       self$checkIfColumnExistsInMetadata(group_name)
       return(self$most_expressed_genes[[group_name]])
+    },
+
+    #' @description
+    #' Add table of mean expression per gene.
+    #'
+    #' @param group_name Name of grouping variable that the mean expression
+    #' belongs to. Must be registered in the \code{groups} field.
+    #' @param table \code{data.frame} that contains the mean expression per gene.
+    addMeanExpression = function(group_name, table) {
+      self$checkIfGroupExists(group_name)
+      self$checkIfColumnExistsInMetadata(group_name)
+      self$mean_expression[[group_name]] <- table
+    },
+
+    #' @description
+    #' Retrieve names of grouping variables for which mean expression data is
+    #' available.
+    #'
+    #' @return
+    #' \code{vector} of grouping variables for which mean expression is
+    #' available.
+    getGroupsWithMeanExpression = function() {
+      return(names(self$mean_expression))
+    },
+
+    #' @description
+    #' Retrieve table of mean expression for a specific grouping variable.
+    #'
+    #' @param group_name Name of grouping variable for which to retrieve mean
+    #' expression.
+    #'
+    #' @return
+    #' \code{data.frame} containing the mean expression per gene.
+    getMeanExpression = function(group_name) {
+      self$checkIfGroupExists(group_name)
+      self$checkIfColumnExistsInMetadata(group_name)
+      return(self$mean_expression[[group_name]])
     },
 
     #' @description

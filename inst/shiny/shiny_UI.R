@@ -100,7 +100,7 @@ ui <- dashboardPage(
       menuItem("Test", tabName = "test", icon = icon("flask")),
       div(id = "sidebar_item_spatial_placeholder"),
       menuItem("Groups", tabName = "groups", icon = icon("layer-group")),
-      menuItem("Most expressed genes", tabName = "mostExpressedGenes", icon = icon("bullhorn")),
+      menuItem("Gene counts", tabName = "mostExpressedGenes", icon = icon("bullhorn")),
       div(id = "sidebar_item_marker_genes_placeholder"),
       div(id = "sidebar_item_enriched_pathways_placeholder"),
       menuItem("Gene expression", tabName = "geneExpression", icon = icon("signal")),

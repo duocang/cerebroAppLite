@@ -1090,6 +1090,16 @@ getMostExpressedGenes <- function(group) {
     return(data_set()$getMostExpressedGenes(group))
   }
 }
+getGroupsWithMeanExpression <- function() {
+  if ( any(grepl('Cerebro', class(data_set()))) ) {
+    return(data_set()$getGroupsWithMeanExpression())
+  }
+}
+getMeanExpression <- function(group) {
+  if ( any(grepl('Cerebro', class(data_set()))) ) {
+    return(data_set()$getMeanExpression(group))
+  }
+}
 getMethodsForMarkerGenes <- function() {
   if ( any(grepl('Cerebro', class(data_set()))) ) {
     return(data_set()$getMethodsWithMarkerGenes())
