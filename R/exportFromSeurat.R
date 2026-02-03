@@ -745,39 +745,19 @@ exportFromSeurat <- function(
   ## marker genes
   ##--------------------------------------------------------------------------##
   if ( !is.null(object@misc$marker_genes) ) {
-    ## check if it's a list
-    if ( !is.list(object@misc$marker_genes) ) {
-      stop(
-        '`object@misc$marker_genes` is not a list.',
-        call. = FALSE
-      )
-    }
     if ( verbose ) {
       message(
         paste0(
           '[', format(Sys.time(), '%H:%M:%S'),
-          '] Extracting tables of marker genes...'
+          '] Extracting marker genes table...'
         )
       )
     }
-    ## for each method
-    for ( i in seq_along(object@misc$marker_genes) ) {
-      method <- names(object@misc$marker_genes)[i]
-      ## for each group
-      for ( j in seq_along(object@misc$marker_genes[[method]]) ) {
-        if ( is.list(object@misc$marker_genes[[method]][j]) ) {
-          group <- names(object@misc$marker_genes[[method]])[j]
-
-          ## only add marker genes if group is present in `groups`
-          if ( group %in% groups ) {
-            export$addMarkerGenes(
-              method,
-              group,
-              object@misc$marker_genes[[method]][[group]]
-            )
-          }
-        }
-      }
+    ## marker_genes should be a data.frame directly
+    if ( is.data.frame(object@misc$marker_genes) ) {
+      export$setMarkerGenes(object@misc$marker_genes)
+    } else {
+      warning('`object@misc$marker_genes` is not a data.frame, skipping.')
     }
   }
 

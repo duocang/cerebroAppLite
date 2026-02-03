@@ -363,10 +363,7 @@ server <- function(input, output, session) {
 
   show_marker_genes_tab <- reactive({
     req(!is.null(data_set()))
-    if (
-      !is.null(getMethodsForMarkerGenes()) &&
-      length(getMethodsForMarkerGenes()) > 0
-    ) {
+    if (hasMarkerGenes()) {
       return(TRUE)
     } else {
       return(FALSE)

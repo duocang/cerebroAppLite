@@ -62,9 +62,9 @@
 
 #' @keywords internal
 #' @noRd
-.readMarkerFile <- function(marker_file, marker_method, verbose = TRUE) {
+.readMarkerFile <- function(marker_file, verbose = TRUE) {
   ext <- tolower(tools::file_ext(marker_file))
-  markers_list <- NULL
+  markers_df <- NULL
 
   # Read file based on extension
   if (ext %in% c("xls", "xlsx")) {
@@ -72,46 +72,30 @@
       stop("Package 'readxl' is required to read Excel files (xls/xlsx).", call. = FALSE)
     }
     sheet_names <- readxl::excel_sheets(marker_file)
-    if (length(sheet_names) > 1) {
-      markers_list <- lapply(sheet_names, function(sheet_name) {
-        df <- readxl::read_excel(marker_file, sheet = sheet_name)
-        as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
-      })
-      names(markers_list) <- sheet_names
-    } else {
-      markers <- readxl::read_excel(marker_file, sheet = sheet_names[1])
-      markers <- as.data.frame(markers, stringsAsFactors = FALSE, check.names = FALSE)
-    }
+    # Read all sheets and combine into one data.frame
+    markers_list <- lapply(sheet_names, function(sheet_name) {
+      df <- readxl::read_excel(marker_file, sheet = sheet_name)
+      as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
+    })
+    markers_df <- do.call(rbind, markers_list)
   } else if (ext == "csv") {
-    markers <- utils::read.csv(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
+    markers_df <- utils::read.csv(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
   } else if (ext %in% c("tsv", "txt", "tab")) {
-    markers <- utils::read.delim(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
+    markers_df <- utils::read.delim(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
   } else {
     stop("Unsupported marker_file format: .", ext, ". Supported: xls, xlsx, csv, tsv, txt, tab.", call. = FALSE)
   }
 
-  # Process single table if markers_list is not yet set
-  if (is.null(markers_list)) {
-    if (nrow(markers) == 0) stop("marker_file read produced an empty table.", call. = FALSE)
-
-    group_col <- names(markers)[1] # First column is grouping
-    if (length(names(markers)) >= 1) {
-       if (is.factor(markers[[group_col]])) markers[[group_col]] <- as.character(markers[[group_col]])
-       markers[[group_col]][is.na(markers[[group_col]])] <- "N/A"
-       markers_list <- split(markers, markers[[group_col]], drop = TRUE)
-    } else {
-       markers_list <- list(custom = markers)
-    }
+  if (is.null(markers_df) || nrow(markers_df) == 0) {
+    stop("marker_file read produced an empty table.", call. = FALSE)
   }
 
   if (verbose) {
-       total_rows <- sum(vapply(markers_list, nrow, integer(1)))
-       message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] Loaded marker_file (",
-                      total_rows, " rows) as method '", marker_method,
-                      "' with ", length(markers_list), " group(s)."))
+    message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] Loaded marker_file (",
+                   nrow(markers_df), " rows)."))
   }
 
-  return(markers_list)
+  return(markers_df)
 }
 
 #' @title
@@ -348,20 +332,16 @@ convertSeuratToCerebro <- function(seurat_file,
   }
 
   # Load marker table (optional) --------------------------------------------##
-  if (!is.null(marker_file) && nzchar(marker_file) &&
-      !is.null(marker_method) && nzchar(marker_method)) {
+  if (!is.null(marker_file) && nzchar(marker_file)) {
     if (!file.exists(marker_file)) {
       stop("marker_file not found: ", marker_file, call. = FALSE)
     }
 
-    markers_list <- .readMarkerFile(marker_file, marker_method, verbose)
+    markers_df <- .readMarkerFile(marker_file, verbose)
 
-    # Attach to Seurat object under misc$marker_genes
-    if (!is.null(markers_list) && length(markers_list) > 0) {
-      if (is.null(seurat@misc$marker_genes) || !is.list(seurat@misc$marker_genes)) {
-        seurat@misc$marker_genes <- list()
-      }
-      seurat@misc$marker_genes[[marker_method]] <- markers_list
+    # Attach to Seurat object under misc$marker_genes as a single data.frame
+    if (!is.null(markers_df) && nrow(markers_df) > 0) {
+      seurat@misc$marker_genes <- markers_df
     }
   }
   # Handle most_expressed_genes input ---------------------------------------##
