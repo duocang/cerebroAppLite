@@ -14,7 +14,7 @@ output[["selected_cells_plot_UI"]] <- renderUI({
         selectInput(
           ns("selected_cells_plot_select_variable"),
           label = "Variable to compare:",
-          choices = colnames(getMetaData())[! colnames(getMetaData()) %in% c("cell_barcode")]
+          choices = getVariableToCompareChoices()
         ),
         plotly::plotlyOutput(ns("details_selected_cells_plot"))
       )
