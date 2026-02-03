@@ -97,7 +97,7 @@ ui <- dashboardPage(
       id = "sidebar",
       menuItem("Data info", tabName = "loadData", icon = icon("info"), selected = TRUE),
       menuItem("Main", tabName = "overview", icon = icon("home")),
-      menuItem("Test", tabName = "test", icon = icon("flask")),
+      # menuItem("Test", tabName = "test", icon = icon("flask")),
       div(id = "sidebar_item_spatial_placeholder"),
       menuItem("Groups", tabName = "groups", icon = icon("layer-group")),
       menuItem("Gene counts", tabName = "mostExpressedGenes", icon = icon("bullhorn")),
@@ -182,7 +182,7 @@ ui <- dashboardPage(
     tabItems(
       tab_load_data,
       tab_overview,
-      tabItem(tabName = "test", projection_UI("test_projection")),
+      # tabItem(tabName = "test", projection_UI("test_projection")),
       tab_spatial,
       tab_groups,
       tab_marker_genes,

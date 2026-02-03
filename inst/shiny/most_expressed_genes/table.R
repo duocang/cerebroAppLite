@@ -220,14 +220,18 @@ output[["most_expressed_genes_table"]] <- DT::renderDataTable({
   ## if there is at least 1 row in the table, create proper table
   } else {
     ## rename value column based on metric type
+    value_col <- NULL
     if (metric_type == "pct") {
-      results_df <- results_df %>%
-        dplyr::rename("% of cells expressing" = pct)
-      value_col <- 3
+      if ("pct" %in% colnames(results_df)) {
+        results_df <- results_df %>%
+          dplyr::rename("% of cells expressing" = pct)
+        value_col <- 3
+      }
     } else {
-      results_df <- results_df %>%
-        dplyr::rename("Mean expression" = mean_expr)
-      value_col <- NULL
+      if ("mean_expr" %in% colnames(results_df)) {
+        results_df <- results_df %>%
+          dplyr::rename("Mean expression" = mean_expr)
+      }
     }
 
     results_df %>%

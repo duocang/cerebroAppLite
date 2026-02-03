@@ -567,8 +567,8 @@ server <- function(input, output, session) {
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/extra_material/server.R"), local = TRUE)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/analysis_info/server.R"), local = TRUE)
 
-  ##--------------------------------------------------------------------------##
-  ## Call projection module for Test tab
-  ##--------------------------------------------------------------------------##
-  projection_server("test_projection", projection_type = "spatial")
+  # ##--------------------------------------------------------------------------##
+  # ## Call projection module for Test tab
+  # ##--------------------------------------------------------------------------##
+  # projection_server("test_projection", projection_type = "spatial")
 }

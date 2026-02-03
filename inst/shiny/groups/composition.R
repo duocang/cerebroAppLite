@@ -6,6 +6,8 @@
 ## UI element for output.
 ##----------------------------------------------------------------------------##
 output[["groups_composition_UI"]] <- renderUI({
+  ## only show if there are more than 1 grouping variables
+  req(length(getGroups()) > 1)
   fluidRow(
     cerebroBox(
       title = tagList(
@@ -35,13 +37,13 @@ output[["groups_by_other_group_other_group_buttons_UI"]] <- renderUI({
       column(
         width = 3,
         shinyWidgets::radioGroupButtons(
-           inputId = "groups_by_other_group_plot_type",
-           label = NULL,
-           choices = c("Bar chart", "Sankey plot"),
-           status = "primary",
-           justified = TRUE,
-           width = "100%",
-           size = "sm"
+          inputId = "groups_by_other_group_plot_type",
+          label = NULL,
+          choices = c("Bar chart", "Sankey plot"),
+          status = "primary",
+          justified = TRUE,
+          width = "100%",
+          size = "sm"
         )
       ),
       column(

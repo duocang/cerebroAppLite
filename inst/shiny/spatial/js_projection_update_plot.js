@@ -211,6 +211,19 @@ const spatial_projection_layout_2D = {
       pointer-events: none;
       transform-origin: center center;
     }
+    #spatial_background_label {
+      position: absolute;
+      z-index: 0;
+      pointer-events: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(45, 55, 72, 0.7);
+      background: rgba(255, 255, 255, 0.6);
+      padding: 4px 12px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
 
     /* Scroll Down Arrow Indicator */
     .scroll-down-indicator {
@@ -382,6 +395,10 @@ shinyjs.applySpatialBackground = function () {
   if (!plotContainer || !bg) return;
 
   const backgroundImage = bg.dataset.backgroundImage;
+  const parent = bg.parentElement;
+
+  // Get or create the label element
+  let label = document.getElementById('spatial_background_label');
 
   if (backgroundImage) {
     bg.style.display = 'block';
@@ -404,18 +421,48 @@ shinyjs.applySpatialBackground = function () {
       bg.style.top = size.t + 'px';
       bg.style.width = size.w + 'px';
       bg.style.height = size.h + 'px';
+
+      // Create label if it doesn't exist
+      if (!label) {
+        label = document.createElement('div');
+        label.id = 'spatial_background_label';
+        label.innerText = 'Towards brain';
+        parent.insertBefore(label, bg.nextSibling);
+      }
+      // Position label at top center of the background image area
+      label.style.display = 'block';
+      label.style.left = size.l + size.w / 2 + 'px';
+      label.style.top = size.t + 8 + 'px';
+      label.style.transform = 'translateX(-50%)';
     } else {
-      const parent = plotContainer.parentElement;
       bg.style.left = '0px';
       bg.style.top = '0px';
       bg.style.width = parent.clientWidth + 'px';
       bg.style.height = parent.clientHeight + 'px';
+
+      // Create label if it doesn't exist
+      if (!label) {
+        label = document.createElement('div');
+        label.id = 'spatial_background_label';
+        label.innerText = 'Towards brain';
+        parent.insertBefore(label, bg.nextSibling);
+      }
+      // Position label at top center
+      label.style.display = 'block';
+      label.style.left = '50%';
+      label.style.top = '8px';
+      label.style.transform = 'translateX(-50%)';
     }
   } else {
     bg.style.display = 'none';
     bg.style.backgroundImage = '';
     bg.style.transform = '';
     bg.style.opacity = '';
+
+    // Hide label when no background image
+    if (label) {
+      label.style.display = 'none';
+    }
   }
 };
 
