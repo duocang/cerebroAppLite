@@ -9,20 +9,27 @@ expression_projection_selected_cells <- reactive({
     expression_projection_parameters_plot(),
     expression_projection_data()
   )
-  # message('--> trigger "expression_projection_selected_cells"')
+
+  ## DEBUG: Print raw event data
+  raw_event <- plotly::event_data("plotly_selected", source = "expression_projection")
+  message("=== DEBUG: expression_projection_selected_cells ===")
+  message("  Raw event_data is NULL: ", is.null(raw_event))
+  message("  Raw event_data length: ", length(raw_event))
+
   ## check selection
   ## ... selection has not been made or there is no cell in it
   if (
-    is.null(plotly::event_data("plotly_selected", source = "expression_projection")) ||
-    length(plotly::event_data("plotly_selected", source = "expression_projection")) == 0
+    is.null(raw_event) ||
+    length(raw_event) == 0
   ) {
+    message("  --> Returning NULL (no selection)")
     return(NULL)
   ## ... selection has been made and at least 1 cell is in it
   } else {
     ## get number of selected cells
-    selected_cells <- plotly::event_data("plotly_selected", source = "expression_projection") %>%
+    selected_cells <- raw_event %>%
       dplyr::mutate(identifier = paste0(x, '-', y))
-    # message(str(selected_cells))
+    message("  --> Returning ", nrow(selected_cells), " selected cells")
     return(selected_cells)
   }
 })
