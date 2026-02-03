@@ -124,13 +124,32 @@ output[["expression_projection_UI"]] <- renderUI({
           )
         ),
         tagList(
+          shinycssloaders::withSpinner(
             plotly::plotlyOutput(
               "expression_projection",
               width = "auto",
-              height = "85vh"
+              height = "calc(100vh - 250px)"
             ),
-            tags$br(),
-          htmlOutput("expression_number_of_selected_cells"),
+            type = 8,
+            hide.ui = FALSE
+          ),
+          tags$br(),
+          fluidRow(
+            column(width = 8,
+              htmlOutput("expression_number_of_selected_cells")
+            ),
+            column(width = 4, style = "text-align: right;",
+              shinyjs::hidden(
+                actionButton(
+                  inputId = "expression_projection_clear_selection",
+                  label = "Clear selection",
+                  icon = icon("eraser"),
+                  class = "btn-xs btn-default btn-breathing",
+                  style = "margin-top: 5px;"
+                )
+              )
+            )
+          ),
           tags$br(),
           htmlOutput("expression_genes_displayed")
         )
