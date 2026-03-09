@@ -50,12 +50,19 @@ output[["load_data_sample_info_UI"]] <- renderUI({
 ##----------------------------------------------------------------------------##
 ## experiment name
 output[["load_data_experiment_name"]] <- renderValueBox({
+  experiment_name <- ifelse(
+    !is.null(getExperiment()$experiment_name),
+    getExperiment()$experiment_name,
+    'not available'
+  )
+
+  # Truncate if longer than 15 characters
+  if (nchar(experiment_name) > 15) {
+    experiment_name <- paste0(substr(experiment_name, 1, 15), "...")
+  }
+
   valueBox(
-    value = ifelse(
-      !is.null(getExperiment()$experiment_name),
-      getExperiment()$experiment_name,
-      'not available'
-    ),
+    value = experiment_name,
     subtitle = "Experiment",
     color = "light-blue"
   )
