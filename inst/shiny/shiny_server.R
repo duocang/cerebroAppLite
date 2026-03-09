@@ -339,21 +339,28 @@ server <- function(input, output, session) {
 
   ## Use insertUI to dynamically add spatial tab
   spatial_tab_inserted <- reactiveVal(FALSE)
-  observeEvent(show_spatial_tab(), {
-    message(glue::glue("[{Sys.time()}] show_spatial_tab: {show_spatial_tab()}"))
-    if (show_spatial_tab() && !spatial_tab_inserted()) {
-      insertUI(
-        selector = "#sidebar_item_spatial_placeholder",
-        where = "afterEnd",
-        ui = tags$li(
-          id = "sidebar_item_spatial",
-          class = "treeview",
-          menuItem("Spatial", tabName = "spatial", icon = icon("images"))$children
-        ),
-        immediate = TRUE
-      )
-      spatial_tab_inserted(TRUE)
-    } else if (!show_spatial_tab() && spatial_tab_inserted()) {
+  observe({
+    req(!is.null(data_set()))
+    should_show <- show_spatial_tab()
+    is_inserted <- isolate(spatial_tab_inserted())
+    message(glue::glue("[{Sys.time()}] show_spatial_tab: {should_show}, spatial_tab_inserted: {is_inserted}"))
+    if (should_show && !is_inserted) {
+      ## Use session$onFlushed to ensure UI is ready before inserting
+      session$onFlushed(function() {
+        insertUI(
+          selector = "#sidebar_item_spatial_placeholder",
+          where = "afterEnd",
+          ui = tags$li(
+            id = "sidebar_item_spatial",
+            class = "treeview",
+            menuItem("Spatial", tabName = "spatial", icon = icon("images"))$children
+          ),
+          immediate = TRUE
+        )
+        spatial_tab_inserted(TRUE)
+        message(glue::glue("[{Sys.time()}] Spatial tab inserted"))
+      }, once = TRUE)
+    } else if (!should_show && is_inserted) {
       removeUI(selector = "#sidebar_item_spatial", immediate = TRUE)
       spatial_tab_inserted(FALSE)
     }

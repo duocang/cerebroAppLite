@@ -124,6 +124,26 @@ ui <- dashboardPage(
         @keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}
         @media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}
         .github-corner svg{fill:#151513; color:#fff; position: fixed; top: 0; border: 0; right: 0; z-index: 9999;}
+
+        /* Animation for sidebar items */
+        @keyframes fadeInSlide {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+            max-height: 0;
+            padding: 0;
+            margin: 0;
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+            max-height: 50px; /* Adjust based on your item height */
+          }
+        }
+
+        .sidebar-menu > li {
+          animation: fadeInSlide 0.3s ease-out forwards;
+        }
       "))
     ),
     # 覆盖 AdminLTE 默认的 solid box 蓝色标题栏 - 放在 body 内确保在 AdminLTE 之后加载

@@ -198,6 +198,83 @@ const overview_projection_layout_3D = {
       opacity: 0.4;
     }
 
+    /* Legend Header with Drag Handle */
+    .legend-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #E2E8F0;
+      cursor: grab;
+    }
+    .legend-header:active {
+      cursor: grabbing;
+    }
+    .legend-drag-handle {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-right: 8px;
+      opacity: 0.4;
+      transition: opacity 0.2s ease;
+    }
+    .custom-legend-item:hover .legend-drag-handle,
+    #overview_projection_legend:hover .legend-drag-handle,
+    .continuous-legend:hover .legend-drag-handle {
+      opacity: 0.7;
+    }
+    .legend-drag-handle-dots {
+      display: flex;
+      gap: 2px;
+    }
+    .legend-drag-handle-dot {
+      width: 3px;
+      height: 3px;
+      background-color: #718096;
+      border-radius: 50%;
+    }
+    .legend-title-text {
+      font-size: 12px;
+      color: #718096;
+      font-weight: 500;
+      flex-grow: 1;
+    }
+
+    /* Drag Tip Tooltip */
+    .legend-drag-tip {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100%);
+      background: #2D3748;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      white-space: nowrap;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+      z-index: 1001;
+      animation: legendTipFadeIn 0.3s ease;
+    }
+    .legend-drag-tip::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px 6px 0 6px;
+      border-style: solid;
+      border-color: #2D3748 transparent transparent transparent;
+    }
+    @keyframes legendTipFadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-90%); }
+      to { opacity: 1; transform: translateX(-50%) translateY(-100%); }
+    }
+    @keyframes legendTipFadeOut {
+      from { opacity: 1; transform: translateX(-50%) translateY(-100%); }
+      to { opacity: 0; transform: translateX(-50%) translateY(-90%); }
+    }
+
     /* Continuous Legend Styles */
     #overview_projection_continuous_legend {
       position: absolute;
@@ -306,6 +383,70 @@ shinyjs.detachOverviewModebar = function () {
   }
 };
 
+// Helper: Create legend drag handle
+function createLegendDragHandle() {
+  const handle = document.createElement('div');
+  handle.className = 'legend-drag-handle';
+
+  const row1 = document.createElement('div');
+  row1.className = 'legend-drag-handle-dots';
+  const row2 = document.createElement('div');
+  row2.className = 'legend-drag-handle-dots';
+
+  for (let i = 0; i < 3; i++) {
+    const dot1 = document.createElement('div');
+    dot1.className = 'legend-drag-handle-dot';
+    row1.appendChild(dot1);
+    const dot2 = document.createElement('div');
+    dot2.className = 'legend-drag-handle-dot';
+    row2.appendChild(dot2);
+  }
+
+  handle.appendChild(row1);
+  handle.appendChild(row2);
+  return handle;
+}
+
+// Helper: Create legend header with drag handle
+function createLegendHeader(titleText) {
+  const header = document.createElement('div');
+  header.className = 'legend-header';
+
+  const handle = createLegendDragHandle();
+  header.appendChild(handle);
+
+  if (titleText) {
+    const title = document.createElement('div');
+    title.className = 'legend-title-text';
+    title.innerText = titleText;
+    header.appendChild(title);
+  }
+
+  return header;
+}
+
+// Helper: Show first-time drag tip
+function showLegendDragTip(legendContainer) {
+  // Check if user has already dragged before
+  if (localStorage.getItem('cerebro_legend_dragged')) {
+    return;
+  }
+
+  // Create tip element
+  const tip = document.createElement('div');
+  tip.className = 'legend-drag-tip';
+  tip.innerHTML = '💡 Drag to reposition';
+  legendContainer.appendChild(tip);
+
+  // Auto-hide after 4 seconds
+  setTimeout(() => {
+    if (tip.parentElement) {
+      tip.style.animation = 'legendTipFadeOut 0.3s ease forwards';
+      setTimeout(() => tip.remove(), 300);
+    }
+  }, 4000);
+}
+
 // Custom Legend Helper Functions
 shinyjs.makeOverviewDraggable = function (el) {
   let isDragging = false;
@@ -353,6 +494,14 @@ shinyjs.makeOverviewDraggable = function (el) {
     if (dx !== 0 || dy !== 0) {
       hasMoved = true;
       el.dataset.isDragging = 'true';
+
+      // Mark as dragged in localStorage so tip doesn't show again
+      if (!localStorage.getItem('cerebro_legend_dragged')) {
+        localStorage.setItem('cerebro_legend_dragged', 'true');
+        // Remove tip if exists
+        const tip = el.querySelector('.legend-drag-tip');
+        if (tip) tip.remove();
+      }
     }
 
     el.style.left = initialLeft + dx + 'px';
@@ -376,7 +525,7 @@ shinyjs.makeOverviewDraggable = function (el) {
   }
 };
 
-shinyjs.createOverviewCustomLegend = function (traces, colors) {
+shinyjs.createOverviewCustomLegend = function (traces, colors, title) {
   const plotContainer = document.getElementById('overview_projection');
   if (!plotContainer) return;
 
@@ -401,18 +550,60 @@ shinyjs.createOverviewCustomLegend = function (traces, colors) {
   legendContainer.innerHTML = '';
   legendContainer.style.display = 'block';
 
+  // Add Header
+  legendContainer.appendChild(createLegendHeader(title));
+
+  // Show tip if needed
+  showLegendDragTip(legendContainer);
+
+  // Calculate scaling based on number of traces
+  const count = traces.length;
+  let fontSize = 13;
+  let itemMargin = 6;
+  let itemPadding = 4; // top/bottom padding
+  let boxSize = 16;
+
+  if (count > 10) {
+    if (count <= 20) {
+      fontSize = 12;
+      itemMargin = 4;
+      itemPadding = 3;
+      boxSize = 14;
+    } else if (count <= 30) {
+      fontSize = 11;
+      itemMargin = 3;
+      itemPadding = 2;
+      boxSize = 12;
+    } else if (count <= 50) {
+      fontSize = 10;
+      itemMargin = 2;
+      itemPadding = 1;
+      boxSize = 10;
+    } else {
+      fontSize = 9;
+      itemMargin = 1;
+      itemPadding = 0;
+      boxSize = 8;
+    }
+  }
+
   // Create legend items
   traces.forEach((traceName, index) => {
     const item = document.createElement('div');
     item.className = 'custom-legend-item';
+    item.style.marginBottom = itemMargin + 'px';
+    item.style.padding = itemPadding + 'px 6px';
 
     const colorBox = document.createElement('span');
     colorBox.className = 'legend-color-box';
     colorBox.style.backgroundColor = colors[index];
+    colorBox.style.width = boxSize + 'px';
+    colorBox.style.height = boxSize + 'px';
 
     const text = document.createElement('span');
     text.className = 'legend-text';
     text.innerText = traceName;
+    text.style.fontSize = fontSize + 'px';
 
     item.appendChild(colorBox);
     item.appendChild(text);
@@ -467,10 +658,11 @@ shinyjs.createOverviewContinuousLegend = function (title, colorMin, colorMax, co
   // Use same class as spatial for styling, ID is different for selection
   legendContainer.className = 'continuous-legend';
 
-  const titleEl = document.createElement('div');
-  titleEl.className = 'continuous-legend-title';
-  titleEl.innerText = title;
-  legendContainer.appendChild(titleEl);
+  // Add Header
+  legendContainer.appendChild(createLegendHeader(title));
+
+  // Show tip if needed
+  showLegendDragTip(legendContainer);
 
   const contentEl = document.createElement('div');
   contentEl.className = 'continuous-legend-content';
@@ -696,7 +888,7 @@ shinyjs.updatePlot2DCategorical = function (params) {
   params = shinyjs.getParams(params, overview_projection_default_params);
 
   shinyjs.removeOverviewContinuousLegend();
-  shinyjs.createOverviewCustomLegend(params.meta.traces, params.data.color);
+  shinyjs.createOverviewCustomLegend(params.meta.traces, params.data.color, params.meta.color_variable);
 
   // Optimization: map directly to data array
   const data = params.data.x.map((_, i) => ({
@@ -775,7 +967,7 @@ shinyjs.updatePlot3DCategorical = function (params) {
   params = shinyjs.getParams(params, overview_projection_default_params);
 
   shinyjs.removeOverviewContinuousLegend();
-  shinyjs.createOverviewCustomLegend(params.meta.traces, params.data.color);
+  shinyjs.createOverviewCustomLegend(params.meta.traces, params.data.color, params.meta.color_variable);
 
   const data = params.data.x.map((_, i) => ({
     x: params.data.x[i],
