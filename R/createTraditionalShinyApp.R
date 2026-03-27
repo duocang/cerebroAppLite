@@ -781,21 +781,21 @@ shiny::shinyApp(
   docker_compose_content <- gsub("{{PORT}}", port, docker_compose_content, fixed = TRUE)
   writeLines(docker_compose_content, file.path(result_dir, "docker-compose.yml"))
 
-  # Create manage.sh ----------------------------------------------------------##
-  if (verbose) cat("Generating manage.sh...\n")
+  # Create run_app.sh----------------------------------------------------------##
+  if (verbose) cat("Generating run_app.sh...\n")
 
-  manage_sh_template <- system.file("docker", "manage.sh", package = "cerebroAppLite")
+  manage_sh_template <- system.file("docker", "run_app.sh", package = "cerebroAppLite")
 
   if (manage_sh_template != "" && file.exists(manage_sh_template)) {
     manage_sh_content <- readLines(manage_sh_template, warn = FALSE)
     # Replace the placeholder {{PORT}} with the actual port
     manage_sh_content <- gsub("{{PORT}}", port, manage_sh_content, fixed = TRUE)
 
-    manage_sh_path <- file.path(result_dir, "manage.sh")
+    manage_sh_path <- file.path(result_dir, "run_app.sh")
     writeLines(manage_sh_content, manage_sh_path)
     Sys.chmod(manage_sh_path, "0755")
   } else {
-    warning("Template manage.sh not found. Skipping generation.", call. = FALSE)
+    warning("Template run_app.sh not found. Skipping generation.", call. = FALSE)
   }
 
   # Summary -------------------------------------------------------------------##
@@ -836,7 +836,7 @@ shiny::shinyApp(
     cat("\nOr using docker-compose:\n")
     cat("  docker-compose up -d\n")
     cat("\nOr using the management script:\n")
-    cat("  ./manage.sh\n")
+    cat("  ./run_app.sh\n")
     cat("========================================\n")
   }
 
