@@ -92,7 +92,7 @@ function show_status() {
 }
 
 function show_help() {
-    echo "Usage: ./manage.sh [command]"
+    echo "Usage: ./run_app.sh [command]"
     echo ""
     echo "Commands:"
     echo "  build    - Build the Docker image"

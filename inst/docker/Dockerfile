@@ -76,6 +76,9 @@ RUN R -e 'install.packages(c(\
   ), \
   repos = "https://packagemanager.posit.co/cran/__linux__/noble/2025-04-09")'
 
+# Copy custom shiny-server configuration for WebGL support
+COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
+
 # Copy the app files to the shiny-server directory
 WORKDIR /srv/shiny-server/
 COPY . .
