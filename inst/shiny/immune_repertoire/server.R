@@ -70,6 +70,18 @@ local({
     "TRBV"
   })
 
+  ## ---- Resolve chain: for functions that don't accept "both" ------------ ##
+  specific_chain <- reactive({
+    ch <- input$ir_chain
+    if (is.null(ch) || ch == "both") {
+      chains <- detect_chains(ir_data())
+      if ("TRB" %in% chains) return("TRB")
+      if (length(chains) > 0) return(chains[1])
+      return("TRB")
+    }
+    ch
+  })
+
   ## ---- Tab change: update cloneCall choices ----------------------------- ##
   observeEvent(input$ir_tabs, {
     req(has_scRepertoire())
@@ -88,9 +100,12 @@ local({
         selected = input$ir_cloneCall
       )
     }
-    shinyjs::toggleElement(id = "ir_scatter_x", anim = TRUE, condition = tab == "Scatter")
-    shinyjs::toggleElement(id = "ir_scatter_y", anim = TRUE, condition = tab == "Scatter")
-    shinyjs::toggleElement(id = "ir_compare_samples", anim = TRUE, condition = tab == "Compare")
+    shinyjs::toggleElement(id = "ir_scatter_x", anim = TRUE,
+      condition = tab == "Scatter" && n_samples() >= 2)
+    shinyjs::toggleElement(id = "ir_scatter_y", anim = TRUE,
+      condition = tab == "Scatter" && n_samples() >= 2)
+    shinyjs::toggleElement(id = "ir_compare_samples", anim = TRUE,
+      condition = tab == "Compare" && n_samples() >= 2)
   })
 
   ## ---- Settings UI ------------------------------------------------------ ##
@@ -121,23 +136,29 @@ local({
         column(6, selectInput("ir_chain", "Chain:",
           choices = chain_choices, selected = "both"))
       ),
-      fluidRow(
-        column(6, selectInput("ir_scatter_x", "Sample 1 (Scatter):",
-          choices = available_samples,
-          selected = if (length(available_samples) >= 1) available_samples[1])),
-        column(6, selectInput("ir_scatter_y", "Sample 2 (Scatter):",
-          choices = available_samples,
-          selected = if (length(available_samples) >= 2) available_samples[2]
-                    else if (length(available_samples) >= 1) available_samples[1]))
-      ),
-      fluidRow(
-        column(12, selectInput("ir_compare_samples",
-          "Samples for Compare (select >= 2):",
-          choices = available_samples, multiple = TRUE,
-          selected = if (length(available_samples) >= 2) available_samples[1:2]
-                    else available_samples))
-      )
+      if (length(available_samples) >= 2) {
+        tagList(
+          fluidRow(
+            column(6, selectInput("ir_scatter_x", "Sample 1 (Scatter):",
+              choices = available_samples, selected = available_samples[1])),
+            column(6, selectInput("ir_scatter_y", "Sample 2 (Scatter):",
+              choices = available_samples, selected = available_samples[2]))
+          ),
+          fluidRow(
+            column(12, selectInput("ir_compare_samples",
+              "Samples for Compare (select >= 2):",
+              choices = available_samples, multiple = TRUE,
+              selected = available_samples[1:2]))
+          )
+        )
+      }
     )
+  })
+
+  ## ---- Reactive: number of samples -------------------------------------- ##
+  n_samples <- reactive({
+    data <- ir_data()
+    if (is.null(data)) 0L else length(data)
   })
 
   ## ---- Visualizations UI ------------------------------------------------ ##
@@ -148,19 +169,16 @@ local({
       return(div(class = "alert alert-warning",
         "No immune repertoire data available."))
     }
-    tabsetPanel(
-      id = "ir_tabs",
+
+    ## Always-available tabs
+    tabs <- list(
       tabPanel("Abundance",    plotOutput("ir_plot_clonalAbundance",          height = 450)),
-      tabPanel("Compare",      plotOutput("ir_plot_clonalCompare",            height = 450)),
       tabPanel("Diversity",    plotOutput("ir_plot_clonalDiversity",          height = 450)),
       tabPanel("Homeostasis",  plotOutput("ir_plot_clonalHomeostasis",        height = 450)),
       tabPanel("Length",       plotOutput("ir_plot_clonalLength",             height = 450)),
-      tabPanel("Overlap",      plotOutput("ir_plot_clonalOverlap",            height = 450)),
       tabPanel("Proportion",   plotOutput("ir_plot_clonalProportion",         height = 450)),
       tabPanel("Quant",        plotOutput("ir_plot_clonalQuant",              height = 450)),
       tabPanel("Rarefaction",  plotOutput("ir_plot_clonalRarefaction",        height = 450)),
-      tabPanel("Scatter",      plotOutput("ir_plot_clonalScatter",            height = 450)),
-      tabPanel("SizeDist",     plotOutput("ir_plot_clonalSizeDistribution",   height = 450)),
       tabPanel("Gene usage",   plotOutput("ir_plot_percentGeneUsage",         height = 450)),
       tabPanel("vizGenes",     plotOutput("ir_plot_vizGenes",                 height = 450)),
       tabPanel("percentGenes", plotOutput("ir_plot_percentGenes",             height = 450)),
@@ -170,6 +188,19 @@ local({
       tabPanel("Property",     plotOutput("ir_plot_positionalProperty",       height = 450)),
       tabPanel("K-mer",        plotOutput("ir_plot_percentKmer",              height = 450))
     )
+
+    ## Tabs requiring >= 2 samples
+    if (n_samples() >= 2) {
+      multi_tabs <- list(
+        tabPanel("Compare",  plotOutput("ir_plot_clonalCompare",              height = 450)),
+        tabPanel("Overlap",  plotOutput("ir_plot_clonalOverlap",              height = 450)),
+        tabPanel("Scatter",  plotOutput("ir_plot_clonalScatter",              height = 450)),
+        tabPanel("SizeDist", plotOutput("ir_plot_clonalSizeDistribution",     height = 450))
+      )
+      tabs <- c(tabs, multi_tabs)
+    }
+
+    do.call(tabsetPanel, c(list(id = "ir_tabs"), tabs))
   })
 
   ##------------------------------------------------------------------------##
@@ -336,7 +367,7 @@ local({
     pars <- ir_params()
     safeRenderPlot(
       scRepertoire::percentGenes(data,
-        chain = pars$chain, gene = "Vgene",
+        chain = specific_chain(), gene = "Vgene",
         summary.fun = "percent",
         exportTable = FALSE, palette = "inferno"),
       "percentGenes")
@@ -348,7 +379,7 @@ local({
     pars <- ir_params()
     safeRenderPlot(
       scRepertoire::percentVJ(data,
-        chain = pars$chain,
+        chain = specific_chain(),
         summary.fun = "percent",
         exportTable = FALSE, palette = "inferno"),
       "percentVJ")
