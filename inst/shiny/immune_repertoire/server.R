@@ -172,30 +172,30 @@ local({
 
     ## Always-available tabs
     tabs <- list(
-      tabPanel("Abundance",    plotOutput("ir_plot_clonalAbundance",          height = 450)),
-      tabPanel("Diversity",    plotOutput("ir_plot_clonalDiversity",          height = 450)),
-      tabPanel("Homeostasis",  plotOutput("ir_plot_clonalHomeostasis",        height = 450)),
-      tabPanel("Length",       plotOutput("ir_plot_clonalLength",             height = 450)),
-      tabPanel("Proportion",   plotOutput("ir_plot_clonalProportion",         height = 450)),
-      tabPanel("Quant",        plotOutput("ir_plot_clonalQuant",              height = 450)),
-      tabPanel("Rarefaction",  plotOutput("ir_plot_clonalRarefaction",        height = 450)),
-      tabPanel("Gene usage",   plotOutput("ir_plot_percentGeneUsage",         height = 450)),
-      tabPanel("vizGenes",     plotOutput("ir_plot_vizGenes",                 height = 450)),
-      tabPanel("percentGenes", plotOutput("ir_plot_percentGenes",             height = 450)),
-      tabPanel("percentVJ",    plotOutput("ir_plot_percentVJ",                height = 450)),
-      tabPanel("AA %",         plotOutput("ir_plot_percentAA",                height = 450)),
-      tabPanel("Entropy",      plotOutput("ir_plot_positionalEntropy",        height = 450)),
-      tabPanel("Property",     plotOutput("ir_plot_positionalProperty",       height = 450)),
-      tabPanel("K-mer",        plotOutput("ir_plot_percentKmer",              height = 450))
+      tabPanel("Abundance",    shinycssloaders::withSpinner(plotOutput("ir_plot_clonalAbundance",          height = 450))),
+      tabPanel("Diversity",    shinycssloaders::withSpinner(plotOutput("ir_plot_clonalDiversity",          height = 450))),
+      tabPanel("Homeostasis",  shinycssloaders::withSpinner(plotOutput("ir_plot_clonalHomeostasis",        height = 450))),
+      tabPanel("Length",       shinycssloaders::withSpinner(plotOutput("ir_plot_clonalLength",             height = 450))),
+      tabPanel("Proportion",   shinycssloaders::withSpinner(plotOutput("ir_plot_clonalProportion",         height = 450))),
+      tabPanel("Quant",        shinycssloaders::withSpinner(plotOutput("ir_plot_clonalQuant",              height = 450))),
+      tabPanel("Rarefaction",  shinycssloaders::withSpinner(plotOutput("ir_plot_clonalRarefaction",        height = 450))),
+      tabPanel("Gene usage",   shinycssloaders::withSpinner(plotOutput("ir_plot_percentGeneUsage",         height = 450))),
+      tabPanel("vizGenes",     shinycssloaders::withSpinner(plotOutput("ir_plot_vizGenes",                 height = 450))),
+      tabPanel("percentGenes", shinycssloaders::withSpinner(plotOutput("ir_plot_percentGenes",             height = 450))),
+      tabPanel("percentVJ",    shinycssloaders::withSpinner(plotOutput("ir_plot_percentVJ",                height = 450))),
+      tabPanel("AA %",         shinycssloaders::withSpinner(plotOutput("ir_plot_percentAA",                height = 450))),
+      tabPanel("Entropy",      shinycssloaders::withSpinner(plotOutput("ir_plot_positionalEntropy",        height = 450))),
+      tabPanel("Property",     shinycssloaders::withSpinner(plotOutput("ir_plot_positionalProperty",       height = 450))),
+      tabPanel("K-mer",        shinycssloaders::withSpinner(plotOutput("ir_plot_percentKmer",              height = 450)))
     )
 
     ## Tabs requiring >= 2 samples
     if (n_samples() >= 2) {
       multi_tabs <- list(
-        tabPanel("Compare",  plotOutput("ir_plot_clonalCompare",              height = 450)),
-        tabPanel("Overlap",  plotOutput("ir_plot_clonalOverlap",              height = 450)),
-        tabPanel("Scatter",  plotOutput("ir_plot_clonalScatter",              height = 450)),
-        tabPanel("SizeDist", plotOutput("ir_plot_clonalSizeDistribution",     height = 450))
+        tabPanel("Compare",  shinycssloaders::withSpinner(plotOutput("ir_plot_clonalCompare",              height = 450))),
+        tabPanel("Overlap",  shinycssloaders::withSpinner(plotOutput("ir_plot_clonalOverlap",              height = 450))),
+        tabPanel("Scatter",  shinycssloaders::withSpinner(plotOutput("ir_plot_clonalScatter",              height = 450))),
+        tabPanel("SizeDist", shinycssloaders::withSpinner(plotOutput("ir_plot_clonalSizeDistribution",     height = 450)))
       )
       tabs <- c(tabs, multi_tabs)
     }
