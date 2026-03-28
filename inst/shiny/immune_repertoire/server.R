@@ -209,7 +209,7 @@ local({
       tabPanel("Length",       shinycssloaders::withSpinner(plotOutput("ir_plot_clonalLength",             height = 450))),
       tabPanel("Proportion",   shinycssloaders::withSpinner(plotOutput("ir_plot_clonalProportion",         height = 450))),
       tabPanel("Quant",        shinycssloaders::withSpinner(plotOutput("ir_plot_clonalQuant",              height = 450))),
-      tabPanel("Rarefaction",  shinycssloaders::withSpinner(plotOutput("ir_plot_clonalRarefaction",        height = 450))),
+      tabPanel("Rarefaction",  shinycssloaders::withSpinner(uiOutput("ir_ui_clonalRarefaction"))),
       tabPanel("Gene usage",   shinycssloaders::withSpinner(uiOutput("ir_ui_percentGeneUsage"))),
       tabPanel("vizGenes",     shinycssloaders::withSpinner(uiOutput("ir_ui_vizGenes"))),
       tabPanel("percentGenes", shinycssloaders::withSpinner(uiOutput("ir_ui_percentGenes"))),
@@ -243,7 +243,8 @@ local({
     data <- ir_data(); req(!is.null(data))
     pars <- ir_params()
     safeRenderPlot(
-      scRepertoire::clonalAbundance(data, cloneCall = pars$cloneCall),
+      scRepertoire::clonalAbundance(data, cloneCall = pars$cloneCall,
+        group.by = pars$groupBy),
       "clonalAbundance")
   })
 
@@ -255,7 +256,7 @@ local({
     safeRenderPlot(
       scRepertoire::clonalCompare(data,
         cloneCall = pars$cloneCall, chain = pars$chain,
-        samples = input$ir_compare_samples,
+        group.by = pars$groupBy, samples = input$ir_compare_samples,
         top.clones = 5, graph = "alluvial", proportion = TRUE,
         exportTable = FALSE, palette = "inferno"),
       "clonalCompare")
@@ -268,7 +269,7 @@ local({
     safeRenderPlot(
       scRepertoire::clonalDiversity(data,
         cloneCall = pars$cloneCall, chain = pars$chain,
-        metric = "shannon", n.boots = 100,
+        group.by = pars$groupBy, metric = "shannon", n.boots = 100,
         exportTable = FALSE, palette = "inferno"),
       "clonalDiversity")
   })
@@ -280,6 +281,7 @@ local({
     safeRenderPlot(
       scRepertoire::clonalHomeostasis(data,
         cloneCall = pars$cloneCall, chain = pars$chain,
+        group.by = pars$groupBy,
         exportTable = FALSE, palette = "inferno"),
       "clonalHomeostasis")
   })
@@ -291,6 +293,7 @@ local({
     safeRenderPlot(
       scRepertoire::clonalLength(data,
         cloneCall = pars$cloneCall, chain = pars$chain,
+        group.by = pars$groupBy,
         exportTable = FALSE, palette = "inferno"),
       "clonalLength")
   })
@@ -302,7 +305,7 @@ local({
     safeRenderPlot(
       scRepertoire::clonalOverlap(data,
         cloneCall = pars$cloneCall, chain = pars$chain,
-        method = "overlap",
+        group.by = pars$groupBy, method = "overlap",
         exportTable = FALSE, palette = "inferno"),
       "clonalOverlap")
   })
@@ -314,6 +317,7 @@ local({
     safeRenderPlot(
       scRepertoire::clonalProportion(data,
         cloneCall = pars$cloneCall, chain = pars$chain,
+        group.by = pars$groupBy,
         clonalSplit = c(10, 100, 1000, 10000, 30000, 1e+05),
         exportTable = FALSE, palette = "inferno"),
       "clonalProportion")
@@ -326,19 +330,32 @@ local({
     safeRenderPlot(
       scRepertoire::clonalQuant(data,
         cloneCall = pars$cloneCall, chain = pars$chain,
-        scale = FALSE,
+        group.by = pars$groupBy, scale = FALSE,
         exportTable = FALSE, palette = "inferno"),
       "clonalQuant")
+  })
+
+  output$ir_ui_clonalRarefaction <- renderUI({
+    n_boots <- input$ir_rarefaction_boots
+    if (is.null(n_boots)) n_boots <- 5
+    tagList(
+      sliderInput("ir_rarefaction_boots", "Bootstrap iterations:",
+        min = 3, max = 50, value = n_boots, step = 1),
+      shinycssloaders::withSpinner(plotOutput("ir_plot_clonalRarefaction", height = "450px"))
+    )
   })
 
   output$ir_plot_clonalRarefaction <- renderPlot({
     req(has_scRepertoire())
     data <- ir_data(); req(!is.null(data))
     pars <- ir_params()
+    n_boots <- input$ir_rarefaction_boots
+    if (is.null(n_boots)) n_boots <- 5
     safeRenderPlot(
       scRepertoire::clonalRarefaction(data,
         cloneCall = pars$cloneCall, chain = pars$chain,
-        plot.type = 1, hill.numbers = 0, n.boots = 20,
+        group.by = pars$groupBy,
+        plot.type = 1, hill.numbers = 0, n.boots = n_boots,
         exportTable = FALSE, palette = "inferno"),
       "clonalRarefaction")
   })
@@ -351,6 +368,7 @@ local({
     safeRenderPlot(
       scRepertoire::clonalScatter(data,
         cloneCall = pars$cloneCall, chain = pars$chain,
+        group.by = pars$groupBy,
         x.axis = input$ir_scatter_x, y.axis = input$ir_scatter_y,
         dot.size = "total", graph = "proportion",
         exportTable = FALSE, palette = "inferno"),
@@ -363,7 +381,8 @@ local({
     pars <- ir_params()
     safeRenderPlot(
       scRepertoire::clonalSizeDistribution(data,
-        cloneCall = pars$cloneCall, method = "ward.D2",
+        cloneCall = pars$cloneCall, group.by = pars$groupBy,
+        method = "ward.D2",
         exportTable = FALSE),
       "clonalSizeDistribution")
   })
@@ -379,7 +398,8 @@ local({
     pars <- ir_params()
     safeRenderPlot(
       scRepertoire::percentGeneUsage(data,
-        chain = pars$chain, genes = default_gene_family(),
+        chain = pars$chain, gene = default_gene_family(),
+        group.by = pars$groupBy,
         summary.fun = "percent", plot.type = "heatmap",
         exportTable = FALSE, palette = "inferno"),
       "percentGeneUsage")
@@ -397,6 +417,7 @@ local({
     safeRenderPlot(
       scRepertoire::vizGenes(data,
         x.axis = default_gene_family(), y.axis = NULL,
+        group.by = pars$groupBy,
         plot = "heatmap", summary.fun = "count",
         exportTable = FALSE, palette = "inferno"),
       "vizGenes")
@@ -414,7 +435,7 @@ local({
     safeRenderPlot(
       scRepertoire::percentGenes(data,
         chain = specific_chain(), gene = "Vgene",
-        summary.fun = "percent",
+        group.by = pars$groupBy, summary.fun = "percent",
         exportTable = FALSE, palette = "inferno"),
       "percentGenes")
   })
@@ -431,7 +452,7 @@ local({
     safeRenderPlot(
       scRepertoire::percentVJ(data,
         chain = specific_chain(),
-        summary.fun = "percent",
+        group.by = pars$groupBy, summary.fun = "percent",
         exportTable = FALSE, palette = "inferno"),
       "percentVJ")
   })
@@ -442,7 +463,8 @@ local({
     pars <- ir_params()
     safeRenderPlot(
       scRepertoire::percentAA(data,
-        chain = pars$chain, aa.length = 20,
+        chain = pars$chain, group.by = pars$groupBy,
+        aa.length = 20,
         exportTable = FALSE, palette = "inferno"),
       "percentAA")
   })
@@ -453,8 +475,8 @@ local({
     pars <- ir_params()
     safeRenderPlot(
       scRepertoire::positionalEntropy(data,
-        chain = pars$chain, aa.length = 20,
-        method = "norm.entropy",
+        chain = pars$chain, group.by = pars$groupBy,
+        aa.length = 20, method = "norm.entropy",
         exportTable = FALSE, palette = "inferno"),
       "positionalEntropy")
   })
@@ -501,7 +523,8 @@ local({
     if (is.null(method)) method <- "atchleyFactors"
     safeRenderPlot(
       scRepertoire::positionalProperty(data,
-        chain = pars$chain, method = method,
+        chain = pars$chain, group.by = pars$groupBy,
+        method = method,
         exportTable = FALSE, palette = "inferno"),
       "positionalProperty")
   })
@@ -526,6 +549,7 @@ local({
     safeRenderPlot(
       scRepertoire::percentKmer(data,
         chain = pars$chain, cloneCall = pars$cloneCall,
+        group.by = pars$groupBy,
         motif.length = 3, min.depth = 3, top.motifs = top_m,
         exportTable = FALSE, palette = "inferno"),
       "percentKmer")
