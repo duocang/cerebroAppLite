@@ -82,6 +82,29 @@ local({
     ch
   })
 
+  ## ---- Count unique genes for dynamic plot height ----------------------- ##
+  n_genes <- reactive({
+    data <- ir_data()
+    if (is.null(data)) return(0L)
+    gene_family <- default_gene_family()
+    # Gather all gene values across samples
+    all_genes <- unique(unlist(lapply(data, function(df) {
+      # CTgene has format like "TRBV1.TRBJ2" — extract the gene family portion
+      ct <- as.character(df$CTgene)
+      ct <- ct[!is.na(ct)]
+      # Split by "." and keep segments matching the gene family prefix
+      segments <- unlist(strsplit(ct, "[._]"))
+      segments[grepl(paste0("^", gene_family), segments, ignore.case = TRUE)]
+    })))
+    length(all_genes)
+  })
+
+  ir_plot_height <- reactive({
+    n <- n_genes()
+    # minimum 450, ~20px per gene row, cap at 2000
+    max(450, min(n * 25, 2500))
+  })
+
   ## ---- Tab change: update cloneCall choices ----------------------------- ##
   observeEvent(input$ir_tabs, {
     req(has_scRepertoire())
@@ -179,14 +202,14 @@ local({
       tabPanel("Proportion",   shinycssloaders::withSpinner(plotOutput("ir_plot_clonalProportion",         height = 450))),
       tabPanel("Quant",        shinycssloaders::withSpinner(plotOutput("ir_plot_clonalQuant",              height = 450))),
       tabPanel("Rarefaction",  shinycssloaders::withSpinner(plotOutput("ir_plot_clonalRarefaction",        height = 450))),
-      tabPanel("Gene usage",   shinycssloaders::withSpinner(plotOutput("ir_plot_percentGeneUsage",         height = 450))),
-      tabPanel("vizGenes",     shinycssloaders::withSpinner(plotOutput("ir_plot_vizGenes",                 height = 450))),
-      tabPanel("percentGenes", shinycssloaders::withSpinner(plotOutput("ir_plot_percentGenes",             height = 450))),
-      tabPanel("percentVJ",    shinycssloaders::withSpinner(plotOutput("ir_plot_percentVJ",                height = 450))),
+      tabPanel("Gene usage",   shinycssloaders::withSpinner(uiOutput("ir_ui_percentGeneUsage"))),
+      tabPanel("vizGenes",     shinycssloaders::withSpinner(uiOutput("ir_ui_vizGenes"))),
+      tabPanel("percentGenes", shinycssloaders::withSpinner(uiOutput("ir_ui_percentGenes"))),
+      tabPanel("percentVJ",    shinycssloaders::withSpinner(uiOutput("ir_ui_percentVJ"))),
       tabPanel("AA %",         shinycssloaders::withSpinner(plotOutput("ir_plot_percentAA",                height = 450))),
       tabPanel("Entropy",      shinycssloaders::withSpinner(plotOutput("ir_plot_positionalEntropy",        height = 450))),
-      tabPanel("Property",     shinycssloaders::withSpinner(plotOutput("ir_plot_positionalProperty",       height = 450))),
-      tabPanel("K-mer",        shinycssloaders::withSpinner(plotOutput("ir_plot_percentKmer",              height = 450)))
+      tabPanel("Property",     shinycssloaders::withSpinner(uiOutput("ir_ui_positionalProperty"))),
+      tabPanel("K-mer",        shinycssloaders::withSpinner(uiOutput("ir_ui_percentKmer")))
     )
 
     ## Tabs requiring >= 2 samples
@@ -337,6 +360,11 @@ local({
       "clonalSizeDistribution")
   })
 
+  output$ir_ui_percentGeneUsage <- renderUI({
+    h <- ir_plot_height()
+    shinycssloaders::withSpinner(plotOutput("ir_plot_percentGeneUsage", height = paste0(h, "px")))
+  })
+
   output$ir_plot_percentGeneUsage <- renderPlot({
     req(has_scRepertoire())
     data <- ir_data(); req(!is.null(data))
@@ -347,6 +375,11 @@ local({
         summary.fun = "percent", plot.type = "heatmap",
         exportTable = FALSE, palette = "inferno"),
       "percentGeneUsage")
+  })
+
+  output$ir_ui_vizGenes <- renderUI({
+    h <- ir_plot_height()
+    shinycssloaders::withSpinner(plotOutput("ir_plot_vizGenes", height = paste0(h, "px")))
   })
 
   output$ir_plot_vizGenes <- renderPlot({
@@ -361,6 +394,11 @@ local({
       "vizGenes")
   })
 
+  output$ir_ui_percentGenes <- renderUI({
+    h <- ir_plot_height()
+    shinycssloaders::withSpinner(plotOutput("ir_plot_percentGenes", height = paste0(h, "px")))
+  })
+
   output$ir_plot_percentGenes <- renderPlot({
     req(has_scRepertoire())
     data <- ir_data(); req(!is.null(data))
@@ -371,6 +409,11 @@ local({
         summary.fun = "percent",
         exportTable = FALSE, palette = "inferno"),
       "percentGenes")
+  })
+
+  output$ir_ui_percentVJ <- renderUI({
+    h <- ir_plot_height()
+    shinycssloaders::withSpinner(plotOutput("ir_plot_percentVJ", height = paste0(h, "px")))
   })
 
   output$ir_plot_percentVJ <- renderPlot({
@@ -408,25 +451,74 @@ local({
       "positionalEntropy")
   })
 
+  ## ---- Positional Property: facet count per method ---------------------- ##
+  ## Requires immApex; most methods also need the Peptides package.
+  all_property_facets <- c(
+    atchleyFactors = 5, crucianiProperties = 3, FASGAI = 6,
+    kideraFactors = 10, MSWHIM = 3, ProtFP = 8,
+    stScales = 8, tScales = 5, VHSE = 8, zScales = 5
+  )
+
+  available_property_methods <- reactive({
+    resolver <- tryCatch(
+      getFromNamespace(".aa.property.matrix", "immApex"),
+      error = function(e) NULL)
+    if (is.null(resolver)) return(all_property_facets["atchleyFactors"])
+    ok <- vapply(names(all_property_facets), function(m) {
+      tryCatch({ resolver(m); TRUE }, error = function(e) FALSE)
+    }, logical(1))
+    all_property_facets[ok]
+  })
+
+  output$ir_ui_positionalProperty <- renderUI({
+    avail <- available_property_methods()
+    method <- input$ir_property_method
+    if (is.null(method) || !method %in% names(avail)) method <- names(avail)[1]
+    n_facets <- avail[[method]]
+    if (is.null(n_facets)) n_facets <- 5
+    # ~120px per facet row, minimum 450
+    h <- max(450, n_facets * 120)
+    tagList(
+      selectInput("ir_property_method", "Property method:",
+        choices = names(avail), selected = method),
+      shinycssloaders::withSpinner(plotOutput("ir_plot_positionalProperty", height = paste0(h, "px")))
+    )
+  })
+
   output$ir_plot_positionalProperty <- renderPlot({
     req(has_scRepertoire())
     data <- ir_data(); req(!is.null(data))
     pars <- ir_params()
+    method <- input$ir_property_method
+    if (is.null(method)) method <- "atchleyFactors"
     safeRenderPlot(
       scRepertoire::positionalProperty(data,
-        chain = pars$chain,
+        chain = pars$chain, method = method,
         exportTable = FALSE, palette = "inferno"),
       "positionalProperty")
+  })
+
+  output$ir_ui_percentKmer <- renderUI({
+    top_m <- input$ir_kmer_top_motifs
+    if (is.null(top_m)) top_m <- 30
+    h <- max(450, top_m * 20)
+    tagList(
+      sliderInput("ir_kmer_top_motifs", "Top motifs:",
+        min = 10, max = 100, value = top_m, step = 5),
+      shinycssloaders::withSpinner(plotOutput("ir_plot_percentKmer", height = paste0(h, "px")))
+    )
   })
 
   output$ir_plot_percentKmer <- renderPlot({
     req(has_scRepertoire())
     data <- ir_data(); req(!is.null(data))
     pars <- ir_params()
+    top_m <- input$ir_kmer_top_motifs
+    if (is.null(top_m)) top_m <- 30
     safeRenderPlot(
       scRepertoire::percentKmer(data,
         chain = pars$chain, cloneCall = pars$cloneCall,
-        motif.length = 3, min.depth = 3, top.motifs = 30,
+        motif.length = 3, min.depth = 3, top.motifs = top_m,
         exportTable = FALSE, palette = "inferno"),
       "percentKmer")
   })
