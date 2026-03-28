@@ -1164,6 +1164,12 @@ getTCR <- function() {
     return(ds$getTCR())
   }
 }
+getImmuneRepertoire <- function() {
+  ds <- data_set()
+  if ( any(grepl('Cerebro', class(ds))) && exists("getImmuneRepertoire", envir = ds) ) {
+    return(ds$getImmuneRepertoire())
+  }
+}
 .has_scRepertoire <- function() {
   requireNamespace("scRepertoire", quietly = TRUE)
 }

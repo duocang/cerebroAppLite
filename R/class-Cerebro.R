@@ -96,10 +96,16 @@ Cerebro <- R6::R6Class(
     #' format in a named \code{list} called `tables`
     extra_material = list(),
 
-    #' @field bcr_data \code{list} that contains BCR data.
+    #' @field immune_repertoire \code{list} of data.frames (one per sample)
+    #'   containing scRepertoire columns (CTgene, CTnt, CTaa, CTstrict, etc.).
+    immune_repertoire = list(),
+
+    #' @field bcr_data \code{list} that contains BCR data (kept for backward
+    #'   compatibility with older .crb files).
     bcr_data = list(),
 
-    #' @field tcr_data \code{list} that contains TCR data.
+    #' @field tcr_data \code{list} that contains TCR data (kept for backward
+    #'   compatibility with older .crb files).
     tcr_data = list(),
 
     #' @field spatial \code{list} that contains spatial data (coordinates and expression).
@@ -809,6 +815,30 @@ Cerebro <- R6::R6Class(
     },
 
     #' @description
+    #' Get immune repertoire data. Returns the unified \code{immune_repertoire}
+    #' field if available; otherwise falls back to merging legacy
+    #' \code{bcr_data} and \code{tcr_data}.
+    #'
+    #' @return Named list of data.frames (one per sample), or empty list.
+    getImmuneRepertoire = function() {
+      if (length(self$immune_repertoire) > 0) {
+        return(self$immune_repertoire)
+      }
+      # Backward compatibility: merge legacy bcr + tcr
+      merged <- c(self$bcr_data, self$tcr_data)
+      return(merged)
+    },
+
+    #' @description
+    #' Set immune repertoire data.
+    #'
+    #' @param data Named list of data.frames (one per sample) containing
+    #'   scRepertoire columns.
+    addImmuneRepertoire = function(data) {
+      self$immune_repertoire <- data
+    },
+
+    #' @description
     #' Add spatial data.
     #'
     #' @param name Name of the spatial data entry (e.g. image name).
@@ -1062,8 +1092,7 @@ Cerebro <- R6::R6Class(
           'enriched pathways:', private$showEnrichedPathways(), '\n',
           'trajectories:', private$showTrajectories(), '\n',
           'extra material:', private$showExtraMaterial(), '\n',
-          'Names of BCR data:', names(self$bcr_data), '\n',
-          'Names of TCR data:', names(self$tcr_data), '\n',
+          'Immune repertoire:', paste0(names(self$getImmuneRepertoire()), collapse = ', '), '\n',
           'Spatial data:', names(self$spatial), '\n'
         )
       )

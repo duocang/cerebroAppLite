@@ -60,6 +60,106 @@
   return(data)
 }
 
+#' Extract immune repertoire data from Seurat metadata
+#'
+#' When scRepertoire's \code{combineExpression()} has been used, the Seurat
+#' metadata contains columns like CTgene, CTnt, CTaa, CTstrict, etc.
+#' This function extracts those columns and splits by sample into the
+#' list-of-data.frames format expected by scRepertoire visualization functions.
+#' TCR and BCR data are kept together; scRepertoire's \code{chain} parameter
+#' handles filtering at plot time.
+#'
+#' @param seurat A Seurat object with scRepertoire columns in meta.data.
+#' @param groups Character vector of group column names to include in output.
+#' @param sample_col Column name to split samples by; defaults to "orig.ident".
+#' @param verbose Logical; print progress messages.
+#' @return A named list of data.frames (one per sample), or NULL if no
+#'   repertoire data is found.
+#' @keywords internal
+#' @noRd
+.extractRepertoireFromMetadata <- function(seurat,
+                                           groups = NULL,
+                                           sample_col = "orig.ident",
+                                           verbose = TRUE) {
+  core_cols <- c("CTgene", "CTnt", "CTaa", "CTstrict")
+  meta_names <- names(seurat@meta.data)
+  present_core <- core_cols[core_cols %in% meta_names]
+
+  if (length(present_core) == 0) {
+    if (verbose) {
+      message("[INFO] No scRepertoire columns found in metadata, ",
+              "skipping repertoire extraction.")
+    }
+    return(NULL)
+  }
+
+  if (verbose) {
+    message(paste0("[", format(Sys.time(), "%H:%M:%S"),
+                   "] Found scRepertoire columns in metadata: ",
+                   paste(present_core, collapse = ", ")))
+  }
+
+  # Additional scRepertoire columns to preserve
+  optional_cols <- c("clonalProportion", "clonalFrequency", "cloneSize",
+                     "Frequency", "frequency", "cloneType")
+  present_optional <- optional_cols[optional_cols %in% meta_names]
+
+  # Identify cells with non-NA repertoire data
+  primary_col <- if ("CTgene" %in% present_core) "CTgene" else present_core[1]
+  has_data <- !is.na(seurat@meta.data[[primary_col]]) &
+              nzchar(as.character(seurat@meta.data[[primary_col]]))
+
+  if (sum(has_data) == 0) {
+    if (verbose) message("[INFO] No cells with non-NA repertoire data found.")
+    return(NULL)
+  }
+
+  # Columns to keep
+  cols_to_keep <- unique(c(present_core, present_optional))
+  if (!is.null(groups)) {
+    cols_to_keep <- unique(c(cols_to_keep, groups[groups %in% meta_names]))
+  }
+
+  rep_df <- seurat@meta.data[has_data, cols_to_keep, drop = FALSE]
+  rep_df$barcode <- rownames(seurat@meta.data)[has_data]
+
+  # Determine sample column for splitting
+  actual_sample_col <- NULL
+  for (col in c(sample_col, "orig.ident", "sample", "Sample")) {
+    if (col %in% meta_names) {
+      actual_sample_col <- col
+      break
+    }
+  }
+
+  if (!is.null(actual_sample_col)) {
+    rep_df$.sample_id <- as.character(
+      seurat@meta.data[[actual_sample_col]][has_data]
+    )
+  } else {
+    rep_df$.sample_id <- "Sample_1"
+  }
+
+  # Split by sample into list-of-data.frames
+  result <- split(rep_df, rep_df$.sample_id)
+  result <- lapply(result, function(x) { x$.sample_id <- NULL; x })
+
+  if (verbose) {
+    # Detect data types present
+    types <- character(0)
+    if ("CTgene" %in% names(rep_df)) {
+      ct <- as.character(rep_df$CTgene)
+      if (any(grepl("TR[ABDG]", ct))) types <- c(types, "TCR")
+      if (any(grepl("IG[HKL]", ct))) types <- c(types, "BCR")
+    }
+    message(paste0("[INFO] Extracted immune repertoire: ", sum(has_data),
+                   " cells in ", length(result), " sample(s)",
+                   if (length(types) > 0) paste0(" [", paste(types, collapse = "+"), "]") else ""))
+  }
+
+  return(result)
+}
+
 #' @keywords internal
 #' @noRd
 .readMarkerFile <- function(marker_file, verbose = TRUE) {
@@ -495,16 +595,29 @@ convertSeuratToCerebro <- function(seurat_file,
   }
 
 
-  # add BCR data if provided -----------------------------------------------##
+  # Immune repertoire data --------------------------------------------------##
+  # Priority: external files (bcr_file/tcr_file) > metadata extraction
+  # All data is stored in the unified immune_repertoire slot.
+
   bcr_data <- .loadImmuneRepertoireData(bcr_file, "BCR", verbose)
-  if (!is.null(bcr_data)) {
-    seurat@misc$bcr_data <- bcr_data
+  tcr_data <- .loadImmuneRepertoireData(tcr_file, "TCR", verbose)
+
+  if (!is.null(bcr_data) || !is.null(tcr_data)) {
+    # External files provided — merge into immune_repertoire
+    seurat@misc$immune_repertoire <- c(
+      if (!is.null(bcr_data)) bcr_data else list(),
+      if (!is.null(tcr_data)) tcr_data else list()
+    )
   }
 
-  # add TCR data if provided -----------------------------------------------##
-  tcr_data <- .loadImmuneRepertoireData(tcr_file, "TCR", verbose)
-  if (!is.null(tcr_data)) {
-    seurat@misc$tcr_data <- tcr_data
+  # Fallback: extract from Seurat metadata (scRepertoire columns)
+  if (is.null(seurat@misc$immune_repertoire) || length(seurat@misc$immune_repertoire) == 0) {
+    rep_data <- .extractRepertoireFromMetadata(
+      seurat, groups = groups, verbose = verbose
+    )
+    if (!is.null(rep_data) && length(rep_data) > 0) {
+      seurat@misc$immune_repertoire <- rep_data
+    }
   }
 
   # Get the base name for the file
