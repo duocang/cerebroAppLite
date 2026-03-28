@@ -1,27 +1,19 @@
 ##----------------------------------------------------------------------------##
-## Tab: Immune Repertoire (BCR/TCR)
+## Tab: Immune Repertoire (unified TCR/BCR)
 ##----------------------------------------------------------------------------##
 
-createImmuneRepertoireTab <- function(repertoire_type = c("bcr", "tcr")) {
-  repertoire_type <- match.arg(repertoire_type)
-  
-  tab_name <- repertoire_type
-  title <- ifelse(repertoire_type == "bcr", "BCR settings", "TCR settings")
-  viz_title <- ifelse(repertoire_type == "bcr", "BCR visualizations", "TCR visualizations")
-  
-  tabItem(
-    tabName = tab_name,
-    fluidRow(
-      cerebroBox(
-        title = boxTitle(title),
-        content = uiOutput(paste0(repertoire_type, "_settings_UI"))
-      )
-    ),
-    fluidRow(
-      cerebroBox(
-        title = boxTitle(viz_title),
-        content = uiOutput(paste0(repertoire_type, "_visualizations_UI"))
-      )
+tab_immune_repertoire <- tabItem(
+  tabName = "immune_repertoire",
+  fluidRow(
+    cerebroBox(
+      title = boxTitle("Immune Repertoire settings"),
+      content = uiOutput("ir_settings_UI")
+    )
+  ),
+  fluidRow(
+    cerebroBox(
+      title = boxTitle("Immune Repertoire visualizations"),
+      content = uiOutput("ir_visualizations_UI")
     )
   )
-}
+)

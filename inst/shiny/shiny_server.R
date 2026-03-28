@@ -397,62 +397,32 @@ server <- function(input, output, session) {
   })
 
   ##--------------------------------------------------------------------------##
-  ## Show "BCR" tab if there is BCR data in the data set.
+  ## Show "Immune Repertoire" tab if there is repertoire data in the data set.
   ##--------------------------------------------------------------------------
 
-  show_bcr_tab <- reactive({
+  show_immune_repertoire_tab <- reactive({
     req(!is.null(data_set()))
-    bcr_data <- getBCR()
-    !is.null(bcr_data) && is.list(bcr_data) && length(bcr_data) > 0
+    ir_data <- getImmuneRepertoire()
+    !is.null(ir_data) && is.list(ir_data) && length(ir_data) > 0
   })
 
-  bcr_tab_inserted <- reactiveVal(FALSE)
-  observeEvent(show_bcr_tab(), {
-    if (show_bcr_tab() && !bcr_tab_inserted()) {
+  immune_repertoire_tab_inserted <- reactiveVal(FALSE)
+  observeEvent(show_immune_repertoire_tab(), {
+    if (show_immune_repertoire_tab() && !immune_repertoire_tab_inserted()) {
       insertUI(
-        selector = "#sidebar_item_bcr_placeholder",
+        selector = "#sidebar_item_immune_repertoire_placeholder",
         where = "afterEnd",
         ui = tags$li(
-          id = "sidebar_item_bcr",
+          id = "sidebar_item_immune_repertoire",
           class = "treeview",
-          menuItem("BCR", tabName = "bcr", icon = icon("dna"))$children
+          menuItem("TCR/BCR", tabName = "immune_repertoire", icon = icon("dna"))$children
         ),
         immediate = TRUE
       )
-      bcr_tab_inserted(TRUE)
-    } else if (!show_bcr_tab() && bcr_tab_inserted()) {
-      removeUI(selector = "#sidebar_item_bcr", immediate = TRUE)
-      bcr_tab_inserted(FALSE)
-    }
-  })
-
-  ##--------------------------------------------------------------------------##
-  ## Show "TCR" tab if there is TCR data in the data set.
-  ##--------------------------------------------------------------------------
-
-  show_tcr_tab <- reactive({
-    req(!is.null(data_set()))
-    tcr_data <- getTCR()
-    !is.null(tcr_data) && is.list(tcr_data) && length(tcr_data) > 0
-  })
-
-  tcr_tab_inserted <- reactiveVal(FALSE)
-  observeEvent(show_tcr_tab(), {
-    if (show_tcr_tab() && !tcr_tab_inserted()) {
-      insertUI(
-        selector = "#sidebar_item_tcr_placeholder",
-        where = "afterEnd",
-        ui = tags$li(
-          id = "sidebar_item_tcr",
-          class = "treeview",
-          menuItem("TCR", tabName = "tcr", icon = icon("dna"))$children
-        ),
-        immediate = TRUE
-      )
-      tcr_tab_inserted(TRUE)
-    } else if (!show_tcr_tab() && tcr_tab_inserted()) {
-      removeUI(selector = "#sidebar_item_tcr", immediate = TRUE)
-      tcr_tab_inserted(FALSE)
+      immune_repertoire_tab_inserted(TRUE)
+    } else if (!show_immune_repertoire_tab() && immune_repertoire_tab_inserted()) {
+      removeUI(selector = "#sidebar_item_immune_repertoire", immediate = TRUE)
+      immune_repertoire_tab_inserted(FALSE)
     }
   })
 
@@ -568,7 +538,7 @@ server <- function(input, output, session) {
 
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/most_expressed_genes/server.R"), local = TRUE)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/enriched_pathways/server.R"), local = TRUE)
-  ## Immune Repertoire tabs (BCR/TCR)
+  ## Immune Repertoire tab (unified TCR/BCR)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/immune_repertoire/server.R"), local = TRUE)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/trajectory/server.R"), local = TRUE)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/extra_material/server.R"), local = TRUE)

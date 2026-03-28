@@ -75,7 +75,7 @@ source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/about/UI.R"), local = T
 ## Load module UI
 source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/module/projection/projection_UI.R"), local = TRUE)
 
-## Immune Repertoire tabs (BCR/TCR)
+## Immune Repertoire tab (unified TCR/BCR)
 source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/immune_repertoire/UI.R"), local = TRUE)
 source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/most_expressed_genes/UI.R"), local = TRUE)
 source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/enriched_pathways/UI.R"), local = TRUE)
@@ -104,8 +104,7 @@ ui <- dashboardPage(
       div(id = "sidebar_item_marker_genes_placeholder"),
       div(id = "sidebar_item_enriched_pathways_placeholder"),
       menuItem("Gene expression", tabName = "geneExpression", icon = icon("signal")),
-      div(id = "sidebar_item_bcr_placeholder"),
-      div(id = "sidebar_item_tcr_placeholder"),
+      div(id = "sidebar_item_immune_repertoire_placeholder"),
       div(id = "sidebar_item_trajectory_placeholder"),
       div(id = "sidebar_item_extra_material_placeholder"),
       menuItem("Gene ID conversion", tabName = "geneIdConversion", icon = icon("barcode")),
@@ -209,8 +208,7 @@ ui <- dashboardPage(
       tab_most_expressed_genes,
       tab_enriched_pathways,
       tab_gene_expression,
-      createImmuneRepertoireTab("bcr"),
-      createImmuneRepertoireTab("tcr"),
+      tab_immune_repertoire,
       tab_trajectory,
       tab_extra_material,
       tab_gene_id_conversion,

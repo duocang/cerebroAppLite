@@ -698,7 +698,25 @@ exportFromSeurat <- function(
   }
 
   ##--------------------------------------------------------------------------##
-  ## BCR data
+  ## Immune repertoire data (unified)
+  ##--------------------------------------------------------------------------##
+  if ( !is.null(object@misc$immune_repertoire) &&
+       is.list(object@misc$immune_repertoire) &&
+       length(object@misc$immune_repertoire) > 0 ) {
+    if ( verbose ) {
+      message(
+        paste0(
+          '[', format(Sys.time(), '%H:%M:%S'),
+          '] Extracting immune repertoire data (',
+          length(object@misc$immune_repertoire), ' samples)...'
+        )
+      )
+    }
+    export$addImmuneRepertoire(object@misc$immune_repertoire)
+  }
+
+  ##--------------------------------------------------------------------------##
+  ## BCR data (legacy)
   ##--------------------------------------------------------------------------##
   if ( !is.null(object@misc$bcr_data) ) {
     ## check if it's a list
@@ -720,7 +738,7 @@ exportFromSeurat <- function(
   }
 
   ##--------------------------------------------------------------------------##
-  ## TCR data
+  ## TCR data (legacy)
   ##--------------------------------------------------------------------------##
   if ( !is.null(object@misc$tcr_data) ) {
     ## check if it's a list
