@@ -51,11 +51,25 @@ local({
 
   ## ---- Reactive: parameters --------------------------------------------- ##
   ir_params <- reactive({
+    gb <- input$ir_groupBy
+    if (is.null(gb) || gb == "") gb <- NULL
     list(
       cloneCall = input$ir_cloneCall,
       chain     = input$ir_chain,
-      groupBy   = input$ir_groupBy
+      groupBy   = gb
     )
+  })
+
+  ## ---- Reactive: number of groups for faceted plots --------------------- ##
+  n_groups <- reactive({
+    gb <- ir_params()$groupBy
+    if (is.null(gb)) return(1L)
+    data <- ir_data()
+    if (is.null(data)) return(1L)
+    lvls <- unique(unlist(lapply(data, function(df) {
+      if (gb %in% names(df)) unique(as.character(df[[gb]])) else character(0)
+    })))
+    max(1L, length(lvls))
   })
 
   ## ---- Dynamic gene parameter for vizGenes/percentGeneUsage ------------- ##
@@ -99,11 +113,21 @@ local({
     length(all_genes)
   })
 
-  ir_plot_height <- reactive({
+  ir_plot_height <- function(facet_mode = c("none", "grid", "wrap")) {
+    facet_mode <- match.arg(facet_mode)
     n <- n_genes()
-    # minimum 450, ~20px per gene row, cap at 2000
-    max(450, min(n * 25, 2500))
-  })
+    ng <- n_groups()
+    base_h <- max(450, min(n * 25, 2500))
+    if (ng <= 1 || facet_mode == "none") return(base_h)
+    if (facet_mode == "grid") {
+      # facet_grid(Group ~ .): each group stacked vertically
+      return(base_h * ng)
+    }
+    # facet_wrap: ggplot default ncol = ceiling(sqrt(n))
+    ncol <- ceiling(sqrt(ng))
+    nrow <- ceiling(ng / ncol)
+    base_h * nrow
+  }
 
   ## ---- Tab change: update cloneCall choices ----------------------------- ##
   observeEvent(input$ir_tabs, {
@@ -161,7 +185,7 @@ local({
         column(6, selectInput("ir_cloneCall", "Clone call:",
           choices = c("gene", "nt", "aa", "strict"), selected = "gene")),
         column(6, selectInput("ir_groupBy", "Group by:",
-          choices = available_groups, selected = NULL))
+          choices = c("None" = "", available_groups), selected = ""))
       ),
       fluidRow(
         column(6, selectInput("ir_chain", "Chain:",
@@ -214,7 +238,7 @@ local({
       tabPanel("vizGenes",     shinycssloaders::withSpinner(uiOutput("ir_ui_vizGenes"))),
       tabPanel("percentGenes", shinycssloaders::withSpinner(uiOutput("ir_ui_percentGenes"))),
       tabPanel("percentVJ",    shinycssloaders::withSpinner(uiOutput("ir_ui_percentVJ"))),
-      tabPanel("AA %",         shinycssloaders::withSpinner(plotOutput("ir_plot_percentAA",                height = 450))),
+      tabPanel("AA %",         shinycssloaders::withSpinner(uiOutput("ir_ui_percentAA"))),
       tabPanel("Entropy",      shinycssloaders::withSpinner(plotOutput("ir_plot_positionalEntropy",        height = 450))),
       tabPanel("Property",     shinycssloaders::withSpinner(uiOutput("ir_ui_positionalProperty"))),
       tabPanel("K-mer",        shinycssloaders::withSpinner(uiOutput("ir_ui_percentKmer")))
@@ -388,7 +412,7 @@ local({
   })
 
   output$ir_ui_percentGeneUsage <- renderUI({
-    h <- ir_plot_height()
+    h <- ir_plot_height("none")
     shinycssloaders::withSpinner(plotOutput("ir_plot_percentGeneUsage", height = paste0(h, "px")))
   })
 
@@ -406,7 +430,7 @@ local({
   })
 
   output$ir_ui_vizGenes <- renderUI({
-    h <- ir_plot_height()
+    h <- ir_plot_height("none")
     shinycssloaders::withSpinner(plotOutput("ir_plot_vizGenes", height = paste0(h, "px")))
   })
 
@@ -424,7 +448,7 @@ local({
   })
 
   output$ir_ui_percentGenes <- renderUI({
-    h <- ir_plot_height()
+    h <- ir_plot_height("none")
     shinycssloaders::withSpinner(plotOutput("ir_plot_percentGenes", height = paste0(h, "px")))
   })
 
@@ -441,7 +465,7 @@ local({
   })
 
   output$ir_ui_percentVJ <- renderUI({
-    h <- ir_plot_height()
+    h <- ir_plot_height("wrap")
     shinycssloaders::withSpinner(plotOutput("ir_plot_percentVJ", height = paste0(h, "px")))
   })
 
@@ -455,6 +479,13 @@ local({
         group.by = pars$groupBy, summary.fun = "percent",
         exportTable = FALSE, palette = "inferno"),
       "percentVJ")
+  })
+
+  output$ir_ui_percentAA <- renderUI({
+    ng <- n_groups()
+    # facet_grid(group ~ .): ~200px per group, minimum 400
+    h <- max(400, ng * 200)
+    shinycssloaders::withSpinner(plotOutput("ir_plot_percentAA", height = paste0(h, "px")))
   })
 
   output$ir_plot_percentAA <- renderPlot({
