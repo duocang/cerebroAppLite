@@ -142,13 +142,21 @@ local({
 
     available_samples <- names(data)
     chains_present <- detect_chains(data)
-    chain_choices <- c("both", chains_present)
+    ## Build grouped chain choices: All / TCR / BCR
+    tcr_present <- intersect(chains_present, c("TRA", "TRB", "TRG", "TRD"))
+    bcr_present <- intersect(chains_present, c("IGH", "IGK", "IGL"))
+    chain_choices <- list("All" = "both")
+    if (length(tcr_present) > 0)
+      chain_choices[["TCR"]] <- as.list(setNames(tcr_present, tcr_present))
+    if (length(bcr_present) > 0)
+      chain_choices[["BCR"]] <- as.list(setNames(bcr_present, bcr_present))
 
     all_groups <- getGroups()
     data_cols <- names(data[[1]])
     available_groups <- c(NULL, intersect(all_groups, data_cols))
 
     tagList(
+      tags$style("#ir_chain + .selectize-control .selectize-dropdown-content { max-height: none; }"),
       fluidRow(
         column(6, selectInput("ir_cloneCall", "Clone call:",
           choices = c("gene", "nt", "aa", "strict"), selected = "gene")),
