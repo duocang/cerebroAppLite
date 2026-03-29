@@ -207,7 +207,7 @@
 #' for visualization.
 #'
 #' @param seurat_file Character string specifying the path to the Seurat object
-#'   file (should be in .qs format).
+#'   file. Supported formats: \code{.qs} and \code{.rds}.
 #' @param result_dir Character string specifying the directory where the Cerebro
 #'   output file (.crb) will be saved.
 #' @param assay Character string specifying which assay to use from the Seurat
@@ -331,7 +331,13 @@ convertSeuratToCerebro <- function(seurat_file,
   if (!file.exists(seurat_file)) {
     stop("seurat_file not found: ", seurat_file, call. = FALSE)
   }
-  seurat <- qs::qread(seurat_file)
+  ext <- tolower(tools::file_ext(seurat_file))
+  seurat <- switch(ext,
+    qs  = qs::qread(seurat_file),
+    rds = readRDS(seurat_file),
+    stop("Unsupported seurat_file format: .", ext,
+         ". Use .qs or .rds.", call. = FALSE)
+  )
 
 
   # Validate groups exist in metadata ----------------------------------------##
@@ -623,7 +629,7 @@ convertSeuratToCerebro <- function(seurat_file,
   }
 
   # Get the base name for the file
-  base_name <- gsub("\\.qs$", "", basename(seurat_file))
+  base_name <- tools::file_path_sans_ext(basename(seurat_file))
   file_name <- paste0("cerebro_", base_name, ".crb")
 
   # Export to cerebro format
