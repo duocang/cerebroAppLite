@@ -1,6 +1,6 @@
 Package: cerebroAppLite
 Title: Interactive visualization of single cell transcriptomics
-Version: 1.5.4
+Version: 1.6.0
 Author: Roman Hillje [aut, cre], Mischko Heming [aut], Xuesong Wang [aut]
 Maintainer: Mischko Heming <mihem@mailbox.org>
 Authors@R: c(
@@ -43,6 +43,7 @@ Imports:
   methods,
   msigdbr (>= 6.2.1),
   pbapply (>= 1.4),
+  Peptides,
   plotly (>= 4.9.0),
   qs,
   qvalue (>= 2.14.0),
@@ -67,5 +68,6 @@ Suggests:
   formattable (>= 0.2.0.1),
   knitr,
   rmarkdown,
+  scRepertoire (>= 2.0.0),
   Seurat (>= 3.0.0)
 VignetteBuilder: knitr
