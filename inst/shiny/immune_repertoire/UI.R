@@ -13,7 +13,10 @@ tab_immune_repertoire <- tabItem(
   fluidRow(
     cerebroBox(
       title = boxTitle("Immune Repertoire visualizations"),
-      content = shinycssloaders::withSpinner(uiOutput("ir_visualizations_UI"))
+      content = tagList(
+        uiOutput("ir_help_panel"),
+        shinycssloaders::withSpinner(uiOutput("ir_visualizations_UI"))
+      )
     )
   )
 )
