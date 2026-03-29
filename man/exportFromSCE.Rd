@@ -16,6 +16,7 @@ exportFromSCE(
   nGene = "nGene",
   add_all_meta_data = TRUE,
   use_delayed_array = FALSE,
+  format = "qs",
   verbose = FALSE
 )
 }
@@ -58,6 +59,9 @@ performance. Note that it is necessary to install the \code{DelayedArray}
 package. If set to \code{FALSE} (default), the expression matrix will be
 copied from the input object as is. It is recommended to use a sparse format,
 such as \code{dgCMatrix} from the \code{Matrix} package.}
+
+\item{format}{Format of output file. Can be either \code{"qs"} or
+\code{"rds"}. Defaults to \code{"qs"}.}
 
 \item{verbose}{Set this to \code{TRUE} if you want additional log messages;
 defaults to \code{FALSE}.}
