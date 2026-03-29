@@ -41,6 +41,13 @@
 #' @param verbose Set this to \code{TRUE} if you want additional log messages;
 #' defaults to \code{FALSE}.
 #'
+#' @section Immune Repertoire:
+#' If \code{object@misc$immune_repertoire} contains a named list of
+#' data.frames (one per sample, with scRepertoire columns such as CTgene,
+#' CTnt, CTaa, CTstrict), it will be automatically exported into the Cerebro
+#' object via \code{addImmuneRepertoire()}.  Legacy \code{bcr_data} /
+#' \code{tcr_data} slots are also supported as a fallback.
+#'
 #' @return
 #' No data returned.
 #'

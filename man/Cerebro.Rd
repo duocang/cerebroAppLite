@@ -46,6 +46,9 @@ reductions.}
 holding the most expressed genes for each grouping variable that was
 specified during the call to \code{\link{getMostExpressedGenes}}.}
 
+\item{\code{mean_expression}}{\code{list} that contains a \code{data.frame}
+holding the mean expression per gene for each grouping variable.}
+
 \item{\code{marker_genes}}{\code{list} that contains a \code{list} for every
 method that was used to calculate marker genes, and a \code{data.frame}
 for each grouping variable, e.g. those that were specified during the
@@ -68,6 +71,17 @@ e.g. those extracted with \code{\link{extractMonocleTrajectory}}.}
 \item{\code{extra_material}}{\code{list} that can contain additional material
 related to the data set; tables should be stored in \code{data.frame}
 format in a named \code{list} called `tables`}
+
+\item{\code{immune_repertoire}}{\code{list} of data.frames (one per sample)
+containing scRepertoire columns (CTgene, CTnt, CTaa, CTstrict, etc.).}
+
+\item{\code{bcr_data}}{\code{list} that contains BCR data (kept for backward
+compatibility with older .crb files).}
+
+\item{\code{tcr_data}}{\code{list} that contains TCR data (kept for backward
+compatibility with older .crb files).}
+
+\item{\code{spatial}}{\code{list} that contains spatial data (coordinates and expression).}
 }
 \if{html}{\out{</div>}}
 }
@@ -108,10 +122,13 @@ format in a named \code{list} called `tables`}
 \item \href{#method-Cerebro-addMostExpressedGenes}{\code{Cerebro$addMostExpressedGenes()}}
 \item \href{#method-Cerebro-getGroupsWithMostExpressedGenes}{\code{Cerebro$getGroupsWithMostExpressedGenes()}}
 \item \href{#method-Cerebro-getMostExpressedGenes}{\code{Cerebro$getMostExpressedGenes()}}
-\item \href{#method-Cerebro-addMarkerGenes}{\code{Cerebro$addMarkerGenes()}}
-\item \href{#method-Cerebro-getMethodsWithMarkerGenes}{\code{Cerebro$getMethodsWithMarkerGenes()}}
-\item \href{#method-Cerebro-getGroupsWithMarkerGenes}{\code{Cerebro$getGroupsWithMarkerGenes()}}
+\item \href{#method-Cerebro-addMeanExpression}{\code{Cerebro$addMeanExpression()}}
+\item \href{#method-Cerebro-getGroupsWithMeanExpression}{\code{Cerebro$getGroupsWithMeanExpression()}}
+\item \href{#method-Cerebro-getMeanExpression}{\code{Cerebro$getMeanExpression()}}
+\item \href{#method-Cerebro-setMarkerGenes}{\code{Cerebro$setMarkerGenes()}}
+\item \href{#method-Cerebro-hasMarkerGenes}{\code{Cerebro$hasMarkerGenes()}}
 \item \href{#method-Cerebro-getMarkerGenes}{\code{Cerebro$getMarkerGenes()}}
+\item \href{#method-Cerebro-getMarkerClusters}{\code{Cerebro$getMarkerClusters()}}
 \item \href{#method-Cerebro-addEnrichedPathways}{\code{Cerebro$addEnrichedPathways()}}
 \item \href{#method-Cerebro-getMethodsWithEnrichedPathways}{\code{Cerebro$getMethodsWithEnrichedPathways()}}
 \item \href{#method-Cerebro-getGroupsWithEnrichedPathways}{\code{Cerebro$getGroupsWithEnrichedPathways()}}
@@ -120,8 +137,27 @@ format in a named \code{list} called `tables`}
 \item \href{#method-Cerebro-getMethodsWithTrajectories}{\code{Cerebro$getMethodsWithTrajectories()}}
 \item \href{#method-Cerebro-getTrajectories}{\code{Cerebro$getTrajectories()}}
 \item \href{#method-Cerebro-getTrajectory}{\code{Cerebro$getTrajectory()}}
+\item \href{#method-Cerebro-getBCR}{\code{Cerebro$getBCR()}}
+\item \href{#method-Cerebro-getTCR}{\code{Cerebro$getTCR()}}
+\item \href{#method-Cerebro-addBCRData}{\code{Cerebro$addBCRData()}}
+\item \href{#method-Cerebro-addTCRData}{\code{Cerebro$addTCRData()}}
+\item \href{#method-Cerebro-getImmuneRepertoire}{\code{Cerebro$getImmuneRepertoire()}}
+\item \href{#method-Cerebro-addImmuneRepertoire}{\code{Cerebro$addImmuneRepertoire()}}
+\item \href{#method-Cerebro-addSpatialData}{\code{Cerebro$addSpatialData()}}
+\item \href{#method-Cerebro-getSpatialData}{\code{Cerebro$getSpatialData()}}
+\item \href{#method-Cerebro-availableSpatial}{\code{Cerebro$availableSpatial()}}
 \item \href{#method-Cerebro-addExtraMaterial}{\code{Cerebro$addExtraMaterial()}}
+\item \href{#method-Cerebro-addExtraTable}{\code{Cerebro$addExtraTable()}}
+\item \href{#method-Cerebro-addExtraPlot}{\code{Cerebro$addExtraPlot()}}
 \item \href{#method-Cerebro-getExtraMaterial}{\code{Cerebro$getExtraMaterial()}}
+\item \href{#method-Cerebro-getExtraMaterialCategories}{\code{Cerebro$getExtraMaterialCategories()}}
+\item \href{#method-Cerebro-checkForExtraTables}{\code{Cerebro$checkForExtraTables()}}
+\item \href{#method-Cerebro-getNamesOfExtraTables}{\code{Cerebro$getNamesOfExtraTables()}}
+\item \href{#method-Cerebro-getExtraTable}{\code{Cerebro$getExtraTable()}}
+\item \href{#method-Cerebro-checkForExtraPlots}{\code{Cerebro$checkForExtraPlots()}}
+\item \href{#method-Cerebro-getNamesOfExtraPlots}{\code{Cerebro$getNamesOfExtraPlots()}}
+\item \href{#method-Cerebro-getExtraPlot}{\code{Cerebro$getExtraPlot()}}
+\item \href{#method-Cerebro-print}{\code{Cerebro$print()}}
 \item \href{#method-Cerebro-clone}{\code{Cerebro$clone()}}
 }
 }
@@ -716,83 +752,116 @@ expressed genes.}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Cerebro-addMarkerGenes"></a>}}
-\if{latex}{\out{\hypertarget{method-Cerebro-addMarkerGenes}{}}}
-\subsection{Method \code{addMarkerGenes()}}{
-Add table of marker genes.
+\if{html}{\out{<a id="method-Cerebro-addMeanExpression"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-addMeanExpression}{}}}
+\subsection{Method \code{addMeanExpression()}}{
+Add table of mean expression per gene.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addMarkerGenes(method, group_name, table)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addMeanExpression(group_name, table)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{method}}{Name of method that was used to calculate marker genes.}
+\item{\code{group_name}}{Name of grouping variable that the mean expression
+belongs to. Must be registered in the \code{groups} field.}
 
-\item{\code{group_name}}{Name of grouping variable that the marker genes belong
-to. Must be registered in the \code{groups} field.}
+\item{\code{table}}{\code{data.frame} that contains the mean expression per gene.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getGroupsWithMeanExpression"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getGroupsWithMeanExpression}{}}}
+\subsection{Method \code{getGroupsWithMeanExpression()}}{
+Retrieve names of grouping variables for which mean expression data is
+available.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getGroupsWithMeanExpression()}\if{html}{\out{</div>}}
+}
 
+\subsection{Returns}{
+\code{vector} of grouping variables for which mean expression is
+available.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getMeanExpression"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getMeanExpression}{}}}
+\subsection{Method \code{getMeanExpression()}}{
+Retrieve table of mean expression for a specific grouping variable.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getMeanExpression(group_name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{group_name}}{Name of grouping variable for which to retrieve mean
+expression.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+\code{data.frame} containing the mean expression per gene.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-setMarkerGenes"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-setMarkerGenes}{}}}
+\subsection{Method \code{setMarkerGenes()}}{
+Set marker genes table.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$setMarkerGenes(table)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
 \item{\code{table}}{\code{data.frame} that contains the marker genes.}
 }
 \if{html}{\out{</div>}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Cerebro-getMethodsWithMarkerGenes"></a>}}
-\if{latex}{\out{\hypertarget{method-Cerebro-getMethodsWithMarkerGenes}{}}}
-\subsection{Method \code{getMethodsWithMarkerGenes()}}{
-Retrieve names of methods for which marker genes are available.
+\if{html}{\out{<a id="method-Cerebro-hasMarkerGenes"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-hasMarkerGenes}{}}}
+\subsection{Method \code{hasMarkerGenes()}}{
+Check if marker genes are available.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getMethodsWithMarkerGenes()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$hasMarkerGenes()}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{
-\code{vector} of methods for which marker genes are available.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Cerebro-getGroupsWithMarkerGenes"></a>}}
-\if{latex}{\out{\hypertarget{method-Cerebro-getGroupsWithMarkerGenes}{}}}
-\subsection{Method \code{getGroupsWithMarkerGenes()}}{
-Retrieve names of grouping variables for which marker genes are
-available for a specific method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getGroupsWithMarkerGenes(method)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{method}}{Name of method for which to retrieve grouping variables.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-\code{vector} of grouping variables for which marker genes are available.
+\code{logical} indicating whether marker genes are available.
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Cerebro-getMarkerGenes"></a>}}
 \if{latex}{\out{\hypertarget{method-Cerebro-getMarkerGenes}{}}}
 \subsection{Method \code{getMarkerGenes()}}{
-Retrieve table of marker genes for a specific method and grouping
-variable.
+Retrieve marker genes table.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getMarkerGenes(method, group_name)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getMarkerGenes()}\if{html}{\out{</div>}}
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{method}}{Name of method for which to retrieve marker genes.}
-
-\item{\code{group_name}}{Name of grouping variable for which to retrieve marker
-genes.}
-}
-\if{html}{\out{</div>}}
-}
 \subsection{Returns}{
 \code{data.frame} containing the marker genes.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getMarkerClusters"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getMarkerClusters}{}}}
+\subsection{Method \code{getMarkerClusters()}}{
+Get unique cluster/group values from marker genes table.
+Looks for common column names like "group", "cluster", "cell_type", etc.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getMarkerClusters()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+\code{vector} of unique cluster/group values, or \code{NULL} if not found.
 }
 }
 \if{html}{\out{<hr>}}
@@ -954,20 +1023,208 @@ Trajectory data as \code{data.frame} or \code{list}.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Cerebro-addExtraMaterial"></a>}}
-\if{latex}{\out{\hypertarget{method-Cerebro-addExtraMaterial}{}}}
-\subsection{Method \code{addExtraMaterial()}}{
-Add extra material to \code{extra_material} field.
+\if{html}{\out{<a id="method-Cerebro-getBCR"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getBCR}{}}}
+\subsection{Method \code{getBCR()}}{
+Retrieve BCR data
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addExtraMaterial(name, content)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getBCR()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+BCR data stored in the object.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getTCR"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getTCR}{}}}
+\subsection{Method \code{getTCR()}}{
+Retrieve TCR data
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getTCR()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+TCR data stored in the object.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-addBCRData"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-addBCRData}{}}}
+\subsection{Method \code{addBCRData()}}{
+Add BCR data.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addBCRData(data)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{name}}{Name of the extra material.}
+\item{\code{data}}{\code{list} that contains BCR data.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-addTCRData"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-addTCRData}{}}}
+\subsection{Method \code{addTCRData()}}{
+Add TCR data.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addTCRData(data)}\if{html}{\out{</div>}}
+}
 
-\item{\code{content}}{Content of the extra material.}
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{data}}{\code{list} that contains TCR data.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getImmuneRepertoire"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getImmuneRepertoire}{}}}
+\subsection{Method \code{getImmuneRepertoire()}}{
+Get immune repertoire data. Returns the unified \code{immune_repertoire}
+field if available; otherwise falls back to merging legacy
+\code{bcr_data} and \code{tcr_data}.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getImmuneRepertoire()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Named list of data.frames (one per sample), or empty list.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-addImmuneRepertoire"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-addImmuneRepertoire}{}}}
+\subsection{Method \code{addImmuneRepertoire()}}{
+Set immune repertoire data.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addImmuneRepertoire(data)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{data}}{Named list of data.frames (one per sample) containing
+scRepertoire columns.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-addSpatialData"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-addSpatialData}{}}}
+\subsection{Method \code{addSpatialData()}}{
+Add spatial data.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addSpatialData(name, data)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of the spatial data entry (e.g. image name).}
+
+\item{\code{data}}{\code{list} containing 'coordinates' (data.frame) and 'expression' (sparse matrix).}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getSpatialData"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getSpatialData}{}}}
+\subsection{Method \code{getSpatialData()}}{
+Retrieve spatial data.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getSpatialData(name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of the spatial data entry.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+\code{list} containing 'coordinates' and 'expression'.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-availableSpatial"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-availableSpatial}{}}}
+\subsection{Method \code{availableSpatial()}}{
+Get list of available spatial data entries.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$availableSpatial()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+\code{vector} of spatial data entries that are available.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-addExtraMaterial"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-addExtraMaterial}{}}}
+\subsection{Method \code{addExtraMaterial()}}{
+Add content to extra material field.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addExtraMaterial(category, name, content)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{category}}{Name of category. At the moment, only \code{tables} and
+\code{plots} are valid categories. Tables must be in \code{data.frame}
+format and plots must be created with \code{ggplot2}.}
+
+\item{\code{name}}{Name of material, will be used to select it in Cerebro.}
+
+\item{\code{content}}{Data that should be added.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-addExtraTable"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-addExtraTable}{}}}
+\subsection{Method \code{addExtraTable()}}{
+Add table to `extra_material` slot.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addExtraTable(name, table)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of material, will be used to select it in Cerebro.}
+
+\item{\code{table}}{Table that should be added, must be \code{data.frame}.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-addExtraPlot"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-addExtraPlot}{}}}
+\subsection{Method \code{addExtraPlot()}}{
+Add plot to `extra_material` slot.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$addExtraPlot(name, plot)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of material, will be used to select it in Cerebro.}
+
+\item{\code{plot}}{Plot that should be added, must be created with
+\code{ggplot2} (class: \code{ggplot}).}
 }
 \if{html}{\out{</div>}}
 }
@@ -984,6 +1241,124 @@ Retrieve extra material from \code{extra_material} field.
 \subsection{Returns}{
 \code{list} of all entries in the \code{extra_material} field.
 }
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getExtraMaterialCategories"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getExtraMaterialCategories}{}}}
+\subsection{Method \code{getExtraMaterialCategories()}}{
+Get names of categories for which extra material is available.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getExtraMaterialCategories()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+\code{vector} with names of available categories.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-checkForExtraTables"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-checkForExtraTables}{}}}
+\subsection{Method \code{checkForExtraTables()}}{
+Check whether there are tables in the extra materials.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$checkForExtraTables()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+\code{logical} indicating whether there are tables in the extra
+materials.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getNamesOfExtraTables"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getNamesOfExtraTables}{}}}
+\subsection{Method \code{getNamesOfExtraTables()}}{
+Get names of tables in extra materials.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getNamesOfExtraTables()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+\code{vector} containing names of tables in extra materials.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getExtraTable"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getExtraTable}{}}}
+\subsection{Method \code{getExtraTable()}}{
+Get table from extra materials.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getExtraTable(name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of table.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Requested table in \code{data.frame} format.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-checkForExtraPlots"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-checkForExtraPlots}{}}}
+\subsection{Method \code{checkForExtraPlots()}}{
+Check whether there are plots in the extra materials.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$checkForExtraPlots()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+\code{logical} indicating whether there are plots in the extra
+materials.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getNamesOfExtraPlots"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getNamesOfExtraPlots}{}}}
+\subsection{Method \code{getNamesOfExtraPlots()}}{
+Get names of plots in extra materials.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getNamesOfExtraPlots()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+\code{vector} containing names of plots in extra materials.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-getExtraPlot"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-getExtraPlot}{}}}
+\subsection{Method \code{getExtraPlot()}}{
+Get plot from extra materials.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$getExtraPlot(name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of plot.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Requested plot made with \code{ggplot2}.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Cerebro-print"></a>}}
+\if{latex}{\out{\hypertarget{method-Cerebro-print}{}}}
+\subsection{Method \code{print()}}{
+Show overview of object and the data it contains.
+Extract expression matrix (helper)
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Cerebro$print()}\if{html}{\out{</div>}}
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Cerebro-clone"></a>}}

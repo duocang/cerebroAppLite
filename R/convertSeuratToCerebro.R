@@ -255,11 +255,13 @@
 #'   list of data.frames. If list elements are unnamed, they will be assigned
 #'   names like "unknown1", "unknown2", etc.; default: \code{NULL}.
 #' @param bcr_file Character string specifying the path to a BCR data file
-#'   (.qs format) to be added to the Seurat object's misc slot; default:
-#'   \code{NULL}.
+#'   (.qs format). The data will be merged into the unified
+#'   \code{immune_repertoire} slot of the Seurat object before export;
+#'   default: \code{NULL}.
 #' @param tcr_file Character string specifying the path to a TCR data file
-#'   (.qs format) to be added to the Seurat object's misc slot; default:
-#'   \code{NULL}.
+#'   (.qs format). The data will be merged into the unified
+#'   \code{immune_repertoire} slot of the Seurat object before export;
+#'   default: \code{NULL}.
 #'
 #' @return
 #' This function does not return a value. It saves a Cerebro object (.crb file)
