@@ -69,14 +69,15 @@ If your Seurat object contains scRepertoire columns (e.g., from `combineExpressi
 
 This tab provides 19 visualization functions from [scRepertoire](https://github.com/ncborcherding/scRepertoire):
 
-| Category | Plots |
-|----------|-------|
+| Category         | Plots                                                             |
+| ---------------- | ----------------------------------------------------------------- |
 | Clonal structure | Abundance, Diversity, Homeostasis, Proportion, Quant, Rarefaction |
-| Clone size | Compare, Overlap, Scatter, SizeDist |
-| CDR3 sequence | Length, AA %, Entropy, Property, K-mer |
-| Gene usage | Gene usage, vizGenes, percentGenes, percentVJ |
+| Clone size       | Compare, Overlap, Scatter, SizeDist                               |
+| CDR3 sequence    | Length, AA %, Entropy, Property, K-mer                            |
+| Gene usage       | Gene usage, vizGenes, percentGenes, percentVJ                     |
 
 Each plot includes:
+
 - A concise explanation panel describing what the plot shows
 - An **Example** button that generates a demo plot from built-in data
 - Dynamic plot heights that adjust to your data
