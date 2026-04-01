@@ -83,7 +83,67 @@ Each plot includes:
 - Dynamic plot heights that adjust to your data
 - Filtering by chain (TRA, TRB, IGH, etc.) and grouping variable
 
-### 4. Other Improvements
+### 4. Spatial Transcriptomics Tab
+
+If your Seurat object contains spatial data (Visium, Xenium, or other coordinate-based platforms), a **Spatial** tab will appear automatically in the Cerebro interface. The tab is hidden when no spatial data is present.
+
+**Two visualization modes:**
+
+| Mode             | Description                                                  |
+| ---------------- | ------------------------------------------------------------ |
+| ImageDimPlot     | Color cells by metadata (cell type, sample, cluster, etc.)   |
+| ImageFeaturePlot | Color cells by gene expression with a continuous color scale |
+
+**Interactive features:**
+
+- **Box / Lasso selection** — select regions of interest and view composition tables and plots for the selected cells
+- **Tissue image overlay** — optional background image with adjustable opacity and flip/scale controls
+- **Group filtering** — filter displayed cells by any combination of grouping variables
+- **Cell subsampling** — "Show % of cells" slider for performance on large datasets
+- **Point customization** — size, opacity, border, and group label toggles
+- **2D / 3D auto-detection** — automatically adapts to the coordinate dimensions
+
+**Supported coordinate formats:**
+
+| Platform     | Columns used           |
+| ------------ | ---------------------- |
+| Visium       | `imagerow`, `imagecol` |
+| Xenium / FOV | `x`, `y` (centroids)   |
+
+### 5. Authentication
+
+`createTraditionalShinyApp()` supports optional login protection via the `enable_auth` parameter. Two authentication backends are available:
+
+| Backend          | Style                    | Speed  | Shiny Server in Docker | Look & Feel |
+| ---------------- | ------------------------ | ------ | ---------------------- | ----------- |
+| `"custom"`       | Static HTML + JS + CSS   | Fast   | Not compatible         | Modern      |
+| `"shinymanager"` | R package (shinymanager) | Slower | Compatible             | Basic       |
+
+**Custom backend** (`auth_style = "custom"`, default):
+
+- A static HTML login page is rendered immediately — no waiting for Shiny to initialize
+- Passwords are hashed with SHA-256 + salt and stored in an RDS file (never in plain text)
+- Rate limiting (max 5 attempts per minute) prevents brute-force attacks
+- On success the login overlay fades out and the main app appears seamlessly
+
+**shinymanager backend** (`auth_style = "shinymanager"`):
+
+- Uses the [shinymanager](https://github.com/datastorm-open/shinymanager) package with an SQLite credentials database
+- Works in Docker containers (Shiny Server)
+
+```r
+createTraditionalShinyApp(
+  cerebro_data = c(`My data` = "cerebro.crb"),
+  enable_auth  = TRUE,
+  auth_style   = "custom",        # or "shinymanager"
+  admin_user   = "admin",
+  admin_pass   = "s3cret",
+  users        = c("viewer1"),
+  users_pass   = c("pass123")
+)
+```
+
+### 6. Other Improvements
 
 - **Seurat v5 / BPCells support** — works with on-disk expression matrices for large datasets
 - **HDF5 matrix support** — via `HDF5Array` for memory-efficient storage
