@@ -62,5 +62,7 @@ Suggests:
   formattable (>= 0.2.0.1),
   knitr,
   rmarkdown,
-  Seurat (>= 3.0.0)
+  Seurat (>= 3.0.0),
+  testthat (>= 3.0.0),
+  shinytest2 (>= 0.2.0)
 VignetteBuilder: knitr
