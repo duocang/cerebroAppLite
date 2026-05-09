@@ -336,6 +336,7 @@ server <- function(input, output, session) {
   ## Export reactive values for testing (shinytest2).
   ##--------------------------------------------------------------------------##
   exportTestValues(
-    overview_cells_to_show = overview_projection_cells_to_show()
+    overview_cells_to_show = overview_projection_cells_to_show(),
+    expression_levels = expression_projection_expression_levels()
   )
 }

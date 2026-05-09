@@ -136,3 +136,37 @@ test_that("{shinytest2} recording: marker_genes", {
   )
   app$stop()
 })
+
+
+test_that("{shinytest2} recording: gene_expression", {
+  local_app_support(test_path("../../inst"))
+  app <- AppDriver$new(test_path("../../inst"), name = "gene_expression", height = 950,
+      width = 1619)
+  app$wait_for_idle(timeout = 20000)
+
+  app$set_inputs(sidebar = "geneExpression")
+  app$wait_for_idle(timeout = 10000)
+
+  ## projection UI renders without any gene selected
+  proj_ui <- app$get_value(output = "expression_projection_UI")
+  expect_false(is.null(proj_ui))
+
+  ## select MS4A1 and verify it is found in the data set
+  app$set_inputs(expression_genes_input = "MS4A1", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+
+  genes_text <- app$get_value(output = "expression_genes_displayed")
+  expect_true(grepl("MS4A1", genes_text))
+  expect_true(grepl("0 gene(s) are not in data set", genes_text, fixed = TRUE))
+
+  ## projection plot renders after gene selection
+  proj_val <- app$get_value(output = "expression_projection")
+  expect_false(is.null(proj_val))
+
+  ## verify expression levels have some non-zero values (cells with color)
+  expr_levels <- app$get_value(export = "expression_levels")
+  expect_true(length(expr_levels) > 0)
+  expect_true(any(expr_levels > 0))
+
+  app$stop()
+})
