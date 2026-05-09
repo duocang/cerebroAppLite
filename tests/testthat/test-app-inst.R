@@ -2,7 +2,7 @@ library(shinytest2)
 
 test_that("{shinytest2} recording: overview", {
   local_app_support(test_path("../../inst"))
-  app <- AppDriver$new(test_path("../../inst"), name = "inst", height = 950, width = 1619)
+  app <- AppDriver$new(test_path("../../inst"), name = "overview", height = 950, width = 1619)
   app$wait_for_idle(timeout = 20000)
 
   ## Data Info tab: verify key values from the loaded example.crb
@@ -53,6 +53,83 @@ test_that("{shinytest2} recording: main", {
       "overview_projection_point_opacity",
       "overview_projection_percentage_cells_to_show",
       "overview_projection_group_filter_seurat_clusters"
+    ),
+    output = FALSE,
+    export = FALSE
+  )
+  app$stop()
+})
+
+
+test_that("{shinytest2} recording: groups", {
+  local_app_support(test_path("../../inst"))
+  app <- AppDriver$new(test_path("../../inst"), name = "groups", height = 950, width = 1619)
+  app$wait_for_idle(timeout = 20000)
+
+  app$set_inputs(sidebar = "groups")
+  app$wait_for_idle(timeout = 10000)
+
+  ## composition plot renders
+  plot_val <- app$get_value(output = "groups_by_other_group_plot")
+  expect_false(is.null(plot_val))
+
+  ## switch to percent view
+  app$set_inputs(groups_by_other_group_show_as_percent = TRUE)
+  app$wait_for_idle(timeout = 10000)
+  plot_pct <- app$get_value(output = "groups_by_other_group_plot")
+  expect_false(is.null(plot_pct))
+
+  ## show table
+  app$set_inputs(groups_by_other_group_show_table = TRUE)
+  app$wait_for_idle(timeout = 10000)
+  table_val <- app$get_value(output = "groups_by_other_group_table")
+  expect_false(is.null(table_val))
+
+  app$expect_values(
+    input = c(
+      "groups_by_other_group_show_as_percent",
+      "groups_by_other_group_show_table"
+    ),
+    output = FALSE,
+    export = FALSE
+  )
+  app$stop()
+})
+
+test_that("{shinytest2} recording: marker_genes", {
+  local_app_support(test_path("../../inst"))
+  app <- AppDriver$new(test_path("../../inst"), name = "marker_genes", height = 950,
+      width = 1619)
+  app$wait_for_idle(timeout = 20000)
+
+  app$set_inputs(sidebar = "markerGenes")
+  app$wait_for_idle(timeout = 10000)
+
+  ## select seurat_clusters (only group with actual marker genes)
+  app$set_inputs(marker_genes_selected_table = "seurat_clusters", wait_ = FALSE)
+  app$wait_for_idle(timeout = 10000)
+
+  ## table renders
+  table_val <- app$get_value(output = "marker_genes_table")
+  expect_false(is.null(table_val))
+
+  ## verify expected columns are present in the table header
+  parsed <- jsonlite::fromJSON(table_val, simplifyVector = FALSE)
+  container_html <- parsed$x$container
+  for (col in c("gene", "p_val", "avg_logFC", "pct.1", "pct.2", "p_val_adj", "on_cell_surface")) {
+    expect_true(grepl(col, container_html, fixed = TRUE), label = paste("column present:", col))
+  }
+
+  ## "no markers found" and "no data" messages should not be shown —
+  ## table_or_text_UI should contain the table, not a text message
+  ui_val <- app$get_value(output = "marker_genes_table_or_text_UI")
+  expect_false(grepl("no_markers_found|no_data", ui_val$html, fixed = FALSE))
+
+  app$expect_values(
+    input = c(
+      "marker_genes_selected_method",
+      "marker_genes_selected_table",
+      "marker_genes_table_filter_switch"
     ),
     output = FALSE,
     export = FALSE
