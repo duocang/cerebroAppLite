@@ -331,4 +331,11 @@ server <- function(input, output, session) {
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/v1.4/gene_id_conversion/server.R"), local = TRUE)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/v1.4/color_management/server.R"), local = TRUE)
   source(paste0(Cerebro.options[["cerebro_root"]], "/shiny/v1.4/about/server.R"), local = TRUE)
+
+  ##--------------------------------------------------------------------------##
+  ## Export reactive values for testing (shinytest2).
+  ##--------------------------------------------------------------------------##
+  exportTestValues(
+    overview_cells_to_show = overview_projection_cells_to_show()
+  )
 }

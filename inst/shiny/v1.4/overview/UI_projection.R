@@ -73,6 +73,7 @@ output[["overview_projection_UI"]] <- renderUI({
             #style = "margin-right: 3px"
           #),
           shinyWidgets::dropdownButton(
+            inputId = "overview_projection_settings_dropdown",
             tags$div(
               style = "color: black !important;",
               uiOutput("overview_projection_show_group_label_UI"),
