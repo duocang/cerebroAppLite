@@ -44,7 +44,7 @@ test_that("{shinytest2} recording: main", {
   ## verify input parameters are applied
   app$set_inputs(overview_projection_point_size = 9)
   app$set_inputs(overview_projection_point_opacity = 0.9)
-  app$set_inputs(overview_projection_percentage_cells_to_show = 60)
+  app$set_inputs(overview_projection_percentage_cells_to_show = 100)
   app$wait_for_idle(timeout = 10000)
 
   app$expect_values(
