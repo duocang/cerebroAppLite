@@ -1,6 +1,6 @@
 library(shinytest2)
 
-test_that("{shinytest2} recording: inst", {
+test_that("{shinytest2} recording: overview", {
   local_app_support(test_path("../../inst"))
   app <- AppDriver$new(test_path("../../inst"), name = "inst", height = 950, width = 1619)
   app$wait_for_idle(timeout = 20000)
