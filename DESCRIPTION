@@ -65,4 +65,6 @@ Suggests:
   Seurat (>= 3.0.0),
   testthat (>= 3.0.0),
   shinytest2 (>= 0.2.0)
+Remotes:
+  bnprks/BPCells/r
 VignetteBuilder: knitr
