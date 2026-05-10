@@ -35,7 +35,7 @@ object@misc$enriched_pathways$<name>; defaults to 'cerebro_GSVA'.}
 
 \item{thresh_q_val}{Threshold for q-value, defaults to 0.1.}
 
-\item{...}{Further parameters can be passed to control GSVA::gsva().}
+\item{...}{Further parameters passed to `GSVA::gsvaParam()` (GSVA >= 2.0) or `GSVA::gsva()` (GSVA < 2.0).}
 }
 \value{
 Seurat object with GSVA results for the specified grouping variables
@@ -50,10 +50,10 @@ labels to cell clusters from single-cell RNA-sequencing data", Diaz-Mejia et
 al., F1000Research (2019).
 }
 \examples{
-pbmc <- readRDS(system.file("extdata/v1.3/pbmc_seurat.rds",
-  package = "cerebroApp"))
+pbmc <- readRDS(system.file("extdata/v1.4/pbmc_seurat.rds",
+  package = "cerebroAppLite"))
 example_gene_set <- system.file("extdata/example_gene_set.gmt",
-  package = "cerebroApp")
+  package = "cerebroAppLite")
 pbmc <- performGeneSetEnrichmentAnalysis(
   object = pbmc,
   GMT_file = example_gene_set,

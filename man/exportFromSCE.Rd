@@ -34,17 +34,17 @@ slot) to avoid performance bottlenecks in the Cerebro interface.}
 \item{organism}{Organism, e.g. \code{hg} (human), \code{mm} (mouse), etc.}
 
 \item{groups}{Names of grouping variables in meta data
-(\code{colData(object)}), e.g. \code{c("sample","cluster")}; at least one
+(\code{SingleCellExperiment::colData(object)}), e.g. \code{c("sample","cluster")}; at least one
 must be provided; defaults to \code{NULL}.}
 
-\item{cell_cycle}{Names of columns in meta data (\code{colData(object)}) that#
+\item{cell_cycle}{Names of columns in meta data (\code{SingleCellExperiment::colData(object)}) that#
 contain cell cycle information, e.g. \code{c("Phase")}; defaults to
 \code{NULL}.}
 
-\item{nUMI}{Column in \code{colData(object)} that contains information about
+\item{nUMI}{Column in \code{SingleCellExperiment::colData(object)} that contains information about
 number of transcripts per cell; defaults to \code{nUMI}.}
 
-\item{nGene}{Column in \code{colData(object)} that contains information about
+\item{nGene}{Column in \code{SingleCellExperiment::colData(object)} that contains information about
 number of expressed genes per cell; defaults to \code{nGene}.}
 
 \item{add_all_meta_data}{If set to \code{TRUE}, all further meta data columns
@@ -70,11 +70,11 @@ This function allows to export a \code{SingleCellExperiment} (\code{SCE})
 object to visualize in Cerebro.
 }
 \examples{
-pbmc <- readRDS(system.file("extdata/v1.3/pbmc_SCE.rds",
-  package = "cerebroApp"))
+pbmc <- readRDS(system.file("extdata/v1.4/pbmc_SCE.rds",
+  package = "cerebroAppLite"))
 exportFromSCE(
   object = pbmc,
-  file = 'pbmc_SCE.crb',
+  file = file.path(tempdir(), 'pbmc_SCE.crb'),
   experiment_name = 'PBMC',
   organism = 'hg',
   groups = c('sample','cluster'),

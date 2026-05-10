@@ -21,7 +21,7 @@ getEnrichedPathways(
 
 \item{marker_genes_input}{Name of list of marker gene tables that will be
 used as input. This could be the "name" parameter used in
-\code{\link{getMarkerGenes()}}. Enriched pathways will be calculated for
+\code{\link{getMarkerGenes}}. Enriched pathways will be calculated for
 every group level of every grouping variable. Defaults to "cerebro_seurat".}
 
 \item{databases}{Which databases to query. Use enrichR::listEnrichrDbs() to
@@ -46,15 +46,24 @@ This function uses the enrichR API to look for enriched pathways in marker
 gene sets of all available grouping variables.
 }
 \examples{
-pbmc <- readRDS(system.file("extdata/v1.3/pbmc_seurat.rds",
-  package = "cerebroApp"))
-pbmc <- getEnrichedPathways(
-  object = pbmc,
-  marker_genes_input = 'cerebro_seurat',
-  databases = c('GO_Biological_Process_2018','GO_Cellular_Component_2018'),
-  adj_p_cutoff = 0.01,
-  max_terms = 100,
-  URL_API = 'http://maayanlab.cloud/Enrichr'
-)
+if (interactive()) {
+  pbmc <- readRDS(system.file("extdata/v1.4/pbmc_seurat.rds",
+    package = "cerebroAppLite"))
+  ## inject minimal marker genes so the example can run without prior
+  ## getMarkerGenes() call
+  if (is.null(pbmc@misc$marker_genes)) pbmc@misc$marker_genes <- list()
+  pbmc@misc$marker_genes$cerebro_seurat <- list(
+    sample = data.frame(gene = c("CD3D", "FCN1"), cluster = c("s1", "s2"),
+      stringsAsFactors = FALSE)
+  )
+  pbmc <- getEnrichedPathways(
+    object = pbmc,
+    marker_genes_input = 'cerebro_seurat',
+    databases = c('GO_Biological_Process_2018'),
+    adj_p_cutoff = 0.01,
+    max_terms = 100,
+    URL_API = 'http://maayanlab.cloud/Enrichr'
+  )
+}
 
 }
