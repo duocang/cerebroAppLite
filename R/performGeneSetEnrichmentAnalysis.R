@@ -21,7 +21,7 @@
 #' object@misc$enriched_pathways$<name>; defaults to 'cerebro_GSVA'.
 #' @param thresh_p_val Threshold for p-value, defaults to 0.05.
 #' @param thresh_q_val Threshold for q-value, defaults to 0.1.
-#' @param ... Further parameters can be passed to control GSVA::gsva().
+#' @param ... Further parameters passed to `GSVA::gsvaParam()` (GSVA >= 2.0) or `GSVA::gsva()` (GSVA < 2.0).
 #'
 #' @return
 #' Seurat object with GSVA results for the specified grouping variables
@@ -41,10 +41,10 @@
 #' )
 #'
 #' @import dplyr
-#' @importFrom GSVA gsva
+#' @importFrom GSVA gsva gsvaParam
 #' @importFrom Matrix colMeans colSums rowSums t
 #' @importFrom qvalue qvalue
-#' @importFrom rlang .data
+#' @importFrom rlang .data :=
 #' @importFrom tibble tibble
 #'
 #' @export
@@ -84,7 +84,7 @@ performGeneSetEnrichmentAnalysis <- function(
   }
 
   ## check if provided object is of class "Seurat"
-  if ( class(object) != "Seurat" ) {
+  if ( !inherits(object, "Seurat") ) {
     stop(
       paste0(
         "Provided object is of class `", class(object), "` but must be of class 'Seurat'."
@@ -113,8 +113,11 @@ performGeneSetEnrichmentAnalysis <- function(
     )
   }
 
+  ## get data matrix using the Seurat API (works for both Assay and Assay5)
+  data_matrix <- Seurat::GetAssayData(object, assay = assay, layer = "data")
+
   ## check if `data` matrix exist in provided assay
-  if ( is.null(object@assays[[assay]]@data) ) {
+  if ( is.null(data_matrix) || nrow(data_matrix) == 0 ) {
     stop(
       paste0(
         '`data` matrix could not be found in `', assay, '` assay slot of the provided Seurat object.'
@@ -197,7 +200,7 @@ performGeneSetEnrichmentAnalysis <- function(
   )
 
   ## check which genes are not expressed in any cell
-  expressed_genes <- Matrix::rowSums(object@assays[[assay]]@data)
+  expressed_genes <- Matrix::rowSums(data_matrix)
   expressed_genes <- which(expressed_genes != 0)
 
   ## extract transcript counts for expressed genes from Seurat object
@@ -207,7 +210,7 @@ performGeneSetEnrichmentAnalysis <- function(
       'from `data` slot of `', assay, '` assay...'
     )
   )
-  matrix_full <- object@assays[[assay]]@data[expressed_genes,]
+  matrix_full <- data_matrix[expressed_genes,]
 
   ##---------------------------------------------------------------------------#
   ## perform gene set enrichment analysis for each group
@@ -310,11 +313,21 @@ performGeneSetEnrichmentAnalysis <- function(
       })
 
       ## get enrichment score for each gene set in every cell group
-      enrichment_scores <- GSVA::gsva(
+      ## GSVA >= 2.0 uses a param-object API; fall back to old API for older versions
+      if (utils::packageVersion("GSVA") >= "2.0") {
+        gsva_param <- GSVA::gsvaParam(
+          exprData = matrix_mean_by_group,
+          geneSets = gene_sets$genesets,
+          ...
+        )
+        enrichment_scores <- GSVA::gsva(gsva_param)
+      } else {
+        enrichment_scores <- GSVA::gsva(
           expr = matrix_mean_by_group,
           gset.idx.list = gene_sets$genesets,
           ...
         )
+      }
 
       ## log message
       # message(
