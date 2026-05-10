@@ -26,7 +26,7 @@
 #' @import dplyr
 #' @importFrom Matrix rowSums
 #' @importFrom pbapply pblapply
-#' @importFrom rlang .data
+#' @importFrom rlang .data :=
 #' @importFrom tibble tibble
 #'
 #' @export
@@ -61,7 +61,7 @@ getMostExpressedGenes <- function(
   }
 
   ## check if provided object is of class "Seurat"
-  if ( class(object) != "Seurat" ) {
+  if ( !inherits(object, "Seurat") ) {
     stop(
       paste0(
         "Provided object is of class `", class(object), "` but must be of class 'Seurat'."
@@ -90,8 +90,11 @@ getMostExpressedGenes <- function(
     )
   }
 
+  ## get counts matrix using the Seurat API (works for both Assay and Assay5)
+  counts_matrix <- Seurat::GetAssayData(object, assay = assay, layer = "counts")
+
   ## check if `counts` matrix exist in provided assay
-  if ( is.null(object@assays[[assay]]@counts) ) {
+  if ( is.null(counts_matrix) || nrow(counts_matrix) == 0 ) {
     stop(
       paste0(
         '`counts` matrix could not be found in `', assay, '` assay slot of the provided Seurat object.'
@@ -183,7 +186,7 @@ getMostExpressedGenes <- function(
       )
 
       ## calculate sums for all genes
-      transcripts_counts_per_gene <- Matrix::rowSums(object@assays[[assay]]@counts)
+      transcripts_counts_per_gene <- Matrix::rowSums(counts_matrix)
 
       ## calculate transcript count across all cells of current group level
       total_transcript_count <- sum(transcripts_counts_per_gene)
@@ -227,7 +230,7 @@ getMostExpressedGenes <- function(
         cells_of_current_group_level <- rownames(object@meta.data)[ which(object@meta.data[[ current_group ]] == x) ]
 
         ## subset transcript count matrix for 
-        transcript_count_matrix <- object@assays[[assay]]@counts[,cells_of_current_group_level]
+        transcript_count_matrix <- counts_matrix[,cells_of_current_group_level]
 
         ## check how many cells are present in the matrix
         ## ... only a single cell, which returns transcript counts as vector
