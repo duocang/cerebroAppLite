@@ -63,7 +63,7 @@ addPercentMtRibo <- function(
   }
 
   ## check if provided object is of class "Seurat"
-  if ( class(object) != "Seurat" ) {
+  if ( !inherits(object, "Seurat") ) {
     stop(
       paste0(
         "Provided object is of class `", class(object), "` but must be of class 'Seurat'."
@@ -165,8 +165,10 @@ addPercentMtRibo <- function(
         call. = FALSE
       )
     }
+    ## get counts matrix using the Seurat API (works for both Assay and Assay5)
+    counts_matrix <- Seurat::GetAssayData(object, assay = assay, layer = "counts")
     ## check if `counts` matrix exist in provided assay
-    if ( is.null(object@assays[[assay]]@counts) ) {
+    if ( is.null(counts_matrix) || nrow(counts_matrix) == 0 ) {
       stop(
         paste0(
           '`counts` matrix could not be found in `', assay, '` assay slot.'
@@ -175,10 +177,10 @@ addPercentMtRibo <- function(
       )
     }
     genes_mt_here <- intersect(
-      genes_mt, rownames(object@assays[[assay]]@counts)
+      genes_mt, rownames(counts_matrix)
     )
     genes_ribo_here <- intersect(
-      genes_ribo, rownames(object@assays[[assay]]@counts)
+      genes_ribo, rownames(counts_matrix)
     )
   }
 
@@ -208,7 +210,7 @@ addPercentMtRibo <- function(
       object,
       assay = assay,
       list('genes_mt' = genes_mt_here)
-    )
+    )[[1]]
   } else {
     object@misc$gene_lists$mitochondrial_genes <- 'no_mitochondrial_genes_found'
     message(
@@ -237,7 +239,7 @@ addPercentMtRibo <- function(
       object,
       assay = assay,
       list('genes_ribo' = genes_ribo_here)
-    )
+    )[[1]]
   } else {
     object@misc$gene_lists$ribosomal_genes <- 'no_ribosomal_genes_found'
     message(
