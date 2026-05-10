@@ -44,7 +44,7 @@
 #'   package = "cerebroAppLite"))
 #' exportFromSeurat(
 #'   object = pbmc,
-#'   file = 'pbmc_Seurat.crb',
+#'   file = file.path(tempdir(), 'pbmc_Seurat.crb'),
 #'   experiment_name = 'PBMC',
 #'   organism = 'hg',
 #'   groups = c('sample','seurat_clusters'),
@@ -55,6 +55,7 @@
 #' )
 #'
 #' @import dplyr
+#' @importFrom methods as
 #' @importFrom rlang .data
 #'
 #' @export
@@ -99,7 +100,7 @@ exportFromSeurat <- function(
   }
 
   ## check if provided object is of class "Seurat"
-  if ( class(object) != "Seurat" ) {
+  if ( !inherits(object, "Seurat") ) {
     stop(
       paste0(
         "Provided object is of class `", class(object), "` but must be of class 'Seurat'."
@@ -222,7 +223,7 @@ exportFromSeurat <- function(
   )
 
   ## check if provided slot exists in provided assay
-  if ( class(expression_data) == 'try-error' ) {
+  if ( inherits(expression_data, 'try-error') ) {
     stop(
       paste0(
         'Slot `', slot, '` could not be found in `', assay, '` assay slot.'
@@ -235,7 +236,7 @@ exportFromSeurat <- function(
   ## "matrix" format, and if the "DelayedArray" package is available
   if (
     use_delayed_array == TRUE &&
-    class(expression_data) %in% c('matrix','dgCMatrix') &&
+    inherits(expression_data, c('matrix','dgCMatrix')) &&
     requireNamespace("DelayedArray", quietly = TRUE)
   ) {
     if ( verbose ) {
@@ -246,8 +247,8 @@ exportFromSeurat <- function(
         )
       )
     }
-    require('DelayedArray')
-    expression_data <- as(expression_data, "RleArray")
+    requireNamespace("DelayedArray", quietly = TRUE)
+    expression_data <- methods::as(expression_data, "RleArray")
   }
 
   ## add expression data
