@@ -22,15 +22,13 @@
   databases = NULL,
   URL_API = NULL
 ) {
-
   ## check input format
   ## ... input is a vector with length > 0 and not all empty genes
   if (
     is.vector(genes) &&
-    length(genes) > 0 &&
-    !all(genes == '')
+      length(genes) > 0 &&
+      !all(genes == '')
   ) {
-
     ## send request with gene names
     temp <- httr::POST(
       url = paste0(URL_API, "/enrich"),
@@ -39,34 +37,33 @@
       )
     )
 
-  ## ... input is a data frame
-  } else if ( is.data.frame(genes) ) {
-
+    ## ... input is a data frame
+  } else if (is.data.frame(genes)) {
     ## send request with gene names and scores
     temp <- httr::POST(
       url = paste0(URL_API, "/enrich"),
       body = list(
-        list = paste(paste(genes[,1], genes[,2], sep = ','), collapse = '\n')
+        list = paste(paste(genes[, 1], genes[, 2], sep = ','), collapse = '\n')
       )
     )
 
-  ## ... none of the above
+    ## ... none of the above
   } else {
-
     warning(
-      paste0('genes must be a non-empty vector of gene names or a dataframe ',
-      'with genes and score.'
+      paste0(
+        'genes must be a non-empty vector of gene names or a dataframe ',
+        'with genes and score.'
       )
     )
   }
 
-  ## 
+  ##
   httr::GET(url = paste0(URL_API, "/share"))
 
   ##
   dfSAF <- options()$stringsAsFactors
 
-  ## 
+  ##
   options()
 
   ##
@@ -74,40 +71,39 @@
     databases,
     USE.NAMES = TRUE,
     simplify = FALSE,
-    function(x)
-  {
-
-    ##
-    r <- httr::GET(
-      url = paste0(URL_API, "/export"),
-      query = list(
-        file = 'API',
-        backgroundType = x
+    function(x) {
+      ##
+      r <- httr::GET(
+        url = paste0(URL_API, "/export"),
+        query = list(
+          file = 'API',
+          backgroundType = x
+        )
       )
-    )
 
-    ##
-    r <- gsub('&#39;', "'", intToUtf8(r$content))
+      ##
+      r <- gsub('&#39;', "'", intToUtf8(r$content))
 
-    ##
-    tc <- textConnection(r)
+      ##
+      tc <- textConnection(r)
 
-    ##
-    r <- utils::read.table(
-      tc,
-      sep = '\t',
-      header = TRUE,
-      quote = '',
-      comment.char = '',
-      stringsAsFactors = FALSE
-    )
+      ##
+      r <- utils::read.table(
+        tc,
+        sep = '\t',
+        header = TRUE,
+        quote = '',
+        comment.char = '',
+        stringsAsFactors = FALSE
+      )
 
-    ##
-    close(tc)
+      ##
+      close(tc)
 
-    ##
-    return(r)
-  })
+      ##
+      return(r)
+    }
+  )
 
   ##
   return(result)
