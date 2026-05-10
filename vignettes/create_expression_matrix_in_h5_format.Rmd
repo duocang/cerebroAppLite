@@ -17,7 +17,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
@@ -32,7 +33,7 @@ The catch: Reading data from the disk tends to be slower than reading it from me
 
 Make sure that the `Matrix`, `HDF5Array` and `cerebroApp` packages are installed.
 
-```{r message=FALSE}
+```{r message=FALSE, eval=FALSE}
 if ( 'Matrix' %in% installed.packages() == FALSE ) install.packages('Matrix')
 if ( 'HDF5Array' %in% installed.packages() == FALSE ) install.packages('HDF5Array')
 if ( 'cerebroApp' %in% installed.packages() == FALSE ) install.packages('cerebroApp')
@@ -43,16 +44,15 @@ library(HDF5Array)
 For this example, we will store the output in a temporary directory.
 
 ```{r}
+library(HDF5Array)
 output_dir <- tempdir()
-```
-
-# Load existing `.crb` file
+```# Load existing `.crb` file
 
 Assuming that you have already exported your data set to a `.crb` file using the `exportFromSeurat()` or `exportFromSCE()` functions, we are first going to load that file.
 Here, we use the example data set in the `cerebroApp` package:
 
 ```{r}
-crb_input <- system.file('extdata', 'v1.3', 'example.crb', package = 'cerebroApp')
+crb_input <- system.file('extdata', 'v1.4', 'example.crb', package = 'cerebroAppLite')
 crb <- readRDS(crb_input)
 ```
 
