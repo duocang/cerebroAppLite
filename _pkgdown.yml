@@ -2,6 +2,7 @@ url: https://mihem.github.io/cerebroAppLite/
 
 template:
   bootstrap: 5
+  bootswatch: flatly
 
 home:
   title: cerebroAppLite
