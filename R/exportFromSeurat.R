@@ -40,8 +40,8 @@
 #' No data returned.
 #'
 #' @examples
-#' pbmc <- readRDS(system.file("extdata/v1.3/pbmc_seurat.rds",
-#'   package = "cerebroApp"))
+#' pbmc <- readRDS(system.file("extdata/v1.4/pbmc_seurat.rds",
+#'   package = "cerebroAppLite"))
 #' exportFromSeurat(
 #'   object = pbmc,
 #'   file = 'pbmc_Seurat.crb',

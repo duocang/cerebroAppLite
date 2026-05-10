@@ -41,7 +41,7 @@
 #'
 #' @examples
 #' pbmc <- readRDS(system.file("extdata/v1.3/pbmc_SCE.rds",
-#'   package = "cerebroApp"))
+#'   package = "cerebroAppLite"))
 #' exportFromSCE(
 #'   object = pbmc,
 #'   file = 'pbmc_SCE.crb',

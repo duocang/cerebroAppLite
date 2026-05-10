@@ -26,8 +26,8 @@
 #' stored in \code{object@misc$enriched_pathways$<marker_genes_input>_enrichr}
 #'
 #' @examples
-#' pbmc <- readRDS(system.file("extdata/v1.3/pbmc_seurat.rds",
-#'   package = "cerebroApp"))
+#' pbmc <- readRDS(system.file("extdata/v1.4/pbmc_seurat.rds",
+#'   package = "cerebroAppLite"))
 #' pbmc <- getEnrichedPathways(
 #'   object = pbmc,
 #'   marker_genes_input = 'cerebro_seurat',
