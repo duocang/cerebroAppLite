@@ -58,7 +58,7 @@ calculatePercentGenes <- function(
   }
 
   ## check if provided object is of class "Seurat"
-  if ( class(object) != "Seurat" ) {
+  if ( !inherits(object, "Seurat") ) {
     stop(
       paste0(
         "Provided object is of class `", class(object), "` but must be of class 'Seurat'."
@@ -87,8 +87,11 @@ calculatePercentGenes <- function(
     )
   }
 
+  ## get counts matrix using the Seurat API (works for both Assay and Assay5)
+  counts_matrix <- Seurat::GetAssayData(object, assay = assay, layer = "counts")
+
   ## check if `counts` matrix exist in provided assay
-  if ( is.null(object@assays[[assay]]@counts) ) {
+  if ( is.null(counts_matrix) || nrow(counts_matrix) == 0 ) {
     stop(
       paste0(
         '`counts` matrix could not be found in `', assay, '` assay slot of the provided Seurat object.'
@@ -105,13 +108,13 @@ calculatePercentGenes <- function(
   result <- pbapply::pblapply(
     genes,
     function(x) {
-      genes_here <- intersect(x, rownames(object@assays[[assay]]@counts))
+      genes_here <- intersect(x, rownames(counts_matrix))
       if ( length(genes_here) == 1 ) {
-        object@assays[[assay]]@counts[genes_here,] /
-        Matrix::colSums(object@assays[[assay]]@counts)
+        counts_matrix[genes_here,] /
+        Matrix::colSums(counts_matrix)
       } else {
-        Matrix::colSums(object@assays[[assay]]@counts[genes_here,]) /
-        Matrix::colSums(object@assays[[assay]]@counts)
+        Matrix::colSums(counts_matrix[genes_here,]) /
+        Matrix::colSums(counts_matrix)
       }
     }
   )
