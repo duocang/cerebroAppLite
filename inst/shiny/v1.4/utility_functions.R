@@ -1014,68 +1014,10 @@ getExtraPlot <- function(name) {
 }
 
 ##----------------------------------------------------------------------------##
-## Cerebro file reader (qs/rds dispatch).
-## Trusts file extension when explicit; otherwise sniffs gzip header.
+## Cerebro file reader (.rds via readRDS).
 ##----------------------------------------------------------------------------##
 read_cerebro_file <- function(file) {
-  ext <- tools::file_ext(file)
-
-  read_qs <- function(f) {
-    if (requireNamespace("qs", quietly = TRUE)) {
-      n_threads <- max(1, min(4, parallel::detectCores()))
-      return(qs::qread(f, nthreads = n_threads))
-    } else {
-      stop("To read qs files, please install the 'qs' package.")
-    }
-  }
-
-  if (tolower(ext) == "qs") {
-    return(read_qs(file))
-  } else if (tolower(ext) == "rds") {
-    return(readRDS(file))
-  }
-
-  is_gzip <- FALSE
-  tryCatch({
-    con <- file(file, "rb")
-    header <- readBin(con, "raw", n = 2)
-    close(con)
-    if (length(header) == 2 && header[1] == 0x1f && header[2] == 0x8b) {
-      is_gzip <- TRUE
-    }
-  }, error = function(e) {})
-
-  if (is_gzip) {
-    tryCatch({
-      return(readRDS(file))
-    }, error = function(e_rds) {
-      if (requireNamespace("qs", quietly = TRUE)) {
-        tryCatch({
-          return(read_qs(file))
-        }, error = function(e_qs) {
-          stop(paste0("Could not read file.\nRDS error: ", e_rds$message,
-                      "\nqs error: ", e_qs$message))
-        })
-      } else {
-        stop(paste0("Could not read file as RDS.\nRDS error: ", e_rds$message))
-      }
-    })
-  } else {
-    if (requireNamespace("qs", quietly = TRUE)) {
-      tryCatch({
-        return(read_qs(file))
-      }, error = function(e_qs) {
-        tryCatch({
-          return(readRDS(file))
-        }, error = function(e_rds) {
-          stop(paste0("Could not read file.\nqs error: ", e_qs$message,
-                      "\nRDS error: ", e_rds$message))
-        })
-      })
-    } else {
-      return(readRDS(file))
-    }
-  }
+  readRDS(file)
 }
 
 ##----------------------------------------------------------------------------##

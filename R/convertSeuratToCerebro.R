@@ -12,21 +12,21 @@
       data_type_upper, " file not found: ", file_path, "\n",
       "Suggestions:\n",
       "  1. Check if the file path is correct\n",
-      "  2. Verify the file extension is .qs\n",
+      "  2. Verify the file extension is .rds\n",
       "  3. Ensure you have read permissions for the file"
     )
   }
 
   data <- tryCatch({
-    qs::qread(file_path)
+    readRDS(file_path)
   }, error = function(e) {
     stop(
       "Failed to read ", data_type_upper, " data from: ", file_path, "\n",
       "  Error: ", e$message, "\n",
       "Suggestions:\n",
-      "  1. Verify the file is a valid .qs file\n",
-      "  2. Check if the file was created using qs::qsave()\n",
-      "  3. Try reading the file directly: qs::qread('", file_path, "')"
+      "  1. Verify the file is a valid .rds file\n",
+      "  2. Check if the file was created using saveRDS()\n",
+      "  3. Try reading the file directly: readRDS('", file_path, "')"
     )
   })
 
@@ -36,7 +36,7 @@
       "Suggestions:\n",
       "  1. Check if the source file contains valid data\n",
       "  2. Verify the file was not corrupted\n",
-      "  3. Try recreating the .qs file"
+      "  3. Try recreating the .rds file"
     )
   }
 
@@ -47,7 +47,7 @@
       "  Received: ", class(data)[1], " with length ", length(data), "\n",
       "Suggestions:\n",
       "  1. Verify the data structure matches scRepertoire format\n",
-      "  2. Check if the data was properly saved using qs::qsave()\n",
+      "  2. Check if the data was properly saved using saveRDS()\n",
       "  3. Ensure the data contains contig annotations"
     )
   }
@@ -167,23 +167,13 @@
   markers_df <- NULL
 
   # Read file based on extension
-  if (ext %in% c("xls", "xlsx")) {
-    if (!requireNamespace("readxl", quietly = TRUE)) {
-      stop("Package 'readxl' is required to read Excel files (xls/xlsx).", call. = FALSE)
-    }
-    sheet_names <- readxl::excel_sheets(marker_file)
-    # Read all sheets and combine into one data.frame
-    markers_list <- lapply(sheet_names, function(sheet_name) {
-      df <- readxl::read_excel(marker_file, sheet = sheet_name)
-      as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
-    })
-    markers_df <- do.call(rbind, markers_list)
-  } else if (ext == "csv") {
+  if (ext == "csv") {
     markers_df <- utils::read.csv(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
   } else if (ext %in% c("tsv", "txt", "tab")) {
     markers_df <- utils::read.delim(marker_file, stringsAsFactors = FALSE, check.names = FALSE)
   } else {
-    stop("Unsupported marker_file format: .", ext, ". Supported: xls, xlsx, csv, tsv, txt, tab.", call. = FALSE)
+    stop("Unsupported marker_file format: .", ext, ". Supported: csv, tsv, txt, tab. ",
+         "For Excel input, export to CSV first.", call. = FALSE)
   }
 
   if (is.null(markers_df) || nrow(markers_df) == 0) {
@@ -348,10 +338,9 @@ convertSeuratToCerebro <- function(seurat_file,
   }
   ext <- tolower(tools::file_ext(seurat_file))
   seurat <- switch(ext,
-    qs  = qs::qread(seurat_file),
     rds = readRDS(seurat_file),
     stop("Unsupported seurat_file format: .", ext,
-         ". Use .qs or .rds.", call. = FALSE)
+         ". Use .rds (saved with saveRDS).", call. = FALSE)
   )
 
 

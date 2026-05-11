@@ -28,8 +28,6 @@
 #' about number of expressed genes per cell; defaults to \code{nGene}.
 #' @param add_all_meta_data If set to \code{TRUE}, all further meta data columns
 #' will be extracted as well.
-#' @param format Format of output file. Can be either \code{"qs"} or
-#' \code{"rds"}. Defaults to \code{"qs"}.
 #' @param use_delayed_array When set to \code{TRUE}, the expression matrix will
 #' be stored as an \code{RleMatrix} (see \code{DelayedArray} package). This can
 #' be useful for very large data sets, as the matrix won't be loaded into memory
@@ -105,7 +103,6 @@ exportFromSeurat <- function(
   add_all_meta_data = TRUE,
   use_delayed_array = FALSE,
   expression_matrix_mode = c("embedded", "bpcells", "h5"),
-  format = "rds",
   verbose = FALSE
 ) {
 
@@ -113,9 +110,6 @@ exportFromSeurat <- function(
   ## safety checks before starting to do anything
   ##--------------------------------------------------------------------------##
 
-  if ( !format %in% c("qs", "rds") ) {
-    stop("Invalid format. Must be 'qs' or 'rds'.")
-  }
 
   expression_matrix_mode <- match.arg(expression_matrix_mode)
   if (expression_matrix_mode == "h5") {
@@ -1077,11 +1071,7 @@ exportFromSeurat <- function(
   )
 
   ## save file
-  if ( format == "qs" ) {
-    qs::qsave(export, file)
-  } else {
-    saveRDS(export, file)
-  }
+  saveRDS(export, file)
 
   ## log message
   ## ... writing to file was successful

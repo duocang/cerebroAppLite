@@ -3,6 +3,8 @@
 export(Cerebro_v1.3)
 export(addPercentMtRibo)
 export(calculatePercentGenes)
+export(convertSeuratToCerebro)
+export(createTraditionalShinyApp)
 export(exportFromSCE)
 export(exportFromSeurat)
 export(extractMonocleTrajectory)

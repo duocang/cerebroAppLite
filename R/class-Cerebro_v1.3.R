@@ -1293,11 +1293,10 @@ Cerebro_v1.3 <- R6::R6Class(
   ## private fields and methods
   private = list(
 
-    #' Extract expression matrix (helper)
-    #'
-    #' @param cells Names/barcodes of cells to extract; NULL for all.
-    #' @param genes Names of genes to extract; NULL for all.
-    #' @return Dense matrix.
+    ## Extract expression matrix (helper)
+    ##   cells  Names/barcodes of cells to extract; NULL for all.
+    ##   genes  Names of genes to extract; NULL for all.
+    ## Returns a dense matrix.
     extractExpression = function(cells = NULL, genes = NULL) {
 
       ## check what kind of matrix the transcription counts are stored as

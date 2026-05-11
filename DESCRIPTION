@@ -67,8 +67,6 @@ Suggests:
   jsonlite,
   knitr,
   monocle,
-  qs,
-  readxl,
   reshape2,
   rmarkdown,
   Seurat (>= 3.0.0),
