@@ -1,32 +1,33 @@
 name: Style with air
 
 on:
-  pull_request:
+  push:
     branches: [master]
-    # Only run when R files are changed.
-    # This also prevents an infinite loop: when the bot pushes styled commits
-    # back to the PR branch, it would normally re-trigger this workflow.
-    # Since air produces already-formatted code on the second run, no R files
-    # are changed, so the paths filter prevents the workflow from running again.
     paths:
       - '**.R'
       - '**.r'
       - '**.Rmd'
 
-permissions: write-all
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   style:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+      GITHUB_PAT: ${{ secrets.PAT_TOKEN }}
 
     steps:
       - uses: actions/checkout@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.head_ref }}
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: master
 
       - name: Create folder to silence Nix warning
         run: mkdir -p ~/.nix-defexpr/channels
@@ -41,10 +42,22 @@ jobs:
       - name: Run Air
         run: nix-shell --quiet -p air-formatter --run "air format ."
 
-      - name: Commit and push changes if any
+      - name: Check for changes
+        id: diff
         run: |
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create PR if files were reformatted
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          BRANCH="style-air-$(date +%Y%m%d-%H%M%S)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
 
           # Use git ls-files with case-insensitive grep instead of glob *.R
           # because R files can have lowercase .r extension (e.g. send_enrichr_query.r)
@@ -52,9 +65,11 @@ jobs:
           # The || true prevents failure if no R files are found at all.
           git add $(git ls-files --modified --others --exclude-standard | grep -iE '\.(R|Rmd)$') || true
 
-          if git diff-index --quiet HEAD; then
-            echo "No changes to commit"
-          else
-            git commit -m "style: format code via air"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
+          git commit -m "style: format code via air"
+          git push origin "$BRANCH"
+          PR_URL=$(gh pr create \
+            --title "style: format code via air" \
+            --body "Automated code formatting by air after a push to master. Auto-merges when CI passes." \
+            --base master \
+            --head "$BRANCH")
+          gh pr merge "$PR_URL" --auto --squash
