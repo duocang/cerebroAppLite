@@ -21,6 +21,8 @@ rix(
     "stringr",
     "shinyvalidate",
     "Seurat",
+
+         "SeuratObject",
     # runtime deps (CRAN)
     "ape",
     "biomaRt",
