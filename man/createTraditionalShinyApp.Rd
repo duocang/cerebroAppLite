@@ -62,6 +62,8 @@ the generated app.}
 (and optionally other keys) forwarded to \code{Cerebro.options}.}
 
 \item{variable_to_compare}{Forwarded to \code{Cerebro.options}.}
+
+\item{...}{Currently unused; reserved for future arguments.}
 }
 \value{
 Invisibly returns \code{result_dir}.

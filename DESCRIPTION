@@ -68,6 +68,7 @@ Suggests:
   knitr,
   monocle,
   reshape2,
+  rhdf5,
   rmarkdown,
   Seurat (>= 3.0.0),
   SeuratObject,

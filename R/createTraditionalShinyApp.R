@@ -67,6 +67,7 @@ dedent <- function(string) {
 #' @param point_size Named list with \code{overview_projection_point_size}
 #'   (and optionally other keys) forwarded to \code{Cerebro.options}.
 #' @param variable_to_compare Forwarded to \code{Cerebro.options}.
+#' @param ... Currently unused; reserved for future arguments.
 #'
 #' @return Invisibly returns \code{result_dir}.
 #' @importFrom stats setNames
