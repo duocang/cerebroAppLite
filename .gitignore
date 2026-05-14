@@ -10,3 +10,4 @@ docs
 .Rproj.user
 *.Rproj
 tests/smoke/
+.playwright-mcp/
