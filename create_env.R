@@ -4,13 +4,23 @@
 
 library(rix)
 
+# Fetch the latest pinned date from rix's available_df.csv so that default.nix
+# uses a fixed nixpkgs snapshot instead of the rolling "bleeding-edge" branch.
+# This ensures cachix hits are reproducible across machines and CI runs.
+available_df <- read.csv(
+  "https://raw.githubusercontent.com/ropensci/rix/refs/heads/main/inst/extdata/available_df.csv"
+)
+latest_date <- tail(available_df$date, 1)
+cat("Using latest_date:", latest_date, "\n")
+
 # Auto-fetch latest BPCells commit SHA from GitHub
 bpcells_sha <- jsonlite::fromJSON(
   "https://api.github.com/repos/bnprks/BPCells/commits/main"
 )$sha
 
+
 rix(
-  r_ver = "bleeding-edge",
+  date = latest_date,
   r_pkgs = c(
     # package development
     "devtools",
