@@ -1,17 +1,14 @@
 # cerebroAppLite 1.7.0
 
-## Breaking changes
-
-- Renamed `createTraditionalShinyApp()` → `createShinyApp()`. The "Traditional" qualifier was a leftover from when the codebase was being re-architected; the new name is what users actually call
-- `createShinyApp()` default `port` changed from `1337` to `8080` (the conventional Shiny port)
-
 ## New features
 
 - External HDF5 expression backend, symmetric to the bpcells backend: `exportFromSeurat()` with `expression_matrix_mode = "h5"` writes the matrix via `HDF5Array::writeTENxMatrix()` to a TENx-format `.h5` next to the `.crb`. The runtime attach loads it back as a lazy `HDF5Array::TENxMatrix` seed and transposes via `DelayedArray::t()` (free); the in-memory `dgCMatrix` is never materialised, so RAM stays close to the `.crb` metadata size and attach is effectively instant
+- Introduced `createShinyApp()` for bundling a self-contained Shiny app from one or more `.crb` files
 - `createShinyApp()` now copies the `<stem>.h5` sibling alongside the `.crb` during app bundling, mirroring the existing `.bpcells/` handling
 - Legacy `.crb` files (predating the `expression_backend` field) are auto-tagged as `h5` when the host app sets `Cerebro.options[["expression_matrix_h5"]]`, finally giving `inst/extdata/v1.4/example.h5` a runtime consumer
 - `convertSeuratToCerebro()` accepts an in-memory Seurat object alongside the `.rds` path; output basename derives from `experiment_name` when no path is given
 - `createShinyApp()` opens a `...` passthrough so callers can forward extra options without signature churn
+- `exportFromSeurat()` with `expression_matrix_mode = "bpcells"` now auto-detects losslessly-integer values and calls `BPCells::convert_matrix_type("uint32_t")` before `write_matrix_dir()`, which triggers BPCells's bit-packed integer storage on the typical scRNA-seq counts case. Shrinks the bpcells sibling ~5× on integer counts (e.g. 50k cells × 20k genes: 440 MB raw double → 78 MB bit-packed; PBMC All Samples 38,606 × 147,756: 2.6 GB → 549 MB), and queries get ~1.5-1.7× faster as a side effect (smaller payload to read). Normalised float values (`slot = "data"`/`"scale.data"`) fall back to raw double to avoid silent precision loss
 
 ## Bug fixes
 
@@ -55,28 +52,36 @@
 - Site automatically builds and deploys to GitHub Pages on push to master
 
 # cerebroAppLite 1.5.3
- - several bug fixes so that launchCerebro should work again
+
+- several bug fixes so that launchCerebro should work again
 
 # cerebroAppLite 1.5.2
- - allow plot settings (size, opacity, number of cells to show) to be different in gene expression and overview (useful for large datasets with slow gene expression)
 
-# cerebroAppLite  1.5.1
+- allow plot settings (size, opacity, number of cells to show) to be different in gene expression and overview (useful for large datasets with slow gene expression)
+
+# cerebroAppLite 1.5.1
+
 - remove unused functions in group
 
 # cerebroAppLite 1.5.0
+
 - make compatible with Seuratv5, especially with BPCells Matrix
 
 # cerebroAppLite 1.4.1
+
 - timeout function added. This logs out the user after 600 second of inactivity (can be changed in `shiny_ui.R`). The JS function was taken from https://stackoverflow.com/a/53207050/21417317.
 - add option to show up to 1000 cells in `Main`, which is useful for exports.
 
 # cerebroAppLite 1.4.0
+
 This is the first update of this cerebroApp fork. Its aim is to continue a lightweight version of the excellent cerebroApp with only the main function as the cerebroApp by Roman Hillje is sadly discontinued.
 
 ## Major changes
+
 - remove enriched pathways, extra material, most expressed genes and trajectory functions since the goal of this fork is to continue with a lightweight version
 
 ## Minor changes
+
 - `Load Data` is renamed to `Data info` and `Overview` to `Main`
 - Preferences about WebGL and hover info are now show in the first tab called `Data info`
 - more colorful boxes for the sample information

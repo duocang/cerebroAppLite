@@ -833,6 +833,11 @@ convertSeuratToCerebro <- function(
     base_name <- gsub("[^A-Za-z0-9._-]", "_", experiment_name)
   }
   file_name <- paste0("cerebro_", base_name, ".crb")
+  source_label <- if (is.character(seurat_file)) {
+    basename(seurat_file)
+  } else {
+    paste0("<Seurat:", experiment_name, ">")
+  }
 
   # Export to cerebro format
   tryCatch(
@@ -856,7 +861,7 @@ convertSeuratToCerebro <- function(
       cat("Successfully exported:", file_name, "\n")
     },
     error = function(e) {
-      cat("Error processing", basename(seurat_file), ":", e$message, "\n")
+      cat("Error processing", source_label, ":", e$message, "\n")
     }
   )
 

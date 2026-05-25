@@ -20,7 +20,7 @@ Everything described there (loading data, exploring projections, viewing marker 
 ## Installation
 
 ```r
-remotes::install_github('duocang/cerebroAppLite')
+remotes::install_github('mihem/cerebroAppLite')
 ```
 
 ## What's New in This Fork
@@ -90,19 +90,21 @@ This is the slimmed-down variant in this fork — auth, spatial, and Docker-temp
 
 Measured trade-offs on a PBMC fixture (38,606 genes × 147,756 cells). Server-side metrics from `tests/smoke/src/93_bench_backend_compare.R` (callr-isolated, three backends each in a fresh R subprocess). End-to-end browser metric from `tests/smoke/src/94_bench_web_load.R` (callr-spawned Shiny + chromote-driven headless Chrome, fresh session per backend). Full methodology and a 5-panel plot in [`vignettes/expression_backend_benchmark.Rmd`](vignettes/expression_backend_benchmark.Rmd):
 
-| metric                                   | embedded | bpcells   |  **h5** |
-| ---------------------------------------- | -------: | --------: | ------: |
-| total disk                               |   681 MB |  2,600 MB |  391 MB |
-| **open URL → dataset visible (browser)** |  14.2 s  |    9.2 s  | **8.7 s** |
-| RAM (RSS) on the server after attach     |   4.5 GB |    1.2 GB | **1.1 GB** |
-| single-gene query, once loaded (cold)    |   0.50 s |    1.23 s | **0.01 s** |
+| metric                                   | embedded | bpcells | **h5** |
+| ---------------------------------------- | -------: | ------: | -----: |
+| total disk                               |   681 MB |  592 MB |  391 MB |
+| **open URL → dataset visible (browser)** |  14.3 s  |   9.2 s | **8.7 s** |
+| RAM (RSS) on the server after attach     |   4.5 GB |  1.2 GB | **1.1 GB** |
+| single-gene query, once loaded (cold)    |   0.51 s |  0.74 s | **0.01 s** |
 
 Browser-side TTFB / DOM-ready / `load` are within ~10 ms of each other across backends — all the divergence in the second row is server-side R work (`readRDS` + `.attachExternalExpression()`) plus a constant ~5 s Shiny session handshake.
 
+**Disk-size caveat — it depends on fixture size.** The 391 MB h5 total above is for a large fixture where HDF5's default gzip filter on the TENx CSC layout compresses sparse counts well (~6× vs uncompressed). On small/dense fixtures the trade-off can flip — for example on Roman Hillje's `inst/extdata/v1.4/example.h5` (1000 cells × 500 genes) the sibling `.h5` is actually *larger* than the equivalent embedded `.crb` would have been, because metadata + chunk overhead dominates over compressed payload. **The h5 win on RAM and load time is consistent across fixture sizes; the win on disk only emerges at scale.** Since 1.7.0 the `bpcells` exporter automatically calls `BPCells::convert_matrix_type("uint32_t")` whenever the input values are losslessly representable as non-negative integers (the typical scRNA-seq counts case), which triggers BPCells's bit-packed integer storage and shrinks the sibling by ~5× vs raw double; for normalised float values (`slot = "data"` / `"scale.data"`) the exporter falls back to raw storage to avoid silent precision loss.
+
 Picking one:
 
-- **`h5`** *(recommended default)* — smallest disk, fastest startup, lowest RAM, fastest queries. The TENx CSC layout aligns with how Cerebro reads expression (per-gene = single column slice), and HDF5 page-caching makes repeated reads memory-fast without committing the whole matrix to RAM. Requires the `HDF5Array` Bioconductor package on the host.
-- **`bpcells`** — RAM-constrained host with very large matrices, or workloads dominated by chunk-level batched operations rather than per-gene reads. Largest disk of the three but only paid once per dataset; single-gene query is ~1 s.
+- **`h5`** *(recommended default)* — fastest startup, lowest RAM, fastest queries; smallest disk on large fixtures (subject to the caveat above). The TENx CSC layout aligns with how Cerebro reads expression (per-gene = single column slice), and HDF5 page-caching makes repeated reads memory-fast without committing the whole matrix to RAM. Requires the `HDF5Array` Bioconductor package on the host.
+- **`bpcells`** — RAM-constrained host with very large matrices, or workloads dominated by chunk-level batched operations rather than per-gene reads. Disk size is similar to h5 on integer counts (bit-packed since 1.7.0); per-gene query is ~0.7 s, so chunk-level batched ops benefit more than per-gene streaming.
 - **`embedded`** — single-file convenience (no sibling to manage), or compatibility with very old `.crb` readers. ~14 s end-to-end and pins the full matrix into RAM per loaded copy. Best for small datasets or one-shot scripts.
 
 For reference, before the 1.7.0 lazy h5 refactor, h5 attach was eager (`rhdf5::h5read` + full `dgCMatrix` reconstruction), giving ~33 s open-URL time, ~11 GB RSS, and ~0.45 s queries — i.e. lazy-h5 is the same backend with attach **~263× faster, RAM ~10× smaller, queries ~45× faster, web load ~4× faster** (see [`expression_backend_benchmark.Rmd`](vignettes/expression_backend_benchmark.Rmd) for the comparison).
