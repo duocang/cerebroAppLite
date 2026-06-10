@@ -76,7 +76,7 @@ createShinyApp(
 
 `cerebro_data` is required and must be a *named* vector / list of `.crb` (or `.rds`) paths — names become the dataset labels users switch between in the app. `result_dir` is optional. Sibling `<stem>.bpcells/` and `<stem>.h5` artefacts produced by the external backends are detected and copied into the bundle automatically (see §3). Other knobs available: `colors`, `cerebro_options`, `crb_pick_smallest_file`, `show_upload_ui`, `point_size`, `variable_to_compare` — run `?createShinyApp` for the full list.
 
-This is the slimmed-down variant in this fork — auth, spatial, and Docker-template handling were dropped because they depend on dev-only modules; they will reappear as the corresponding modules land.
+This is the slimmed-down variant in this fork — auth and Docker-template handling were dropped because they depend on dev-only modules.
 
 ### 3. Choosing an expression backend
 

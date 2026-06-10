@@ -330,22 +330,6 @@ prettifyTable <- function(
     }
   }
 
-  ## if color highlighting is on...
-  ## - use color bar for percentages
-  ## - use color bar for p-values (ideally I wanted to use colors with
-  ##   styleInterval(), but styleInterval() cannot handle missing cuts; I'd
-  ##   like to color values based on fixed intervals, e.g. below 0.1, 0.05,
-  ##   etc, but if the column doesn't contain any values for a cut, then the
-  ##   function will results in an error)
-  ## - use color scale for logFC
-  ## - use color scale for integer
-  ## - use color scale for numeric values that are none of the above
-  ## - use colors for logicals
-  ## - use reactive colors for grouping variables
-  ## - use reactive colors for cell cycle assignments
-  ## NOTES:
-  ## - "styleInterval()" only works when there are at least two values that
-  ##   are not the same, therefore a few tests are necessary to prevent errors
   if (color_highlighting == TRUE) {
     ## integer
     if (
@@ -537,8 +521,6 @@ calculateTableAB <- function(
   mode,
   percent
 ) {
-  ## TODO: more safety checks?
-
   ## check if specified group columns exist in table
   if (groupA %in% colnames(table) == FALSE) {
     stop(

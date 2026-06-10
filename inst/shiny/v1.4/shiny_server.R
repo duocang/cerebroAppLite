@@ -243,11 +243,6 @@ server <- function(input, output, session) {
   })
 
   ##--------------------------------------------------------------------------##
-  ## The old renderMenu + toggleElement pattern for trajectory and
-  ## extra_material was dead code and has been removed.
-  ##--------------------------------------------------------------------------##
-
-  ##--------------------------------------------------------------------------##
   ## Print log message when switching tab (for debugging).
   ##--------------------------------------------------------------------------##
   observe({

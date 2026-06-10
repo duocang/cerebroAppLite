@@ -55,9 +55,9 @@ dedent <- function(string) {
 #' UI/server. The output directory can be served directly by shiny-server or
 #' run with \code{shiny::runApp(result_dir)}.
 #'
-#' This is mischko's slimmed-down variant: auth, spatial, bpcells, and Docker
-#' template handling were dropped — they depend on dev-only modules. Re-add
-#' those switches as the corresponding modules land.
+#' This is mischko's slimmed-down variant: auth and Docker template handling
+#' were dropped — they depend on dev-only modules. Spatial, bpcells, and h5
+#' backends are included.
 #'
 #' @param cerebro_data Named character vector or list of \code{.crb} (or
 #'   \code{.rds}) file paths. Names are used as dataset labels.

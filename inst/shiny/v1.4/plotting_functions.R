@@ -72,8 +72,6 @@ plotlyBarChart <- function(
   colors,
   percent
 ) {
-  ## TODO: safety checks?
-  ##
   if (percent == FALSE) {
     y_title <- "Number of cells"
     y_range <- NULL
