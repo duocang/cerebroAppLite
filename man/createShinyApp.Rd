@@ -76,7 +76,7 @@ UI/server. The output directory can be served directly by shiny-server or
 run with \code{shiny::runApp(result_dir)}.
 }
 \details{
-This is mischko's slimmed-down variant: auth, spatial, bpcells, and Docker
-template handling were dropped — they depend on dev-only modules. Re-add
-those switches as the corresponding modules land.
+This fork extends the upstream cerebroAppLite with spatial transcriptomics
+and external expression backends (bpcells, h5). Auth and Docker deployment
+modules from the upstream package are not included in this fork.
 }
