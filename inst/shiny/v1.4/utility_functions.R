@@ -330,22 +330,6 @@ prettifyTable <- function(
     }
   }
 
-  ## if color highlighting is on...
-  ## - use color bar for percentages
-  ## - use color bar for p-values (ideally I wanted to use colors with
-  ##   styleInterval(), but styleInterval() cannot handle missing cuts; I'd
-  ##   like to color values based on fixed intervals, e.g. below 0.1, 0.05,
-  ##   etc, but if the column doesn't contain any values for a cut, then the
-  ##   function will results in an error)
-  ## - use color scale for logFC
-  ## - use color scale for integer
-  ## - use color scale for numeric values that are none of the above
-  ## - use colors for logicals
-  ## - use reactive colors for grouping variables
-  ## - use reactive colors for cell cycle assignments
-  ## NOTES:
-  ## - "styleInterval()" only works when there are at least two values that
-  ##   are not the same, therefore a few tests are necessary to prevent errors
   if (color_highlighting == TRUE) {
     ## integer
     if (
@@ -537,8 +521,6 @@ calculateTableAB <- function(
   mode,
   percent
 ) {
-  ## TODO: more safety checks?
-
   ## check if specified group columns exist in table
   if (groupA %in% colnames(table) == FALSE) {
     stop(
@@ -845,19 +827,6 @@ centerOfGroups <- function(coordinates, df, n_dimensions, group) {
 }
 
 ##----------------------------------------------------------------------------##
-## Set order of rows in data frame.
-##----------------------------------------------------------------------------##
-setRowOrder <- function(df, order) {
-  if (order == 'Random') {
-    return(df[sample(1:nrow(df)), ])
-  } else if (order == "Highest expression on top") {
-    return(dplyr::arrange(df, level))
-  } else {
-    return(df)
-  }
-}
-
-##----------------------------------------------------------------------------##
 ## Functions to interact with data set.
 ##
 ## Never directly interact with data set: data_set()
@@ -917,21 +886,6 @@ getProjection <- function(name) {
     return(data_set()$getProjection(name))
   }
 }
-getTree <- function(group) {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getTree(group))
-  }
-}
-getGroupsWithMostExpressedGenes <- function() {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getGroupsWithMostExpressedGenes())
-  }
-}
-getMostExpressedGenes <- function(group) {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getMostExpressedGenes(group))
-  }
-}
 getMethodsForMarkerGenes <- function() {
   if ('Cerebro_v1.3' %in% class(data_set())) {
     return(data_set()$getMethodsForMarkerGenes())
@@ -945,21 +899,6 @@ getGroupsWithMarkerGenes <- function(method) {
 getMarkerGenes <- function(method, group) {
   if ('Cerebro_v1.3' %in% class(data_set())) {
     return(data_set()$getMarkerGenes(method, group))
-  }
-}
-getMethodsForEnrichedPathways <- function() {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getMethodsForEnrichedPathways())
-  }
-}
-getGroupsWithEnrichedPathways <- function(method) {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getGroupsWithEnrichedPathways(method))
-  }
-}
-getEnrichedPathways <- function(method, group) {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getEnrichedPathways(method, group))
   }
 }
 getMethodsForTrajectories <- function() {
@@ -977,42 +916,6 @@ getTrajectory <- function(method, name) {
     return(data_set()$getTrajectory(method, name))
   }
 }
-getExtraMaterialCategories <- function() {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getExtraMaterialCategories())
-  }
-}
-checkForExtraTables <- function() {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$checkForExtraTables())
-  }
-}
-getNamesOfExtraTables <- function() {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getNamesOfExtraTables())
-  }
-}
-getExtraTable <- function(name) {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getExtraTable(name))
-  }
-}
-checkForExtraPlots <- function() {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$checkForExtraPlots())
-  }
-}
-getNamesOfExtraPlots <- function() {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getNamesOfExtraPlots())
-  }
-}
-getExtraPlot <- function(name) {
-  if ('Cerebro_v1.3' %in% class(data_set())) {
-    return(data_set()$getExtraPlot(name))
-  }
-}
-
 ##----------------------------------------------------------------------------##
 ## Cerebro file reader (.rds via readRDS).
 ##----------------------------------------------------------------------------##

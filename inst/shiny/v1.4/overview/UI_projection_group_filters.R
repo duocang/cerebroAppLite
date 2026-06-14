@@ -59,37 +59,4 @@ overview_projection_group_filters_info <- list(
 ## the existing solution
 ##----------------------------------------------------------------------------##
 
-# output[["overview_projection_group_filters_tree"]] <- shinyTree::renderTree({
-#   groups <- list()
-#   for ( i in getGroups() ) {
-#     groups[[i]] <- structure(
-#       as.list(
-#         setNames(
-#           getGroupLevels(i),
-#           getGroupLevels(i)
-#         )
-#       ),
-#       stselected = TRUE
-#     )
-#   }
-#   groups
-# })
 
-# output[["overview_projection_group_filters_selected_groups"]] <- renderPrint({
-#   tree <- input[["overview_projection_group_filters_tree"]]
-#   req(overview_projection_group_filters_tree)
-#   str(shinyTree::get_selected(tree, format = "slices"))
-# })
-
-# output[["overview_projection_group_filters_tree_UI"]] <- renderUI({
-#   tagList(
-#     shinyTree::shinyTree(
-#       "overview_projection_group_filters_tree",
-#       theme = "proton",
-#       themeIcons = FALSE,
-#       themeDots = FALSE,
-#       checkbox = TRUE
-#     ),
-#     verbatimTextOutput("sel_slices")
-#   )
-# })

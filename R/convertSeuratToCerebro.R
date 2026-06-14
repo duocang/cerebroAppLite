@@ -307,11 +307,13 @@
 #'   behaviour), \code{"bpcells"} writes an on-disk BPCells directory next to
 #'   the \code{.crb} and keeps a lightweight handle inside it (typically
 #'   reduces \code{.crb} size by ~80% on large sparse matrices), and
-#'   \code{"h5"} is reserved for a future release. Pass this through when you
-#'   need a deployment-friendly artefact for large datasets. The Shiny runtime
-#'   re-resolves the BPCells directory relative to the \code{.crb}'s parent
-#'   directory, so packaging the \code{.crb} and its sibling
-#'   \code{*.bpcells/} directory together is enough for portable deployment.
+#'   \code{"h5"} writes a TENx-format HDF5 file next to the \code{.crb}
+#'   that the Shiny runtime loads lazily, minimising RAM and startup time
+#'   (recommended default for large datasets). The Shiny runtime
+#'   re-resolves both backends relative to the \code{.crb}'s parent
+#'   directory, so packaging the \code{.crb} with its sibling
+#'   \code{<stem>.bpcells/} or \code{<stem>.h5} together is enough for
+#'   portable deployment.
 #' @param verbose Logical indicating whether to print progress messages; default:
 #'   \code{TRUE}.
 #' @param cell_cycle Character vector of column names in metadata containing
@@ -569,7 +571,7 @@ convertSeuratToCerebro <- function(
     markers_df <- .readMarkerFile(marker_file, verbose)
 
     # Attach to Seurat object under misc$marker_genes.
-    # mischko's exportFromSeurat expects list(method = list(group = df)).
+    # exportFromSeurat expects list(method = list(group = df)).
     # Split markers_df by 'cluster' / 'group' column when available,
     # otherwise dump as a single 'all' group under the chosen method.
     if (!is.null(markers_df) && nrow(markers_df) > 0) {

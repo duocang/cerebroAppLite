@@ -76,7 +76,9 @@ UI/server. The output directory can be served directly by shiny-server or
 run with \code{shiny::runApp(result_dir)}.
 }
 \details{
-This is mischko's slimmed-down variant: auth, spatial, bpcells, and Docker
-template handling were dropped — they depend on dev-only modules. Re-add
-those switches as the corresponding modules land.
+Supports external expression backends (\code{bpcells}, \code{h5}) in
+addition to the embedded mode. When \code{cerebro_data} points to a
+\code{.crb} with an external backend, the sibling \code{.bpcells/}
+directory or \code{.h5} file is detected and copied into the bundle
+alongside the \code{.crb}.
 }

@@ -39,15 +39,6 @@ output[["load_data_number_of_cells"]] <- renderValueBox({
   )
 })
 
-## output[["load_data_number_of_cells"]] <- renderValueBox({
-##   box(
-##       title = "Cells",
-##       width = 5,
-##       background = "light-blue",
-##       formatC(nrow(data_set()$meta_data), format = "f", big.mark = ",", digits = 0),
-##   )
-## })
-
 ## organism
 output[["load_data_organism"]] <- renderValueBox({
   if (getExperiment()$organism == "hg") {
