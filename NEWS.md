@@ -100,11 +100,11 @@ data conversion and Shiny app deployment.
 
 # cerebroAppLite 1.4.0
 
-First release of cerebroAppLite.
+This is the first update of this cerebroApp fork. Its aim is to continue a lightweight version of the excellent cerebroApp with only the main function as the cerebroApp by Roman Hillje is sadly discontinued.
 
 ## Major changes
 
-- Streamlined the interface to focus on core visualization modules
+- remove enriched pathways, extra material, most expressed genes and trajectory functions since the goal of this fork is to continue with a lightweight version
 
 ## Minor changes
 
