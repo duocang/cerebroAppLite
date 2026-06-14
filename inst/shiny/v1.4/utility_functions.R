@@ -1116,3 +1116,20 @@ getMostExpressedGenes <- function(group) {
     return(data_set()$getMostExpressedGenes(group))
   }
 }
+
+## Wrapper functions for enriched_pathways module.
+getMethodsForEnrichedPathways <- function() {
+  if ('Cerebro_v1.3' %in% class(data_set())) {
+    return(data_set()$getMethodsForEnrichedPathways())
+  }
+}
+getGroupsWithEnrichedPathways <- function(method) {
+  if ('Cerebro_v1.3' %in% class(data_set())) {
+    return(data_set()$getGroupsWithEnrichedPathways(method))
+  }
+}
+getEnrichedPathways <- function(method, group) {
+  if ('Cerebro_v1.3' %in% class(data_set())) {
+    return(data_set()$getEnrichedPathways(method, group))
+  }
+}
