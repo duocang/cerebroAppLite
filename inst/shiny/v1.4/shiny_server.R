@@ -242,6 +242,12 @@ server <- function(input, output, session) {
     return(hover_info)
   })
 
+  ## Dynamic sidebar: conditional tabs are inserted/removed based on dataset
+  ## content (see insertConditionalTab() below). The old renderMenu +
+  ## shinyjs::toggleElement pattern for trajectory and extra_material has been
+  ## replaced.
+  ##--------------------------------------------------------------------------##
+
   ##--------------------------------------------------------------------------##
   ## Print log message when switching tab (for debugging).
   ##--------------------------------------------------------------------------##
@@ -312,6 +318,11 @@ server <- function(input, output, session) {
   )
   source(
     paste0(Cerebro.options[["cerebro_root"]], "/shiny/v1.4/about/server.R"),
+    local = TRUE
+  )
+  ## Enhanced module servers.
+  source(
+    paste0(Cerebro.options[["cerebro_root"]], "/shiny/v1.4/most_expressed_genes/server.R"),
     local = TRUE
   )
 

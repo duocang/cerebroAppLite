@@ -106,6 +106,12 @@ source(
   local = TRUE
 )
 
+## Enhanced module UIs.
+source(
+  paste0(Cerebro.options[["cerebro_root"]], "/shiny/v1.4/most_expressed_genes/UI.R"),
+  local = TRUE
+)
+
 ##----------------------------------------------------------------------------##
 ## Create dashboard with different tabs.
 ##----------------------------------------------------------------------------##
@@ -135,6 +141,13 @@ ui <- dashboardPage(
         icon = icon("list-alt")
       ),
       menuItem(
+        "Most expressed genes",
+        tabName = "mostExpressedGenes",
+        icon = icon("bullhorn")
+      ),
+      div(id = "sidebar_item_enriched_pathways_placeholder"),
+      div(id = "sidebar_item_extra_material_placeholder"),
+      menuItem(
         "Gene expression",
         tabName = "geneExpression",
         icon = icon("signal")
@@ -160,6 +173,7 @@ ui <- dashboardPage(
       tab_overview,
       tab_groups,
       tab_marker_genes,
+      tab_most_expressed_genes,
       tab_gene_expression,
       tab_gene_id_conversion,
       tab_color_management,
