@@ -6,6 +6,16 @@ has_scRepertoire <- function() {
     requireNamespace("scRepertoire", quietly = TRUE)
   }
 
+  ## ---- Container width guard: prevent "figure margins too large" during
+  ## ---- tab switches when the output container has zero width. req() silently
+  ## ---- halts rendering; Shiny re-triggers once the container has real space.
+  req_plot_space <- function(output_id, min_width = 24L) {
+    w <- shiny::getDefaultReactiveDomain()$clientData[[
+      paste0("output_", output_id, "_width")
+    ]]
+    shiny::req(isTRUE(w >= min_width))
+  }
+
   safeRenderPlot <- function(expr, plot_name = "unknown") {
     tryCatch(
       {

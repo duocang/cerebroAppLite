@@ -162,6 +162,7 @@ output$ir_visualizations_UI <- renderUI({
 
 ## ---- BCR-specific renderers --------------------------------------------- ##
 output$ir_plot_isotype <- renderPlot({
+  req_plot_space("ir_plot_isotype")
   data <- ir_data()
   req(!is.null(data))
   gb <- ir_params()$groupBy
@@ -191,6 +192,7 @@ output$ir_plot_isotype <- renderPlot({
   )
 
 output$ir_plot_shmProxy <- renderPlot({
+  req_plot_space("ir_plot_shmProxy")
   data <- ir_data()
   req(!is.null(data))
   gb <- ir_params()$groupBy
@@ -323,6 +325,7 @@ output$ir_ui_pairedScatter_plot <- renderUI({
 
 output$ir_plot_pairedScatter <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_pairedScatter")
   data <- ir_data()
   req(!is.null(data))
   meta <- ir_sample_meta()
@@ -412,6 +415,7 @@ output$ir_plot_pairedScatter <- renderPlot({
 
 output$ir_plot_clonalAbundance <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalAbundance")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -435,6 +439,7 @@ output$ir_plot_clonalAbundance <- renderPlot({
 
 output$ir_plot_clonalCompare <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalCompare")
   req(
     !is.null(input$ir_compare_samples) && length(input$ir_compare_samples) >= 2
   )
@@ -594,6 +599,7 @@ ir_plot_clonal_diversity <- function(
 
 output$ir_plot_clonalDiversity <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalDiversity")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -627,6 +633,7 @@ output$ir_plot_clonalDiversity <- renderPlot({
 
 output$ir_plot_clonalHomeostasis <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalHomeostasis")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -651,6 +658,7 @@ output$ir_plot_clonalHomeostasis <- renderPlot({
 
 output$ir_plot_clonalLength <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalLength")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -686,6 +694,7 @@ output$ir_plot_clonalLength <- renderPlot({
 
 output$ir_plot_clonalOverlap <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalOverlap")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -711,6 +720,7 @@ output$ir_plot_clonalOverlap <- renderPlot({
 
 output$ir_plot_clonalProportion <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalProportion")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -744,6 +754,7 @@ output$ir_plot_clonalProportion <- renderPlot({
 
 output$ir_plot_clonalQuant <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalQuant")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -778,6 +789,7 @@ output$ir_ui_clonalRarefaction <- renderUI({
 
 output$ir_plot_clonalRarefaction <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalRarefaction")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -809,6 +821,7 @@ output$ir_plot_clonalRarefaction <- renderPlot({
 
 output$ir_plot_clonalScatter <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalScatter")
   data <- ir_data()
   req(!is.null(data))
   # clonalScatter compares two groups. x.axis / y.axis are the names of the
@@ -861,6 +874,7 @@ output$ir_plot_clonalScatter <- renderPlot({
 
 output$ir_plot_clonalSizeDistribution <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_clonalSizeDistribution")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -901,6 +915,7 @@ output$ir_ui_percentGeneUsage <- renderUI({
 
 output$ir_plot_percentGeneUsage <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_percentGeneUsage")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -940,6 +955,7 @@ output$ir_ui_vizGenes <- renderUI({
 
 output$ir_plot_vizGenes <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_vizGenes")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -978,6 +994,7 @@ output$ir_ui_percentGenes <- renderUI({
 
 output$ir_plot_percentGenes <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_percentGenes")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -1012,6 +1029,7 @@ output$ir_ui_percentVJ <- renderUI({
 
 output$ir_plot_percentVJ <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_percentVJ")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -1046,6 +1064,7 @@ output$ir_ui_percentAA <- renderUI({
 
 output$ir_plot_percentAA <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_percentAA")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -1074,6 +1093,7 @@ output$ir_plot_percentAA <- renderPlot({
 
 output$ir_plot_positionalEntropy <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_positionalEntropy")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -1161,6 +1181,7 @@ output$ir_ui_positionalProperty <- renderUI({
 
 output$ir_plot_positionalProperty <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_positionalProperty")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
@@ -1202,6 +1223,7 @@ output$ir_ui_percentKmer <- renderUI({
 
 output$ir_plot_percentKmer <- renderPlot({
   req(has_scRepertoire())
+  req_plot_space("ir_plot_percentKmer")
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()

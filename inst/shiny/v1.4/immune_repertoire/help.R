@@ -559,6 +559,7 @@ observeEvent(input$ir_help_example_btn, {
 
 ## ---- Demo plot renderer ----------------------------------------------- ##
 output$ir_demo_plot <- renderPlot({
+  req_plot_space("ir_demo_plot")
   tab <- input$ir_tabs
   demo <- .get_demo_data()
   if (is.null(demo) || is.null(tab)) {
