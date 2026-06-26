@@ -65,62 +65,44 @@ ir_data_annotated <- reactive({
   })
 })
 
-## ---- Candidate columns for sample splitting --------------------------- ##
-## Prefer the data set's declared grouping variables (getGroups()); fall back
-## to any shared non-standard column present in the (annotated) IR tables.
-ir_sample_col_choices <- reactive({
-  data <- ir_data_annotated()
+## ---- Reactive: repertoire data --------------------------------------- ##
+## Returns the metadata-annotated repertoire list as stored (one element per
+## sample). Grouping is handled by scRepertoire's native `group.by` (and
+## `x.axis` for the functions that support it), not by re-splitting the list —
+## a re-split duplicated what group.by already does and was removed.
+ir_data <- reactive({
+  ir_data_annotated()
+})
+
+## ---- Helper: read a dynamic function-specific parameter --------------- ##
+## The function-specific controls (IR_PARAM_SPEC) are rendered into a dynamic
+## panel, so an input may be absent on tabs where the parameter doesn't apply.
+## Returns `default` when the input is missing/empty.
+ir_param <- function(id, default = NULL) {
+  v <- input[[id]]
+  if (is.null(v)) default else v
+}
+
+## ---- Comparable groups for Scatter / Compare ------------------------- ##
+## clonalScatter (x.axis/y.axis) and clonalCompare (samples) operate on the
+## *names of the groups that group.by produces*. With group.by = None the
+## groups are the list elements (samples); with group.by = <column> they are
+## that column's levels. This reactive returns those group names so the Scatter
+## X/Y and Compare selectors stay in sync with the active grouping.
+ir_compare_groups <- reactive({
+  data <- ir_data()
   if (is.null(data)) {
     return(character(0))
   }
-  shared <- Reduce(intersect, lapply(data, colnames))
-
-  groups <- tryCatch(getGroups(), error = function(e) character(0))
-  candidates <- intersect(groups, shared)
-  if (length(candidates) == 0) {
-    # fall back: any shared column that isn't a standard scRepertoire field
-    candidates <- setdiff(shared, ir_scr_cols)
+  gb <- input$ir_groupBy
+  if (is.null(gb) || !nzchar(gb)) {
+    return(names(data))
   }
-
-  ok <- vapply(
-    candidates,
-    function(col) {
-      vals <- unique(unlist(lapply(data, function(df) unique(df[[col]]))))
-      vals <- vals[!is.na(vals)]
-      n <- length(vals)
-      n >= 2L && n <= 200L
-    },
-    logical(1)
-  )
-  candidates[ok]
-})
-
-## ---- Reactive: repertoire data (re-split by user-chosen column) ------- ##
-ir_data <- reactive({
-  data <- ir_data_annotated()
-  if (is.null(data)) {
-    return(NULL)
-  }
-  col <- input$ir_sampleCol
-  if (is.null(col) || col == "" || col == "(original)") {
-    return(data)
-  }
-  merged <- dplyr::bind_rows(lapply(names(data), function(nm) {
-    df <- data[[nm]]
-    df$.orig_sample <- nm
-    df
-  }))
-  if (is.null(merged) || nrow(merged) == 0) {
-    return(data)
-  }
-  if (!col %in% colnames(merged)) {
-    return(data)
-  }
-  split_list <- split(merged, merged[[col]])
-  lapply(split_list, function(df) {
-    df$.orig_sample <- NULL
-    df
-  })
+  vals <- unique(unlist(lapply(data, function(df) {
+    if (gb %in% colnames(df)) as.character(df[[gb]]) else character(0)
+  })))
+  vals <- vals[!is.na(vals)]
+  if (length(vals) == 0) names(data) else sort(vals)
 })
 
 ## ---- Reactive: parameters --------------------------------------------- ##
@@ -134,13 +116,7 @@ ir_params <- reactive({
     chain = input$ir_chain,
     groupBy = gb
   )
-}) %>%
-  debounce(500)
-
-## ---- Debounced slider values (avoid recompute on every drag tick) ----- ##
-ir_diversity_boots_d <- debounce(reactive(input$ir_diversity_boots), 400)
-ir_rarefaction_boots_d <- debounce(reactive(input$ir_rarefaction_boots), 400)
-ir_kmer_top_motifs_d <- debounce(reactive(input$ir_kmer_top_motifs), 400)
+})
 
 ## ---- Reactive: number of groups for faceted plots --------------------- ##
 n_groups <- reactive({

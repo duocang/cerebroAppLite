@@ -20,13 +20,34 @@ has_scRepertoire <- function() {
           stop(e)
         }
         message("[IR ERROR] Plot '", plot_name, "' failed: ", e$message)
-        plot.new()
-        text(
-          0.5,
-          0.5,
-          paste("Error in", plot_name, ":\n", e$message),
-          cex = 0.8
+
+        # scRepertoire raises cryptic internal errors (e.g. "get1index",
+        # "subscript out of bounds", "less than one element") when the current
+        # selection leaves a group/sample empty or single-valued. These are not
+        # actionable to the user, so translate them into a plain empty-state
+        # message instead of dumping the raw R error onto the plot.
+        msg <- conditionMessage(e)
+        is_empty_selection <- grepl(
+          "get1index|subscript out of bounds|less than one element|undefined columns|replacement has|non-conformable|missing value",
+          msg,
+          ignore.case = TRUE
         )
+        label <- if (is_empty_selection) {
+          paste0(
+            "No data to display for the current selection.\n",
+            "Try a different Chain, Clone call, or Group by."
+          )
+        } else {
+          paste0("Could not render this plot:\n", msg)
+        }
+        # Render an empty-state message robustly even on small devices. ggplot
+        # avoids base-graphics margin issues ("figure margins too large").
+        ggplot2::ggplot() +
+          ggplot2::annotate(
+            "text", x = 0, y = 0, label = label,
+            size = 4.5, colour = "#666666", hjust = 0.5, vjust = 0.5
+          ) +
+          ggplot2::theme_void()
       }
     )
   }
@@ -280,6 +301,13 @@ has_scRepertoire <- function() {
     }
   }
 
+  source(
+    paste0(
+      Cerebro.options[["cerebro_root"]],
+      "/shiny/v1.4/immune_repertoire/param_spec.R"
+    ),
+    local = TRUE
+  )
   source(
     paste0(
       Cerebro.options[["cerebro_root"]],

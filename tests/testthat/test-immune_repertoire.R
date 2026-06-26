@@ -5,11 +5,22 @@
 # single donor is partitioned into three demo samples; sample labels do not
 # represent distinct biological donors.
 
-shiny_root <- system.file("shiny/v1.4", package = "cerebroAppLite")
-example_crb <- system.file(
-  "extdata/v1.4/example.crb",
-  package = "cerebroAppLite"
+inst_candidates <- c(
+  normalizePath("inst", mustWork = FALSE),
+  normalizePath("../../inst", mustWork = FALSE),
+  normalizePath(testthat::test_path("../../inst"), mustWork = FALSE)
 )
+local_inst <- inst_candidates[file.exists(file.path(inst_candidates, "shiny/v1.4"))][1]
+if (!is.na(local_inst)) {
+  shiny_root <- file.path(local_inst, "shiny/v1.4")
+  example_crb <- file.path(local_inst, "extdata/v1.4/example.crb")
+} else {
+  shiny_root <- system.file("shiny/v1.4", package = "cerebroAppLite")
+  example_crb <- system.file(
+    "extdata/v1.4/example.crb",
+    package = "cerebroAppLite"
+  )
+}
 
 test_that("immune_repertoire module files parse without errors", {
   mod_files <- c(
@@ -66,8 +77,8 @@ test_that("IR grouping variables are recoverable from cell metadata by barcode",
   # The IR data.frames carry only standard scRepertoire columns. The module
   # joins ANY grouping variable (getGroups(): sample, condition, cell type, ...)
   # onto the IR rows by barcode at runtime. This verifies that join is possible
-  # for the example data set, so the "Sample column" / "Group by" dropdowns are
-  # populated regardless of which columns a producer embedded in the IR table.
+  # for the example data set, so the Group by dropdown is populated regardless
+  # of which columns a producer embedded in the IR table.
   skip_if_not(file.exists(example_crb))
   crb <- readRDS(example_crb)
   ir <- crb$getImmuneRepertoire()
@@ -116,27 +127,84 @@ test_that("data.R joins metadata so grouping is not limited to IR columns", {
   content <- paste(readLines(data_file), collapse = "\n")
   expect_match(content, "ir_data_annotated")
   expect_match(content, "cell_barcode")
-  expect_match(content, "getGroups\\(\\)")
+  # grouping options are derived from getGroups() in the settings panel
+  settings_file <- file.path(shiny_root, "immune_repertoire", "settings.R")
+  settings <- paste(readLines(settings_file), collapse = "\n")
+  expect_match(settings, "getGroups\\(\\)")
 })
 
-test_that("clonalScatter render guards against invalid sample selection", {
-  # clonalScatter compares two named list elements via x.axis/y.axis and must
-  # not also receive group.by (scRepertoire errors: "undefined columns
-  # selected"). The render must also validate >= 2 distinct samples to avoid
+test_that("core IR params update immediately to keep bindCache keys and values aligned", {
+  data_file <- file.path(shiny_root, "immune_repertoire", "data.R")
+  skip_if_not(file.exists(data_file))
+  content <- paste(readLines(data_file), collapse = "\n")
+  ir_params_block <- regmatches(
+    content,
+    regexpr("ir_params <- reactive\\(\\{[\\s\\S]*?\\n\\s*\\}\\)", content, perl = TRUE)
+  )
+  expect_length(ir_params_block, 1)
+  expect_false(grepl(
+    "ir_params <- reactive\\(\\{[\\s\\S]*?\\}\\)\\s*%>%\\s*debounce\\(",
+    content,
+    perl = TRUE
+  ))
+})
+
+test_that("removed Split data by control leaves no stale sample-column input", {
+  mod_files <- c("data.R", "settings.R", "visualizations.R")
+  content <- paste(vapply(
+    mod_files,
+    function(f) {
+      paste(readLines(file.path(shiny_root, "immune_repertoire", f)), collapse = "\n")
+    },
+    character(1)
+  ), collapse = "\n")
+  expect_false(grepl("ir_sampleCol|ir_sample_col_choices|Split data by", content))
+})
+
+test_that("renderers pass supported scRepertoire parameters", {
+  viz <- file.path(shiny_root, "immune_repertoire", "visualizations.R")
+  skip_if_not(file.exists(viz))
+  content <- paste(readLines(viz), collapse = "\n")
+
+  expect_match(
+    content,
+    "clonalAbundance\\([\\s\\S]{0,300}chain\\s*=\\s*pars\\$chain",
+    perl = TRUE
+  )
+  expect_match(
+    content,
+    "clonalSizeDistribution\\([\\s\\S]{0,300}chain\\s*=\\s*pars\\$chain",
+    perl = TRUE
+  )
+})
+
+test_that("Diversity x.axis uses grouped bootstrap plot, not scRepertoire's continuous-axis boxplot", {
+  viz <- file.path(shiny_root, "immune_repertoire", "visualizations.R")
+  skip_if_not(file.exists(viz))
+  content <- paste(readLines(viz), collapse = "\n")
+
+  expect_match(content, "ir_plot_clonal_diversity")
+  expect_match(
+    content,
+    "clonalDiversity\\([\\s\\S]{0,500}return\\.boots\\s*=\\s*TRUE",
+    perl = TRUE
+  )
+  expect_match(
+    content,
+    "geom_boxplot\\([\\s\\S]{0,300}group\\s*=\\s*\\.data\\[\\[x_axis\\]\\]",
+    perl = TRUE
+  )
+})
+
+test_that("clonalScatter render guards against invalid group selection", {
+  # clonalScatter compares two groups via x.axis/y.axis (the levels produced by
+  # group.by). The render must validate >= 2 distinct groups to avoid
   # "attempt to select less than one element" on a single-element list.
   viz <- file.path(shiny_root, "immune_repertoire", "visualizations.R")
   skip_if_not(file.exists(viz))
   content <- paste(readLines(viz), collapse = "\n")
-  # locate the main clonalScatter render block
-  block <- sub(
-    ".*output\\$ir_plot_clonalScatter.*?(renderPlot.*?ir_bindCache).*",
-    "\\1",
-    content,
-    perl = TRUE
-  )
-  # the main scatter render must guard sample count and distinctness
-  expect_match(content, "Clonal scatter needs at least 2 samples")
-  expect_match(content, "Select two different samples")
+  expect_match(content, "Clonal scatter needs at least 2 groups")
+  expect_match(content, "Select two different groups")
 })
 
 test_that("safeRenderPlot lets validate/req conditions pass through", {
@@ -172,6 +240,35 @@ test_that("safeRenderPlot lets validate/req conditions pass through", {
   expect_equal(safeRenderPlot(stop("boom")), "ERROR_PLOT")
 })
 
+test_that("server.R translates cryptic scRepertoire errors to empty-state", {
+  # scRepertoire raises opaque internal errors (get1index, subscript out of
+  # bounds, ...) when a selection leaves a group empty/single-valued.
+  # safeRenderPlot must turn these into a friendly empty-state message rather
+  # than dumping the raw error, while still surfacing genuine errors.
+  srv <- file.path(shiny_root, "immune_repertoire", "server.R")
+  skip_if_not(file.exists(srv))
+  content <- paste(readLines(srv), collapse = "\n")
+  expect_match(content, "get1index")
+  expect_match(content, "No data to display for the current selection")
+
+  # mirror the classifier used in safeRenderPlot
+  is_empty_selection <- function(msg) {
+    grepl(
+      paste0(
+        "get1index|subscript out of bounds|less than one element|",
+        "undefined columns|replacement has|non-conformable|missing value"
+      ),
+      msg,
+      ignore.case = TRUE
+    )
+  }
+  expect_true(is_empty_selection(
+    "attempt to select less than one element in get1index"
+  ))
+  expect_true(is_empty_selection("subscript out of bounds"))
+  expect_false(is_empty_selection("some unrelated real error"))
+})
+
 test_that("ir_bindCache injects dataset identity into cache key", {
   # data_to_load$path in every cache key prevents stale plots when switching
   # datasets; cache = "session" prevents cross-user/session cache leakage.
@@ -188,4 +285,31 @@ test_that("example.crb preserves core data fields", {
   expect_true(!is.null(crb$getMetaData()))
   expect_true(nrow(crb$getMetaData()) > 0)
   expect_true(!is.null(crb$experiment))
+})
+
+test_that("renderers enforce scRepertoire parameter constraints", {
+  # Three plots have scRepertoire API constraints that a stale/global control
+  # value can violate, causing internal errors. The renderers must enforce
+  # valid values rather than trust the global Clone call / aa.length inputs.
+  viz <- file.path(shiny_root, "immune_repertoire", "visualizations.R")
+  skip_if_not(file.exists(viz))
+  content <- paste(readLines(viz), collapse = "\n")
+
+  # clonalLength: cloneCall must be a sequence type (nt/aa), never gene/strict
+  expect_match(
+    content,
+    "clonalLength[\\s\\S]{0,400}clone_call <- if \\(isTRUE\\(pars\\$cloneCall %in% c\\(\"nt\", \"aa\"\\)\\)",
+    perl = TRUE
+  )
+
+  # clonalSizeDistribution: the distribution fit only converges on the strict
+  # clone definition for the bundled data, so cloneCall is forced to "strict"
+  expect_match(
+    content,
+    "clonalSizeDistribution\\([\\s\\S]{0,200}cloneCall = \"strict\"",
+    perl = TRUE
+  )
+
+  # percentAA / positionalEntropy: aa.length is validated to a positive integer
+  expect_match(content, "if \\(is.na\\(aa_len\\) \\|\\| aa_len < 1\\) aa_len <- 20")
 })

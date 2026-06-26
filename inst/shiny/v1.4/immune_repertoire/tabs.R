@@ -1,3 +1,15 @@
+## ---- Remember the last selected tab ----------------------------------- ##
+## The visualizations tabsetPanel is rebuilt by renderUI whenever ir_data()
+## changes. Without this, the rebuild resets the selection to the first tab
+## (Abundance). We remember the user's current tab so the rebuild can restore
+## it (see visualizations.R).
+ir_last_tab <- reactiveVal(NULL)
+observeEvent(input$ir_tabs, {
+  if (!is.null(input$ir_tabs) && nzchar(input$ir_tabs)) {
+    ir_last_tab(input$ir_tabs)
+  }
+})
+
 ## ---- Tab change: update cloneCall choices ----------------------------- ##
 observeEvent(input$ir_tabs, {
   req(has_scRepertoire())
@@ -36,21 +48,8 @@ observeEvent(input$ir_tabs, {
       selected = input$ir_cloneCall
     )
   }
-  shinyjs::toggleElement(
-    id = "ir_scatter_x",
-    anim = TRUE,
-    condition = tab == "Scatter" && n_samples() >= 2
-  )
-  shinyjs::toggleElement(
-    id = "ir_scatter_y",
-    anim = TRUE,
-    condition = tab == "Scatter" && n_samples() >= 2
-  )
-  shinyjs::toggleElement(
-    id = "ir_compare_samples",
-    anim = TRUE,
-    condition = tab == "Compare" && n_samples() >= 2
-  )
+  # Scatter / Compare sample selectors are shown/hidden by conditionalPanel
+  # (see settings.R) keyed on input$ir_tabs, so no manual toggling is needed.
 })
 
 ## ---- Attach tooltips to tab links via JS ------------------------------ ##
