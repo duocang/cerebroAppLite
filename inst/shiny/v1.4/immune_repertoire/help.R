@@ -571,11 +571,14 @@ output$ir_demo_plot <- renderPlot({
       p <- switch(
         tab,
         "Abundance" = scRepertoire::clonalAbundance(demo, cloneCall = "gene"),
-        "Diversity" = scRepertoire::clonalDiversity(
-          demo,
-          cloneCall = "gene",
+        "Diversity" = ir_plot_clonal_diversity(
+          data = demo,
+          clone_call = "gene",
           chain = "TRB",
-          n.boots = 20,
+          group_by = NULL,
+          metric = "shannon",
+          x_axis = NULL,
+          n_boots = 20,
           palette = "inferno"
         ),
         "Homeostasis" = scRepertoire::clonalHomeostasis(
