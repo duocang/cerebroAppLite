@@ -426,14 +426,68 @@ ir_display_params <- reactive({
   vals
 })
 
-## ---- Group filters (left column, box 3) — placeholder ----------------- ##
-## Implemented in stage C (per-group pickerInputs to subset cells for the
-## Clonal UMAP). Placeholder so the box renders meaningfully before then.
+## ---- Group filters (left column, box 3) ------------------------------- ##
+## Per-group-column pickerInputs to subset which cells appear in the Clonal
+## UMAP (mirrors the Main tab's group filters). Only meaningful on the Clonal
+## UMAP tab; other tabs see a short note. All levels selected by default.
 output$ir_group_filters_UI <- renderUI({
   if (!has_scRepertoire() || is.null(ir_data_raw())) {
     return(NULL)
   }
-  helpText("Group filters apply to the Clonal UMAP (coming below).")
+  if (!identical(input$ir_tabs, "Clonal UMAP")) {
+    return(helpText("Group filters apply to the Clonal UMAP tab."))
+  }
+  groups <- tryCatch(getGroups(), error = function(e) character(0))
+  if (length(groups) == 0) {
+    return(helpText("No grouping columns available to filter by."))
+  }
+  filters <- lapply(groups, function(g) {
+    lvls <- tryCatch(getGroupLevels(g), error = function(e) character(0))
+    shinyWidgets::pickerInput(
+      paste0("ir_group_filter_", g),
+      label = g,
+      choices = lvls,
+      selected = lvls,
+      options = list("actions-box" = TRUE),
+      multiple = TRUE
+    )
+  })
+  do.call(tagList, filters)
+})
+
+## ---- Barcodes to show in the Clonal UMAP (from Group filters) ---------- ##
+## Reads the per-group pickerInputs and returns the barcodes whose cells pass
+## every active filter. Returns NULL when no filtering is in effect (every
+## level of every group still selected) so the renderer shows all cells.
+## Overrides the NULL default defined in data.R.
+ir_umap_cells_to_show <- reactive({
+  groups <- tryCatch(getGroups(), error = function(e) character(0))
+  md <- tryCatch(getMetaData(), error = function(e) NULL)
+  if (
+    length(groups) == 0 ||
+      is.null(md) ||
+      !("cell_barcode" %in% colnames(md))
+  ) {
+    return(NULL)
+  }
+  keep <- rep(TRUE, nrow(md))
+  any_filter <- FALSE
+  for (g in groups) {
+    sel <- input[[paste0("ir_group_filter_", g)]]
+    if (is.null(sel) || !(g %in% colnames(md))) {
+      next
+    }
+    all_lvls <- tryCatch(getGroupLevels(g), error = function(e) character(0))
+    # Only treat it as an active filter when the user has deselected something.
+    if (length(sel) < length(all_lvls)) {
+      any_filter <- TRUE
+      keep <- keep & (as.character(md[[g]]) %in% sel)
+    }
+  }
+  if (!any_filter) {
+    return(NULL)
+  }
+  as.character(md$cell_barcode[keep])
 })
 
 ## Keep the left-column boxes' dynamic UI alive even while their box is
