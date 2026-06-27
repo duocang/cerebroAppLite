@@ -143,28 +143,15 @@ output$ir_additional_params_UI <- renderUI({
   uiOutput("ir_display_panel")
 })
 
-## ---- Helper: flow a list of controls into rows (2 per row) ------------ ##
-## Renders only the supplied (visible) controls, packed two per fluidRow, so a
-## hidden control never leaves an empty grid cell.
+## ---- Helper: flow a list of controls, one per full-width row ---------- ##
+## The left parameter column is narrow (width = 3), so each control gets its
+## own full-width row rather than being packed two-per-row.
 ir_flow_controls <- function(controls) {
   controls <- Filter(Negate(is.null), controls)
   if (length(controls) == 0) {
     return(NULL)
   }
-  rows <- list()
-  i <- 1
-  while (i <= length(controls)) {
-    if (i + 1 <= length(controls)) {
-      rows[[length(rows) + 1]] <- fluidRow(
-        column(6, controls[[i]]),
-        column(6, controls[[i + 1]])
-      )
-      i <- i + 2
-    } else {
-      rows[[length(rows) + 1]] <- fluidRow(column(6, controls[[i]]))
-      i <- i + 1
-    }
-  }
+  rows <- lapply(controls, function(ctrl) fluidRow(column(12, ctrl)))
   do.call(tagList, rows)
 }
 
@@ -329,22 +316,8 @@ output$ir_param_panel <- renderUI({
     )
   })
 
-  # two controls per row
-  rows <- list()
-  i <- 1
-  while (i <= length(controls)) {
-    if (i + 1 <= length(controls)) {
-      rows[[length(rows) + 1]] <- fluidRow(
-        column(6, controls[[i]]),
-        column(6, controls[[i + 1]])
-      )
-      i <- i + 2
-    } else {
-      rows[[length(rows) + 1]] <- fluidRow(column(6, controls[[i]]))
-      i <- i + 1
-    }
-  }
-  do.call(tagList, rows)
+  # one control per full-width row (narrow left column)
+  ir_flow_controls(controls)
 })
 
 ## ---- Reactive: number of samples -------------------------------------- ##
