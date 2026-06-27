@@ -15,6 +15,10 @@
 - **Reworked layout**: the immune repertoire page now uses the same
   left-parameters / right-visualization layout as the main projection tab, with
   Main parameters, Additional parameters, and Group filters boxes on the left.
+- **Parameter help**: the info button on each parameter box opens a dialog
+  explaining, in plain language, exactly the controls shown on the current tab.
+- Clone call is no longer shown on the Clonal UMAP tab, where it only adds
+  noise.
 
 # cerebroAppLite 1.7.3
 
