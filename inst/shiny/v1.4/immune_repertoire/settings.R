@@ -297,6 +297,16 @@ output$ir_param_panel <- renderUI({
   }
   spec <- IR_PARAM_SPEC[[tab]]
 
+  # Append the generic "Order groups" control on tabs whose scRepertoire
+  # function accepts order.by (declared once in param_spec.R).
+  if (
+    exists("IR_ORDER_BY_TABS") &&
+      exists("IR_ORDER_BY_PARAM") &&
+      tab %in% IR_ORDER_BY_TABS
+  ) {
+    spec <- c(spec, list(IR_ORDER_BY_PARAM))
+  }
+
   groups <- tryCatch(getGroups(), error = function(e) character(0))
   genes <- ir_gene_families()
 

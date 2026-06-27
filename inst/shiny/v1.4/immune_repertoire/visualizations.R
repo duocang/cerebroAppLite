@@ -595,6 +595,7 @@ output$ir_plot_clonalAbundance <- renderPlot({
       cloneCall = pars$cloneCall,
       chain = pars$chain,
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       scale = isTRUE(ir_param("ir_p_scale", FALSE))
     ),
     "clonalAbundance"
@@ -622,6 +623,7 @@ output$ir_plot_clonalCompare <- renderPlot({
       cloneCall = pars$cloneCall,
       chain = pars$chain,
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       samples = input$ir_compare_samples,
       top.clones = as.numeric(ir_param("ir_p_top_clones", 10)),
       graph = ir_param("ir_p_compare_graph", "alluvial"),
@@ -690,6 +692,10 @@ ir_plot_clonal_diversity <- function(
   )
   if (!is.null(x_axis)) {
     scr_args[["x.axis"]] <- x_axis
+  }
+  ob <- ir_order_by()
+  if (!is.null(ob)) {
+    scr_args[["order.by"]] <- ob
   }
   output_df <- do.call(scRepertoire::clonalDiversity, scr_args)
 
@@ -833,7 +839,9 @@ output$ir_plot_clonalHomeostasis <- renderPlot({
       data,
       cloneCall = pars$cloneCall,
       chain = pars$chain,
+      cloneSize = ir_clone_size(),
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       exportTable = FALSE,
       palette = "inferno"
     ),
@@ -868,6 +876,7 @@ output$ir_plot_clonalLength <- renderPlot({
       cloneCall = clone_call,
       chain = pars$chain,
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       scale = isTRUE(ir_param("ir_p_scale", FALSE)),
       exportTable = FALSE,
       palette = "inferno"
@@ -1131,6 +1140,7 @@ output$ir_plot_percentGeneUsage <- renderPlot({
         if (is.null(g) || !nzchar(g)) default_gene_family() else g
       })(),
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       summary.fun = ir_param("ir_p_gu_summary", "percent"),
       plot.type = ir_param("ir_p_gu_plot_type", "heatmap"),
       exportTable = FALSE,
@@ -1172,6 +1182,7 @@ output$ir_plot_vizGenes <- renderPlot({
       x.axis = vg_x,
       y.axis = NULL,
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       plot = ir_param("ir_p_vg_plot", "heatmap"),
       summary.fun = ir_param("ir_p_vg_summary", "percent"),
       exportTable = FALSE,
@@ -1209,6 +1220,7 @@ output$ir_plot_percentGenes <- renderPlot({
       chain = specific_chain(),
       gene = ir_param("ir_p_pg_gene", "Vgene"),
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       summary.fun = ir_param("ir_p_pg_summary", "percent"),
       exportTable = FALSE,
       palette = "inferno"
@@ -1243,6 +1255,7 @@ output$ir_plot_percentVJ <- renderPlot({
       data,
       chain = specific_chain(),
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       summary.fun = ir_param("ir_p_vj_summary", "percent"),
       exportTable = FALSE,
       palette = "inferno"
@@ -1284,6 +1297,7 @@ output$ir_plot_percentAA <- renderPlot({
       data,
       chain = pars$chain,
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       aa.length = aa_len,
       exportTable = FALSE,
       palette = "inferno"
@@ -1314,6 +1328,7 @@ output$ir_plot_positionalEntropy <- renderPlot({
       data,
       chain = pars$chain,
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       aa.length = aa_len,
       method = ir_param("ir_p_pe_method", "norm.entropy"),
       exportTable = FALSE,
@@ -1403,6 +1418,7 @@ output$ir_plot_positionalProperty <- renderPlot({
       data,
       chain = pars$chain,
       group.by = pars$groupBy,
+      order.by = ir_order_by(),
       method = method,
       aa.length = as.numeric(ir_param("ir_p_pp_aa_length", 20)),
       exportTable = FALSE,

@@ -382,6 +382,8 @@ ir_bindCache <- function(x, ..., cache = "session") {
       input$ir_d_title,
       input$ir_d_point_size,
       input$ir_d_alpha,
+      input$ir_p_order_by,
+      input$ir_p_clone_size,
       data_to_load$path,
       cache = cache
     )
