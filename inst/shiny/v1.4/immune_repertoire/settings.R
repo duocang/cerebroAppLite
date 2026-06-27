@@ -52,8 +52,10 @@ output$ir_settings_UI <- renderUI({
     "Entropy",
     "Property"
   )
-  groupby_hidden <- c("Paired Scatter")
-  chain_hidden <- c("vizGenes")
+  # Clonal UMAP uses its own Receptor selector instead of the global Chain, and
+  # colours by clone size rather than a group.by split, so hide both there.
+  groupby_hidden <- c("Paired Scatter", "Clonal UMAP")
+  chain_hidden <- c("vizGenes", "Clonal UMAP")
 
   # Collect only the controls that apply to the current tab, then flow them into
   # rows so a hidden control never leaves a blank gap.
@@ -297,6 +299,20 @@ output$ir_param_panel <- renderUI({
       choices <- names(available_property_methods())
       if (is.null(selected) || !selected %in% choices) {
         selected <- choices[1]
+      }
+    } else if (identical(choices, "<<receptors>>")) {
+      # TCR / BCR — only the receptor classes present in the data.
+      choices <- ir_receptor_types()
+      if (is.null(selected) || !selected %in% choices) {
+        selected <- if (length(choices) > 0) choices[1] else NULL
+      }
+    } else if (identical(choices, "<<projections>>")) {
+      # cell projections (UMAP/tSNE) available in the data set; default first.
+      choices <- tryCatch(availableProjections(), error = function(e) {
+        character(0)
+      })
+      if (is.null(selected) || !selected %in% choices) {
+        selected <- if (length(choices) > 0) choices[1] else NULL
       }
     }
     selectInput(

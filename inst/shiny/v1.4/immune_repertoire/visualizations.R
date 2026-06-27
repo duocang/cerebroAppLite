@@ -23,6 +23,16 @@ output$ir_visualizations_UI <- renderUI({
       ))
     ),
     tabPanel(
+      # Clonal expansion overlaid on the cell UMAP. Placed after Abundance so
+      # it does not displace the default landing tab, but kept among the
+      # priority overview plots.
+      "Clonal UMAP",
+      shinycssloaders::withSpinner(plotOutput(
+        "ir_plot_clonalUMAP",
+        height = 500
+      ))
+    ),
+    tabPanel(
       "Diversity",
       uiOutput("ir_ui_clonalDiversity")
     ),
@@ -161,6 +171,81 @@ output$ir_visualizations_UI <- renderUI({
 ##------------------------------------------------------------------------##
 ## Plot renderers
 ##------------------------------------------------------------------------##
+
+## ---- Clonal UMAP -------------------------------------------------------- ##
+## Overlays clone expansion level on the cell projection (UMAP/tSNE). Data is
+## built in data.R (ir_clonal_umap_data); here we draw the coloured scatter.
+## Point size / opacity come from the generic display options; font size and
+## title are applied by safeRenderPlot via ir_apply_display.
+IR_EXPANSION_COLORS <- c(
+  "Single (0 < X <= 1)" = "#C7A0CE",
+  "Small (1 < X <= 5)" = "#9C6FB0",
+  "Medium (5 < X <= 20)" = "#1FA187",
+  "Large (20 < X <= 100)" = "#B8860B",
+  "Hyperexpanded (100 < X)" = "#E8602D"
+)
+
+output$ir_plot_clonalUMAP <- renderPlot({
+  req_plot_space("ir_plot_clonalUMAP")
+  receptor <- ir_param("ir_p_umap_receptor")
+  projection <- ir_param("ir_p_umap_projection")
+  cloneCall <- ir_params()$cloneCall %||% "gene"
+  df <- ir_clonal_umap_data(projection, receptor, cloneCall)
+
+  safeRenderPlot(
+    {
+      if (is.null(df) || nrow(df) == 0) {
+        ggplot2::ggplot() +
+          ggplot2::annotate(
+            "text",
+            x = 0,
+            y = 0,
+            label = paste0(
+              "No clonal UMAP to display.\n",
+              "Needs a cell projection and ",
+              if (is.null(receptor)) "TCR/BCR" else receptor,
+              " clonotypes whose barcodes match the cells."
+            ),
+            size = 4.5,
+            colour = "#666666"
+          ) +
+          ggplot2::theme_void()
+      } else {
+        dp <- tryCatch(ir_display_params(), error = function(e) list())
+        point_size <- suppressWarnings(as.numeric(dp[["ir_d_point_size"]]))
+        if (length(point_size) != 1 || is.na(point_size)) {
+          point_size <- 1
+        }
+        alpha <- suppressWarnings(as.numeric(dp[["ir_d_alpha"]]))
+        if (length(alpha) != 1 || is.na(alpha)) {
+          alpha <- 0.8
+        }
+
+        ggplot2::ggplot(
+          df,
+          ggplot2::aes(x = .data$x, y = .data$y, colour = .data$expansion)
+        ) +
+          ggplot2::geom_point(size = point_size, alpha = alpha) +
+          ggplot2::scale_colour_manual(
+            values = IR_EXPANSION_COLORS,
+            drop = FALSE,
+            name = "Clonotype"
+          ) +
+          ggplot2::labs(x = "UMAP_1", y = "UMAP_2") +
+          ggplot2::theme_classic() +
+          ggplot2::guides(
+            colour = ggplot2::guide_legend(override.aes = list(size = 3))
+          )
+      }
+    },
+    "clonalUMAP"
+  )
+}) %>%
+  ir_bindCache(
+    input$ir_p_umap_receptor,
+    input$ir_p_umap_projection,
+    input$ir_cloneCall
+  )
 
 ## ---- BCR-specific renderers --------------------------------------------- ##
 output$ir_plot_isotype <- renderPlot({

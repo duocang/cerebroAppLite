@@ -18,6 +18,26 @@
 ## ---------------------------------------------------------------------------
 
 IR_PARAM_SPEC <- list(
+  # Clonal UMAP: overlay clone expansion on the cell projection. Receptor and
+  # projection choices are dynamic (resolved in settings.R via the
+  # "<<receptors>>" / "<<projections>>" tokens), defaulting to the first option.
+  "Clonal UMAP" = list(
+    list(
+      id = "ir_p_umap_receptor",
+      label = "Receptor:",
+      type = "select",
+      choices = "<<receptors>>",
+      value = NULL
+    ),
+    list(
+      id = "ir_p_umap_projection",
+      label = "Projection:",
+      type = "select",
+      choices = "<<projections>>",
+      value = NULL
+    )
+  ),
+
   "Diversity" = list(
     list(
       id = "ir_p_metric",

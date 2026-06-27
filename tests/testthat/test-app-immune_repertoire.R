@@ -331,3 +331,89 @@ test_that("immune_repertoire module loads without breaking main app", {
 
   app$stop()
 })
+
+test_that("Clonal UMAP tab renders with receptor + projection selectors", {
+  local_app_support(inst_dir)
+  app <- AppDriver$new(
+    inst_dir,
+    name = "ir_clonal_umap",
+    height = 950,
+    width = 1619
+  )
+  app$wait_for_idle(timeout = 20000)
+  app$run_js(
+    'document.querySelector(\'a[href="#shiny-tab-immune_repertoire"]\').click();'
+  )
+  app$wait_for_idle(timeout = 20000)
+
+  # The Clonal UMAP tab should exist among the visualization tabs.
+  has_umap_tab <- app$get_js(
+    "(function(){
+      var as = document.querySelectorAll('#ir_tabs > li > a');
+      for (var i=0;i<as.length;i++){
+        if (as[i].textContent.trim() === 'Clonal UMAP') return true;
+      }
+      return false;
+    })();"
+  )
+  expect_true(isTRUE(has_umap_tab))
+
+  # Switch to it; the receptor + projection selectors should render with options.
+  app$set_inputs(ir_tabs = "Clonal UMAP", wait_ = FALSE)
+  app$wait_for_idle(timeout = 20000)
+
+  n_options <- function(id) {
+    app$get_js(sprintf(
+      "(function(){var e=document.querySelector('#%s');return e?e.querySelectorAll('option').length:0;})();",
+      id
+    ))
+  }
+  expect_gte(as.numeric(n_options("ir_p_umap_receptor")), 1)
+  expect_gte(as.numeric(n_options("ir_p_umap_projection")), 1)
+
+  # The plot output should render without surfacing a raw R error.
+  v <- app$get_value(output = "ir_plot_clonalUMAP")
+  expect_false(isTRUE(grepl(
+    "Error|undefined columns|subscript out of bounds",
+    v$html,
+    ignore.case = TRUE
+  )))
+
+  app$stop()
+})
+
+test_that("Display options panel exposes scatter params on scatter-type tabs", {
+  local_app_support(inst_dir)
+  app <- AppDriver$new(
+    inst_dir,
+    name = "ir_display_opts",
+    height = 950,
+    width = 1619
+  )
+  app$wait_for_idle(timeout = 20000)
+  app$run_js(
+    'document.querySelector(\'a[href="#shiny-tab-immune_repertoire"]\').click();'
+  )
+  app$wait_for_idle(timeout = 20000)
+
+  control_exists <- function(id) {
+    app$get_js(sprintf(
+      "document.querySelector('#%s') !== null;",
+      id
+    ))
+  }
+
+  # Abundance (non-scatter): base display params present, scatter ones absent.
+  app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+  expect_true(isTRUE(control_exists("ir_d_base_size")))
+  expect_false(isTRUE(control_exists("ir_d_point_size")))
+
+  # Clonal UMAP (scatter-type): point size + opacity also present.
+  app$set_inputs(ir_tabs = "Clonal UMAP", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+  expect_true(isTRUE(control_exists("ir_d_point_size")))
+  expect_true(isTRUE(control_exists("ir_d_alpha")))
+
+  app$stop()
+})
