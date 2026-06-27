@@ -490,3 +490,62 @@ test_that("Clonal UMAP has Show-all toggle and group filters", {
 
   app$stop()
 })
+
+test_that("Clone call is hidden on the Clonal UMAP tab", {
+  local_app_support(inst_dir)
+  app <- AppDriver$new(
+    inst_dir,
+    name = "ir_umap_no_clonecall",
+    height = 950,
+    width = 1619
+  )
+  app$wait_for_idle(timeout = 20000)
+  app$run_js(
+    'document.querySelector(\'a[href="#shiny-tab-immune_repertoire"]\').click();'
+  )
+  app$wait_for_idle(timeout = 20000)
+
+  exists_el <- function(sel) {
+    app$get_js(sprintf("document.querySelector('%s') !== null;", sel))
+  }
+
+  # Default tab is Clonal UMAP: the global Clone call should be omitted there.
+  expect_false(isTRUE(exists_el("#ir_cloneCall")))
+
+  # On Abundance it should be back.
+  app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+  expect_true(isTRUE(exists_el("#ir_cloneCall")))
+
+  app$stop()
+})
+
+test_that("Main parameters info button opens a help dialog", {
+  local_app_support(inst_dir)
+  app <- AppDriver$new(
+    inst_dir,
+    name = "ir_info_dialog",
+    height = 950,
+    width = 1619
+  )
+  app$wait_for_idle(timeout = 20000)
+  app$run_js(
+    'document.querySelector(\'a[href="#shiny-tab-immune_repertoire"]\').click();'
+  )
+  app$wait_for_idle(timeout = 20000)
+
+  # Move to a tab with several controls, then click the Main parameters info.
+  app$set_inputs(ir_tabs = "Diversity", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+  app$run_js("document.querySelector('#ir_main_parameters_info').click();")
+  app$wait_for_idle(timeout = 10000)
+
+  # A modal with help cards should appear, containing the param help text.
+  modal_html <- app$get_js(
+    "(function(){var m=document.querySelector('.modal-body');return m?m.innerHTML:'';})();"
+  )
+  expect_true(grepl("ir-help-card", modal_html))
+  expect_true(grepl("Metric|Clone call|Bootstrap", modal_html))
+
+  app$stop()
+})

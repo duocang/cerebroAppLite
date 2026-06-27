@@ -46,6 +46,10 @@ output$ir_main_params_UI <- renderUI({
   # left as an empty grid cell). Server-side filtering keeps the layout compact.
   tab <- input$ir_tabs
   clonecall_hidden <- c(
+    # Clonal UMAP colours by clone size and uses its own Receptor selector;
+    # the global Clone call only nudges what counts as the "same" clone and is
+    # noise for this view, so omit it here.
+    "Clonal UMAP",
     "Isotype",
     "SHM Proxy",
     "Gene usage",
@@ -461,6 +465,147 @@ ir_umap_cells_to_show <- reactive({
     return(NULL)
   }
   as.character(md$cell_barcode[keep])
+})
+
+## ---- Info dialogs: explain the parameters shown on the current tab ---- ##
+## The info buttons next to each left-column box open a modal that explains,
+## in plain language, exactly the controls visible on the current tab. Text
+## comes from IR_PARAM_DESC (param_spec.R) so it never drifts from the controls.
+
+## Which global controls (cloneCall/chain/groupBy) are shown on a given tab —
+## mirrors the hidden-lists logic in ir_main_params_UI above.
+ir_visible_global_ids <- function(tab) {
+  clonecall_hidden <- c(
+    "Clonal UMAP",
+    "Isotype",
+    "SHM Proxy",
+    "Gene usage",
+    "vizGenes",
+    "percentGenes",
+    "percentVJ",
+    "AA %",
+    "Entropy",
+    "Property"
+  )
+  groupby_hidden <- c("Paired Scatter", "Clonal UMAP")
+  chain_hidden <- c("vizGenes", "Clonal UMAP")
+  ids <- character(0)
+  if (is.null(tab) || !(tab %in% clonecall_hidden)) {
+    ids <- c(ids, "ir_cloneCall")
+  }
+  if (is.null(tab) || !(tab %in% chain_hidden)) {
+    ids <- c(ids, "ir_chain")
+  }
+  if (is.null(tab) || !(tab %in% groupby_hidden)) {
+    ids <- c(ids, "ir_groupBy")
+  }
+  ids
+}
+
+## Render a list of param ids as styled help cards (bold name + plain text).
+ir_param_help_cards <- function(ids) {
+  ids <- ids[ids %in% names(IR_PARAM_DESC)]
+  if (length(ids) == 0) {
+    return(tags$p(
+      style = "color:#888;",
+      "No adjustable parameters on this tab."
+    ))
+  }
+  cards <- lapply(ids, function(id) {
+    label <- IR_PARAM_LABELS[[id]] %||% id
+    div(
+      class = "ir-help-card",
+      div(class = "ir-help-card-title", label),
+      div(class = "ir-help-card-body", IR_PARAM_DESC[[id]])
+    )
+  })
+  tagList(
+    ir_help_card_style,
+    div(class = "ir-help-cards", do.call(tagList, cards))
+  )
+}
+
+## Lookup: input id -> human label (from IR_PARAM_SPEC / display / globals).
+IR_PARAM_LABELS <- local({
+  labs <- list(
+    ir_cloneCall = "Clone call",
+    ir_chain = "Chain",
+    ir_groupBy = "Group by"
+  )
+  for (tab in names(IR_PARAM_SPEC)) {
+    for (p in IR_PARAM_SPEC[[tab]]) {
+      labs[[p$id]] <- sub(":\\s*$", "", p$label)
+    }
+  }
+  for (p in c(IR_DISPLAY_BASE, IR_DISPLAY_SCATTER)) {
+    labs[[p$id]] <- sub(":\\s*$", "", p$label)
+  }
+  labs
+})
+
+## Card styling — compact, clearly separated, with a coloured accent bar.
+ir_help_card_style <- tags$style(HTML(
+  "
+  .ir-help-cards { display:flex; flex-direction:column; gap:10px; }
+  .ir-help-card {
+    border:1px solid #e3e6ea; border-left:4px solid #3c8dbc;
+    border-radius:6px; padding:10px 14px; background:#fafbfc;
+  }
+  .ir-help-card-title { font-weight:600; color:#2c3e50; margin-bottom:3px; }
+  .ir-help-card-body { color:#4a4a4a; font-size:13px; line-height:1.5; }
+  "
+))
+
+## Main parameters info: global controls + this tab's analysis params.
+observeEvent(input$ir_main_parameters_info, {
+  tab <- input$ir_tabs
+  spec_ids <- if (
+    !is.null(tab) && exists("IR_PARAM_SPEC") && !is.null(IR_PARAM_SPEC[[tab]])
+  ) {
+    vapply(IR_PARAM_SPEC[[tab]], function(p) p$id, character(1))
+  } else {
+    character(0)
+  }
+  ids <- c(ir_visible_global_ids(tab), spec_ids)
+  showModal(modalDialog(
+    title = paste0("Main parameters", if (!is.null(tab)) paste0(" — ", tab)),
+    ir_param_help_cards(ids),
+    easyClose = TRUE,
+    footer = modalButton("Close"),
+    size = "l"
+  ))
+})
+
+## Additional parameters info: the display options for this tab.
+observeEvent(input$ir_additional_parameters_info, {
+  tab <- input$ir_tabs
+  ids <- if (exists("ir_display_params_for")) {
+    vapply(ir_display_params_for(tab), function(p) p$id, character(1))
+  } else {
+    character(0)
+  }
+  showModal(modalDialog(
+    title = "Additional parameters — display options",
+    ir_param_help_cards(ids),
+    easyClose = TRUE,
+    footer = modalButton("Close"),
+    size = "l"
+  ))
+})
+
+## Group filters info.
+observeEvent(input$ir_group_filters_info, {
+  showModal(modalDialog(
+    title = "Group filters",
+    tags$p(
+      "Restrict the Clonal UMAP to a subset of cells by metadata column ",
+      "(sample, condition, cell type, ...). Deselect levels to hide those ",
+      "cells; with everything selected, all cells are shown."
+    ),
+    easyClose = TRUE,
+    footer = modalButton("Close"),
+    size = "l"
+  ))
 })
 
 ## Keep the left-column boxes' dynamic UI alive even while their box is
