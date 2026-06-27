@@ -181,7 +181,10 @@ output$ir_plot_isotype <- renderPlot({
           cex = 0.9
         )
       } else {
-        print(p)
+        # Return the ggplot (not print()) so safeRenderPlot can apply display
+        # options and renderPlot prints it once. Printing here too would render
+        # twice.
+        p
       }
     },
     "isotype"
@@ -211,7 +214,10 @@ output$ir_plot_shmProxy <- renderPlot({
           cex = 0.9
         )
       } else {
-        print(p)
+        # Return the ggplot (not print()) so safeRenderPlot can apply display
+        # options and renderPlot prints it once. Printing here too would render
+        # twice.
+        p
       }
     },
     "shmProxy"
@@ -357,7 +363,7 @@ output$ir_plot_pairedScatter <- renderPlot({
           palette = "inferno"
         )
         p <- p + ggplot2::ggtitle(paste(lvls[1], "vs", lvls[2]))
-        print(p)
+        p
       } else {
         facet_lvls <- unique(meta[[facet_col]])
         panels <- list()
@@ -400,7 +406,7 @@ output$ir_plot_pairedScatter <- renderPlot({
           )
         } else {
           ncol_p <- min(4L, length(panels))
-          print(patchwork::wrap_plots(panels, ncol = ncol_p))
+          patchwork::wrap_plots(panels, ncol = ncol_p)
         }
       }
     },

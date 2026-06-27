@@ -121,6 +121,9 @@ output$ir_settings_UI <- renderUI({
     ),
     # Function-specific analysis parameters (IR_PARAM_SPEC for the current tab).
     uiOutput("ir_param_panel"),
+    # Generic display options (font/title, scatter point size/opacity),
+    # collapsible so they don't crowd the panel.
+    uiOutput("ir_display_panel"),
     # Scatter / Compare sample selectors only on their own tabs.
     conditionalPanel(
       condition = "input.ir_tabs == 'Scatter'",
@@ -327,4 +330,81 @@ output$ir_param_panel <- renderUI({
 n_samples <- reactive({
   data <- ir_data()
   if (is.null(data)) 0L else length(data)
+})
+
+## ---- Generic display options (collapsible) ---------------------------- ##
+## Renders the IR_DISPLAY_SPEC controls applicable to the current tab inside a
+## collapsible <details> block, kept separate from the analysis params so the
+## panel stays compact. Defaults collapsed (no `open` attribute).
+output$ir_display_panel <- renderUI({
+  tab <- input$ir_tabs
+  if (!exists("ir_display_params_for")) {
+    return(NULL)
+  }
+  spec <- ir_display_params_for(tab)
+  if (length(spec) == 0) {
+    return(NULL)
+  }
+
+  controls <- lapply(spec, function(p) {
+    if (identical(p$type, "numeric")) {
+      return(numericInput(
+        p$id,
+        p$label,
+        value = p$value,
+        min = p$min,
+        max = p$max,
+        step = p$step
+      ))
+    }
+    # text (the only other display type)
+    textInput(p$id, p$label, value = p$value)
+  })
+
+  # two controls per row
+  rows <- list()
+  i <- 1
+  while (i <= length(controls)) {
+    if (i + 1 <= length(controls)) {
+      rows[[length(rows) + 1]] <- fluidRow(
+        column(6, controls[[i]]),
+        column(6, controls[[i + 1]])
+      )
+      i <- i + 2
+    } else {
+      rows[[length(rows) + 1]] <- fluidRow(column(6, controls[[i]]))
+      i <- i + 1
+    }
+  }
+
+  tags$details(
+    id = "ir_display_details",
+    tags$summary(tags$b("Display options")),
+    do.call(tagList, rows)
+  )
+})
+
+## ---- Reactive: current display parameter values ----------------------- ##
+## Collects the live display-control values for the current tab, falling back
+## to each param's declared default when the input is absent (e.g. a control
+## not rendered on the current tab). Consumed by ir_apply_display().
+ir_display_params <- reactive({
+  tab <- input$ir_tabs
+  spec <- if (exists("ir_display_params_for")) {
+    ir_display_params_for(tab)
+  } else {
+    list()
+  }
+  vals <- list()
+  for (p in spec) {
+    v <- input[[p$id]]
+    vals[[p$id]] <- if (
+      is.null(v) || (is.character(v) && !nzchar(v) && p$type != "text")
+    ) {
+      p$value
+    } else {
+      v
+    }
+  }
+  vals
 })
