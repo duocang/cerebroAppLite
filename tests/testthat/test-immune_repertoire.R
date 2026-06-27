@@ -29,6 +29,7 @@ test_that("immune_repertoire module files parse without errors", {
   mod_files <- c(
     "UI.R",
     "server.R",
+    "paired_scatter_helpers.R",
     "data.R",
     "settings.R",
     "tabs.R",
@@ -162,7 +163,7 @@ test_that("core IR params update immediately to keep bindCache keys and values a
   ))
 })
 
-test_that("removed Split data by control leaves no stale sample-column input", {
+test_that("Sample column split control is wired into repertoire data", {
   mod_files <- c("data.R", "settings.R", "visualizations.R")
   content <- paste(
     vapply(
@@ -177,13 +178,10 @@ test_that("removed Split data by control leaves no stale sample-column input", {
     ),
     collapse = "\n"
   )
-  # The old ir_sampleCol split logic was removed — verify no dead code remains.
-  # "ir_sampleCol" / "Split data by" may appear in comments documenting the
-  # removal; such documentation is fine. Check for actual code references only:
-  # selectInput / updateSelectInput referencing the removed id.
-  expect_false(grepl('selectInput\\(\\s*"ir_sampleCol"', content))
-  expect_false(grepl('updateSelectInput\\([^)]*"ir_sampleCol"', content))
-  expect_false(grepl('input\\$ir_sampleCol', content))
+  expect_match(content, "ir_sample_col_choices")
+  expect_match(content, 'selectInput\\(\\s*"ir_sampleCol"')
+  expect_match(content, "input\\$ir_sampleCol")
+  expect_match(content, "split\\(merged, merged\\[\\[col\\]\\]\\)")
 })
 
 test_that("renderers pass supported scRepertoire parameters", {
@@ -297,6 +295,29 @@ test_that("server.R translates cryptic scRepertoire errors to empty-state", {
   ))
   expect_true(is_empty_selection("subscript out of bounds"))
   expect_false(is_empty_selection("some unrelated real error"))
+})
+
+test_that("paired scatter falls back to manual sample selection", {
+  helper <- file.path(
+    shiny_root,
+    "immune_repertoire",
+    "paired_scatter_helpers.R"
+  )
+  expect_true(file.exists(helper))
+  env <- new.env(parent = globalenv())
+  sys.source(helper, envir = env)
+
+  meta <- data.frame(
+    .sample_name = c("sample_1", "sample_2", "sample_3"),
+    sample = c("sample_1", "sample_2", "sample_3"),
+    orig.ident = c("sample_1", "sample_2", "sample_3"),
+    stringsAsFactors = FALSE
+  )
+  choices <- env$ir_paired_scatter_choices(meta)
+
+  expect_equal(choices$compare_candidates, character(0))
+  expect_equal(choices$mode, "manual")
+  expect_equal(choices$sample_choices, meta$.sample_name)
 })
 
 test_that("ir_bindCache injects dataset identity into cache key", {

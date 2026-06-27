@@ -39,6 +39,33 @@ load_ir <- function() {
   })
 }
 
+split_ir_by <- function(ir, col) {
+  merged <- do.call(
+    rbind,
+    lapply(names(ir), function(nm) {
+      df <- ir[[nm]]
+      df$.orig_sample <- nm
+      df
+    })
+  )
+  keep <- col %in%
+    colnames(merged) &&
+    any(!is.na(merged[[col]]) & nzchar(as.character(merged[[col]])))
+  if (!keep) {
+    return(ir)
+  }
+  merged <- merged[
+    !is.na(merged[[col]]) & nzchar(as.character(merged[[col]])),
+    ,
+    drop = FALSE
+  ]
+  out <- split(merged, merged[[col]])
+  lapply(out, function(df) {
+    df$.orig_sample <- NULL
+    df
+  })
+}
+
 # A real, non-empty ggplot: is a ggplot and its first layer has rows.
 expect_nonempty_ggplot <- function(p, label) {
   expect_s3_class(p, "ggplot")
@@ -70,6 +97,48 @@ test_that("core clonal plots render a non-empty ggplot on example.crb", {
   expect_nonempty_ggplot(
     scRepertoire::clonalProportion(ir, cloneCall = "gene", group.by = "sample"),
     "clonalProportion"
+  )
+})
+
+test_that("paired scatter manual fallback renders on example.crb", {
+  skip_if_not(file.exists(example_crb))
+  ir <- load_ir()
+  skip_if_not(length(ir) >= 2)
+
+  expect_nonempty_ggplot(
+    scRepertoire::clonalScatter(
+      ir,
+      cloneCall = "gene",
+      chain = "both",
+      x.axis = names(ir)[1],
+      y.axis = names(ir)[2],
+      dot.size = "total",
+      graph = "proportion",
+      exportTable = FALSE,
+      palette = "inferno"
+    ),
+    "pairedScatter"
+  )
+})
+
+test_that("paired scatter renders after splitting by a metadata category", {
+  skip_if_not(file.exists(example_crb))
+  ir <- split_ir_by(load_ir(), "cell_type")
+  skip_if_not(length(ir) >= 2)
+
+  expect_nonempty_ggplot(
+    scRepertoire::clonalScatter(
+      ir,
+      cloneCall = "gene",
+      chain = "both",
+      x.axis = names(ir)[1],
+      y.axis = names(ir)[2],
+      dot.size = "total",
+      graph = "proportion",
+      exportTable = FALSE,
+      palette = "inferno"
+    ),
+    "pairedScatterCellType"
   )
 })
 

@@ -100,6 +100,23 @@ IR_PARAM_SPEC <- list(
     )
   ),
 
+  "Paired Scatter" = list(
+    list(
+      id = "ir_p_graph",
+      label = "Graph:",
+      type = "select",
+      choices = c("proportion", "count"),
+      value = "proportion"
+    ),
+    list(
+      id = "ir_p_dot_size",
+      label = "Dot size:",
+      type = "select",
+      choices = c("total", "x", "y"),
+      value = "total"
+    )
+  ),
+
   "vizGenes" = list(
     list(
       id = "ir_p_vg_x_axis",
@@ -448,7 +465,7 @@ IR_DISPLAY_SCATTER <- list(
 )
 
 ## Tabs whose plots are point clouds (scatter-type): get the scatter extras.
-IR_SCATTER_TABS <- c("Clonal UMAP", "Scatter")
+IR_SCATTER_TABS <- c("Clonal UMAP", "Scatter", "Paired Scatter")
 
 ## Assemble the display params applicable to a given tab.
 ir_display_params_for <- function(tab) {
@@ -473,7 +490,8 @@ IR_PARAM_DESC <- list(
   ## ---- Global controls ----
   ir_cloneCall = "How a 'clone' is defined when counting cells. gene = same V(D)J genes; nt = identical CDR3 nucleotide sequence; aa = identical CDR3 amino-acid sequence; strict = same genes AND same CDR3 nucleotides (most specific). Stricter definitions split near-identical cells into separate clones.",
   ir_chain = "Which receptor chain to analyse. 'All chains' combines them; otherwise restrict to one chain (e.g. TRB for the T-cell beta chain, IGH for the B-cell heavy chain). Choose a single chain when a plot should reflect just that chain's diversity or genes.",
-  ir_groupBy = "The metadata column that splits the repertoire into groups to compare (sample, condition, cell type, ...). 'None' treats each loaded sample as its own group. Most plots draw one colour/curve per group.",
+  ir_groupBy = "Metadata regrouping inside scRepertoire. On Paired Scatter this is shown as Compare by and directly defines the X/Y candidates: None uses original samples; a metadata column uses that column's levels. On Scatter and Compare it overrides the Comparison units when selected.",
+  ir_sampleCol = "Defines the comparison units that scRepertoire treats as samples. '(original)' uses the loaded repertoire list; choosing sample, condition, treatment, or cell type re-splits the repertoire so cross-sample plots compare those levels.",
 
   ## ---- Clonal UMAP ----
   ir_p_umap_receptor = "Which receptor to colour by: TCR (T cells) or BCR (B cells). Only the types present in your data are offered.",

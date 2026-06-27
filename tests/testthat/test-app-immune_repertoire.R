@@ -86,6 +86,12 @@ test_that("Group by is visible on plots whose grouping it drives", {
       "(function(){var e=document.querySelector('#ir_groupBy');return e!==null && e.offsetParent!==null;})();"
     )
   }
+  n_options <- function(id) {
+    app$get_js(sprintf(
+      "(function(){var e=document.querySelector('#%s');return e?e.querySelectorAll('option').length:0;})();",
+      id
+    ))
+  }
 
   app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
   app$wait_for_idle(timeout = 15000)
@@ -105,7 +111,32 @@ test_that("Group by is visible on plots whose grouping it drives", {
 
   app$set_inputs(ir_tabs = "Paired Scatter", wait_ = FALSE)
   app$wait_for_idle(timeout = 15000)
-  expect_false(isTRUE(groupby_visible()))
+  expect_true(isTRUE(groupby_visible()))
+  expect_equal(
+    app$get_js(
+      "(function(){var e=document.querySelector('#ir_groupBy');return e?e.value:null;})();"
+    ),
+    ""
+  )
+  expect_equal(as.numeric(n_options("ir_sampleCol")), 0)
+  expect_true(isTRUE(app$get_js(
+    "(function(){return document.querySelector('#ir_pair_x_group') !== null && document.querySelector('#ir_pair_y_group') !== null;})();"
+  )))
+  expect_gte(as.numeric(n_options("ir_pair_x_group")), 2)
+  expect_gte(as.numeric(n_options("ir_pair_y_group")), 2)
+  expect_true(isTRUE(app$get_js(
+    "(function(){return document.querySelector('#ir_groupBy option[value=\"cell_type\"]') !== null;})();"
+  )))
+  app$set_inputs(ir_groupBy = "cell_type", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+  expect_equal(
+    app$get_js(
+      "(function(){var e=document.querySelector('#ir_groupBy');return e?e.value:null;})();"
+    ),
+    "cell_type"
+  )
+  expect_gte(as.numeric(n_options("ir_pair_x_group")), 2)
+  expect_gte(as.numeric(n_options("ir_pair_y_group")), 2)
 
   app$stop()
 })
