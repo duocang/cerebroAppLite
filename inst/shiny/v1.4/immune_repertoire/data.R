@@ -223,3 +223,159 @@ ir_plot_height <- function(facet_mode = c("none", "grid", "wrap")) {
   nrow <- ceiling(ng / ncol)
   base_h * nrow
 }
+
+##----------------------------------------------------------------------------##
+## Clonal UMAP data layer
+##----------------------------------------------------------------------------##
+
+## ---- Chains that define each receptor class --------------------------- ##
+IR_TCR_CHAINS <- c("TRA", "TRB", "TRG", "TRD")
+IR_BCR_CHAINS <- c("IGH", "IGK", "IGL")
+
+## ---- Which receptor classes are present in the data ------------------- ##
+## Returns a named vector ("TCR" / "BCR") of the receptor types actually
+## detected, so the Clonal UMAP selector only offers what exists. The names
+## are the labels shown to the user; values feed ir_umap_chains().
+ir_receptor_types <- reactive({
+  chains <- tryCatch(detect_chains(ir_data()), error = function(e) character(0))
+  types <- character(0)
+  if (length(intersect(chains, IR_TCR_CHAINS)) > 0) {
+    types <- c(types, "TCR" = "TCR")
+  }
+  if (length(intersect(chains, IR_BCR_CHAINS)) > 0) {
+    types <- c(types, "BCR" = "BCR")
+  }
+  types
+})
+
+## ---- Chains belonging to the selected receptor type ------------------- ##
+ir_umap_chains <- function(receptor) {
+  if (identical(receptor, "BCR")) IR_BCR_CHAINS else IR_TCR_CHAINS
+}
+
+## ---- Clone-size bin breaks / labels (scRepertoire cloneSize defaults) -- ##
+## A clone's size = number of cells carrying that clonotype (within the
+## selected receptor). Cells are binned into the standard expansion levels.
+IR_CLONE_BINS <- c(0, 1, 5, 20, 100, Inf)
+IR_CLONE_LABELS <- c(
+  "Single (0 < X <= 1)",
+  "Small (1 < X <= 5)",
+  "Medium (5 < X <= 20)",
+  "Large (20 < X <= 100)",
+  "Hyperexpanded (100 < X)"
+)
+
+## ---- Which CT* column a cloneCall maps to ----------------------------- ##
+ir_clonecall_col <- function(cloneCall) {
+  switch(
+    cloneCall %||% "gene",
+    "gene" = "CTgene",
+    "nt" = "CTnt",
+    "aa" = "CTaa",
+    "strict" = "CTstrict",
+    "CTgene"
+  )
+}
+
+## ---- Clonal UMAP data: coords + per-cell expansion level --------------- ##
+## Joins the chosen projection's UMAP coordinates (barcode-indexed) with each
+## cell's clone-expansion level, restricted to the selected receptor (TCR/BCR).
+## Returns a data.frame (x, y, expansion, barcode) or NULL when it cannot be
+## built (no projection, no data for the receptor, no overlapping barcodes).
+##
+##   projection : a name from availableProjections()
+##   receptor   : "TCR" | "BCR"
+##   cloneCall  : "gene" | "nt" | "aa" | "strict" (clone identity column)
+ir_clonal_umap_data <- function(projection, receptor, cloneCall = "gene") {
+  if (is.null(projection) || !nzchar(projection)) {
+    return(NULL)
+  }
+  if (
+    !(projection %in%
+      tryCatch(availableProjections(), error = function(e) character(0)))
+  ) {
+    return(NULL)
+  }
+  coords <- tryCatch(getProjection(projection), error = function(e) NULL)
+  if (is.null(coords) || nrow(coords) == 0) {
+    return(NULL)
+  }
+
+  data <- ir_data_annotated()
+  if (is.null(data)) {
+    return(NULL)
+  }
+  clone_col <- ir_clonecall_col(cloneCall)
+  keep_chains <- ir_umap_chains(receptor)
+
+  # Flatten the per-sample IR list into one barcode -> clonotype table,
+  # restricted to rows whose CTstrict/CTgene references one of the receptor's
+  # chains. Each row is one cell (scRepertoire keeps one row per barcode).
+  rows <- lapply(data, function(df) {
+    if (is.null(df) || !all(c("barcode", clone_col) %in% colnames(df))) {
+      return(NULL)
+    }
+    chain_ref <- if ("CTstrict" %in% colnames(df)) {
+      as.character(df$CTstrict)
+    } else {
+      as.character(df[[clone_col]])
+    }
+    in_receptor <- vapply(
+      chain_ref,
+      function(s) {
+        any(vapply(
+          keep_chains,
+          function(ch) grepl(ch, s, fixed = TRUE),
+          logical(1)
+        ))
+      },
+      logical(1)
+    )
+    df <- df[in_receptor, , drop = FALSE]
+    if (nrow(df) == 0) {
+      return(NULL)
+    }
+    data.frame(
+      barcode = as.character(df$barcode),
+      clone = as.character(df[[clone_col]]),
+      stringsAsFactors = FALSE
+    )
+  })
+  rows <- do.call(rbind, rows[!vapply(rows, is.null, logical(1))])
+  if (is.null(rows) || nrow(rows) == 0) {
+    return(NULL)
+  }
+
+  # Clone size = number of cells sharing the clonotype; bin into expansion levels.
+  rows <- rows[!is.na(rows$clone) & nzchar(rows$clone), , drop = FALSE]
+  if (nrow(rows) == 0) {
+    return(NULL)
+  }
+  sizes <- table(rows$clone)
+  rows$size <- as.integer(sizes[rows$clone])
+  rows$expansion <- cut(
+    rows$size,
+    breaks = IR_CLONE_BINS,
+    labels = IR_CLONE_LABELS,
+    right = TRUE,
+    include.lowest = TRUE
+  )
+
+  # Join onto coordinates by barcode (intersection only).
+  coord_bc <- rownames(coords)
+  idx <- match(rows$barcode, coord_bc)
+  ok <- !is.na(idx)
+  if (!any(ok)) {
+    return(NULL)
+  }
+  rows <- rows[ok, , drop = FALSE]
+  xy <- coords[idx[ok], 1:2, drop = FALSE]
+  out <- data.frame(
+    x = as.numeric(xy[[1]]),
+    y = as.numeric(xy[[2]]),
+    expansion = factor(rows$expansion, levels = IR_CLONE_LABELS),
+    barcode = rows$barcode,
+    stringsAsFactors = FALSE
+  )
+  out
+}
