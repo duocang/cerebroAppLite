@@ -253,6 +253,13 @@ ir_umap_chains <- function(receptor) {
   if (identical(receptor, "BCR")) IR_BCR_CHAINS else IR_TCR_CHAINS
 }
 
+## ---- Barcodes to show in the Clonal UMAP (Group filters) -------------- ##
+## Returns the barcodes left after applying the per-group-column filters from
+## the left-column "Group filters" box, or NULL when no filtering is active
+## (show every cell). Replaced by a reactive in settings.R once the filter UI
+## exists; this default keeps the renderer safe (NULL = no filter).
+ir_umap_cells_to_show <- function() NULL
+
 ## ---- Clone-size bin breaks / labels (scRepertoire cloneSize defaults) -- ##
 ## A clone's size = number of cells carrying that clonotype (within the
 ## selected receptor). Cells are binned into the standard expansion levels.
@@ -286,7 +293,18 @@ ir_clonecall_col <- function(cloneCall) {
 ##   projection : a name from availableProjections()
 ##   receptor   : "TCR" | "BCR"
 ##   cloneCall  : "gene" | "nt" | "aa" | "strict" (clone identity column)
-ir_clonal_umap_data <- function(projection, receptor, cloneCall = "gene") {
+##   show_all   : when TRUE, also include every other cell in the projection
+##                with expansion = NA (drawn as a grey background by the
+##                renderer), so the receptor cells are shown in context.
+##   cells      : optional character vector of barcodes to restrict to (e.g.
+##                from the Group filters); NULL = all cells in the projection.
+ir_clonal_umap_data <- function(
+  projection,
+  receptor,
+  cloneCall = "gene",
+  show_all = TRUE,
+  cells = NULL
+) {
   if (is.null(projection) || !nzchar(projection)) {
     return(NULL)
   }
@@ -299,6 +317,14 @@ ir_clonal_umap_data <- function(projection, receptor, cloneCall = "gene") {
   coords <- tryCatch(getProjection(projection), error = function(e) NULL)
   if (is.null(coords) || nrow(coords) == 0) {
     return(NULL)
+  }
+  # Restrict to the requested cells (group filters) up front, so both the
+  # coloured receptor cells and the grey background respect the filter.
+  if (!is.null(cells)) {
+    coords <- coords[rownames(coords) %in% cells, , drop = FALSE]
+    if (nrow(coords) == 0) {
+      return(NULL)
+    }
   }
 
   data <- ir_data_annotated()
@@ -342,40 +368,83 @@ ir_clonal_umap_data <- function(projection, receptor, cloneCall = "gene") {
     )
   })
   rows <- do.call(rbind, rows[!vapply(rows, is.null, logical(1))])
-  if (is.null(rows) || nrow(rows) == 0) {
-    return(NULL)
+  has_receptor <- !is.null(rows) && nrow(rows) > 0
+  if (has_receptor) {
+    # Clone size = number of cells sharing the clonotype; bin into expansion levels.
+    rows <- rows[!is.na(rows$clone) & nzchar(rows$clone), , drop = FALSE]
+  }
+  if (!has_receptor || nrow(rows) == 0) {
+    # No receptor cells. With show_all we can still draw the grey background;
+    # otherwise there is nothing to plot.
+    if (!isTRUE(show_all)) {
+      return(NULL)
+    }
+    rows <- data.frame(
+      barcode = character(0),
+      clone = character(0),
+      stringsAsFactors = FALSE
+    )
+    has_receptor <- FALSE
+  } else {
+    sizes <- table(rows$clone)
+    rows$size <- as.integer(sizes[rows$clone])
+    rows$expansion <- cut(
+      rows$size,
+      breaks = IR_CLONE_BINS,
+      labels = IR_CLONE_LABELS,
+      right = TRUE,
+      include.lowest = TRUE
+    )
   }
 
-  # Clone size = number of cells sharing the clonotype; bin into expansion levels.
-  rows <- rows[!is.na(rows$clone) & nzchar(rows$clone), , drop = FALSE]
-  if (nrow(rows) == 0) {
-    return(NULL)
-  }
-  sizes <- table(rows$clone)
-  rows$size <- as.integer(sizes[rows$clone])
-  rows$expansion <- cut(
-    rows$size,
-    breaks = IR_CLONE_BINS,
-    labels = IR_CLONE_LABELS,
-    right = TRUE,
-    include.lowest = TRUE
-  )
-
-  # Join onto coordinates by barcode (intersection only).
   coord_bc <- rownames(coords)
-  idx <- match(rows$barcode, coord_bc)
-  ok <- !is.na(idx)
-  if (!any(ok)) {
+
+  # Coloured layer: receptor cells with an expansion level, joined to coords.
+  if (has_receptor) {
+    idx <- match(rows$barcode, coord_bc)
+    ok <- !is.na(idx)
+    rows <- rows[ok, , drop = FALSE]
+    idx <- idx[ok]
+  } else {
+    idx <- integer(0)
+  }
+  if (length(idx) == 0 && !isTRUE(show_all)) {
     return(NULL)
   }
-  rows <- rows[ok, , drop = FALSE]
-  xy <- coords[idx[ok], 1:2, drop = FALSE]
-  out <- data.frame(
-    x = as.numeric(xy[[1]]),
-    y = as.numeric(xy[[2]]),
-    expansion = factor(rows$expansion, levels = IR_CLONE_LABELS),
-    barcode = rows$barcode,
-    stringsAsFactors = FALSE
-  )
+  coloured <- if (length(idx) > 0) {
+    xy <- coords[idx, 1:2, drop = FALSE]
+    data.frame(
+      x = as.numeric(xy[[1]]),
+      y = as.numeric(xy[[2]]),
+      expansion = factor(rows$expansion, levels = IR_CLONE_LABELS),
+      barcode = rows$barcode,
+      stringsAsFactors = FALSE
+    )
+  } else {
+    NULL
+  }
+
+  # Background layer: every other cell in the projection, expansion = NA, so the
+  # renderer can draw them in grey. Only when show_all is requested.
+  background <- NULL
+  if (isTRUE(show_all)) {
+    bg_mask <- !(coord_bc %in%
+      (if (length(idx) > 0) rows$barcode else character(0)))
+    if (any(bg_mask)) {
+      xy_bg <- coords[bg_mask, 1:2, drop = FALSE]
+      background <- data.frame(
+        x = as.numeric(xy_bg[[1]]),
+        y = as.numeric(xy_bg[[2]]),
+        expansion = factor(NA, levels = IR_CLONE_LABELS),
+        barcode = coord_bc[bg_mask],
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  out <- rbind(background, coloured)
+  if (is.null(out) || nrow(out) == 0) {
+    return(NULL)
+  }
   out
 }

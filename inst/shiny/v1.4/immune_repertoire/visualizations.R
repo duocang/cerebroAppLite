@@ -16,20 +16,19 @@ output$ir_visualizations_UI <- renderUI({
   ## which is moved in with the other multi-sample tabs below.
   priority_tabs <- list(
     tabPanel(
-      "Abundance",
-      shinycssloaders::withSpinner(plotOutput(
-        "ir_plot_clonalAbundance",
-        height = 450
-      ))
-    ),
-    tabPanel(
-      # Clonal expansion overlaid on the cell UMAP. Placed after Abundance so
-      # it does not displace the default landing tab, but kept among the
-      # priority overview plots.
+      # Clonal expansion overlaid on the cell UMAP — the default landing tab,
+      # so the first thing the user sees is where expanded clones sit.
       "Clonal UMAP",
       shinycssloaders::withSpinner(plotOutput(
         "ir_plot_clonalUMAP",
         height = 500
+      ))
+    ),
+    tabPanel(
+      "Abundance",
+      shinycssloaders::withSpinner(plotOutput(
+        "ir_plot_clonalAbundance",
+        height = 450
       ))
     ),
     tabPanel(
@@ -190,7 +189,15 @@ output$ir_plot_clonalUMAP <- renderPlot({
   receptor <- ir_param("ir_p_umap_receptor")
   projection <- ir_param("ir_p_umap_projection")
   cloneCall <- ir_params()$cloneCall %||% "gene"
-  df <- ir_clonal_umap_data(projection, receptor, cloneCall)
+  show_all <- isTRUE(ir_param("ir_p_umap_show_all", TRUE))
+  cells <- ir_umap_cells_to_show()
+  df <- ir_clonal_umap_data(
+    projection,
+    receptor,
+    cloneCall,
+    show_all = show_all,
+    cells = cells
+  )
 
   safeRenderPlot(
     {
@@ -221,11 +228,29 @@ output$ir_plot_clonalUMAP <- renderPlot({
           alpha <- 0.8
         }
 
-        ggplot2::ggplot(
-          df,
-          ggplot2::aes(x = .data$x, y = .data$y, colour = .data$expansion)
-        ) +
-          ggplot2::geom_point(size = point_size, alpha = alpha) +
+        # Split into the grey background (cells without the selected receptor,
+        # expansion = NA) and the coloured receptor cells, drawn on top.
+        bg <- df[is.na(df$expansion), , drop = FALSE]
+        fg <- df[!is.na(df$expansion), , drop = FALSE]
+
+        p <- ggplot2::ggplot()
+        if (nrow(bg) > 0) {
+          p <- p +
+            ggplot2::geom_point(
+              data = bg,
+              ggplot2::aes(x = .data$x, y = .data$y),
+              colour = "grey85",
+              size = point_size,
+              alpha = alpha
+            )
+        }
+        p +
+          ggplot2::geom_point(
+            data = fg,
+            ggplot2::aes(x = .data$x, y = .data$y, colour = .data$expansion),
+            size = point_size,
+            alpha = alpha
+          ) +
           ggplot2::scale_colour_manual(
             values = IR_EXPANSION_COLORS,
             drop = FALSE,
@@ -244,6 +269,7 @@ output$ir_plot_clonalUMAP <- renderPlot({
   ir_bindCache(
     input$ir_p_umap_receptor,
     input$ir_p_umap_projection,
+    input$ir_p_umap_show_all,
     input$ir_cloneCall
   )
 

@@ -35,6 +35,12 @@ IR_PARAM_SPEC <- list(
       type = "select",
       choices = "<<projections>>",
       value = NULL
+    ),
+    list(
+      id = "ir_p_umap_show_all",
+      label = "Show all cells (grey background)",
+      type = "checkbox",
+      value = TRUE
     )
   ),
 

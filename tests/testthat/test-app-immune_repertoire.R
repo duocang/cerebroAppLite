@@ -37,9 +37,9 @@ test_that("immune_repertoire tab is present with example data (has TCR)", {
   app$stop()
 })
 
-test_that("first IR plot tab is Abundance, not Scatter", {
-  # The default/landing tab should be a common overview plot (Abundance), not
-  # the sample-comparison Scatter.
+test_that("first IR plot tab is Clonal UMAP", {
+  # The default/landing tab should be the Clonal UMAP overview, so the first
+  # thing shown is where expanded clones sit on the cell projection.
   local_app_support(inst_dir)
   app <- AppDriver$new(
     inst_dir,
@@ -56,7 +56,7 @@ test_that("first IR plot tab is Abundance, not Scatter", {
   first_tab <- app$get_js(
     "document.querySelector('#ir_tabs > li > a').textContent.trim();"
   )
-  expect_identical(first_tab, "Abundance")
+  expect_identical(first_tab, "Clonal UMAP")
 
   app$stop()
 })
@@ -205,6 +205,11 @@ test_that("settings dropdowns render all their options (not just selected)", {
     ))
   }
 
+  # The global controls (chain / group-by) are hidden on the default Clonal UMAP
+  # tab (which uses its own Receptor selector), so move to a tab that shows them.
+  app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+
   # Group by: None + grouping variables (sample, seurat_clusters, cell_type)
   expect_gte(as.numeric(n_options("ir_groupBy")), 2)
   # Chain: both + detected chains (TRA/TRB/IGH/IGK/IGL) > 1
@@ -231,6 +236,10 @@ test_that("immune_repertoire tab can be opened and renders settings", {
     'document.querySelector(\'a[href="#shiny-tab-immune_repertoire"]\').click();'
   )
   app$wait_for_idle(timeout = 20000)
+
+  # Chain is hidden on the default Clonal UMAP tab; move to one that shows it.
+  app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
 
   # the chain selector (a core settings control) should be populated
   chain_present <- app$get_js(
