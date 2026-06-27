@@ -1,5 +1,9 @@
-## ---- Settings UI ------------------------------------------------------ ##
-output$ir_settings_UI <- renderUI({
+## ---- Main parameters (left column, box 1) ----------------------------- ##
+## Core controls needed to select a plot: the global cloneCall / chain /
+## group-by (shown only on tabs they apply to) plus the current tab's
+## function-specific analysis parameters (IR_PARAM_SPEC). Scatter / Compare
+## sample selectors live here too, scoped to their tabs.
+output$ir_main_params_UI <- renderUI({
   if (!has_scRepertoire()) {
     return(ir_scRepertoire_missing_ui())
   }
@@ -115,17 +119,8 @@ output$ir_settings_UI <- renderUI({
     ),
     # Global controls, flowed two-per-row so no hidden control leaves a gap.
     ir_flow_controls(controls),
-    helpText(
-      tags$b("Group by"),
-      "is the scRepertoire grouping variable: it splits the repertoire by a",
-      "metadata column (sample, condition, cell type, ...). It defaults to the",
-      "first available grouping variable; \"None\" groups by list element."
-    ),
     # Function-specific analysis parameters (IR_PARAM_SPEC for the current tab).
     uiOutput("ir_param_panel"),
-    # Generic display options (font/title, scatter point size/opacity),
-    # collapsible so they don't crowd the panel.
-    uiOutput("ir_display_panel"),
     # Scatter / Compare sample selectors only on their own tabs.
     conditionalPanel(
       condition = "input.ir_tabs == 'Scatter'",
@@ -136,6 +131,16 @@ output$ir_settings_UI <- renderUI({
       uiOutput("ir_compare_settings")
     )
   )
+})
+
+## ---- Additional parameters (left column, box 2) ----------------------- ##
+## Secondary / presentation controls: the generic display options
+## (font, title, and for scatter-type plots point size + opacity).
+output$ir_additional_params_UI <- renderUI({
+  if (!has_scRepertoire() || is.null(ir_data_raw())) {
+    return(NULL)
+  }
+  uiOutput("ir_display_panel")
 })
 
 ## ---- Helper: flow a list of controls into rows (2 per row) ------------ ##
@@ -348,10 +353,10 @@ n_samples <- reactive({
   if (is.null(data)) 0L else length(data)
 })
 
-## ---- Generic display options (collapsible) ---------------------------- ##
-## Renders the IR_DISPLAY_SPEC controls applicable to the current tab inside a
-## collapsible <details> block, kept separate from the analysis params so the
-## panel stays compact. Defaults collapsed (no `open` attribute).
+## ---- Generic display options ------------------------------------------ ##
+## Renders the IR_DISPLAY_SPEC controls applicable to the current tab. Lives in
+## the collapsible "Additional parameters" box (see UI.R), so it needs no extra
+## collapse of its own.
 output$ir_display_panel <- renderUI({
   tab <- input$ir_tabs
   if (!exists("ir_display_params_for")) {
@@ -393,11 +398,7 @@ output$ir_display_panel <- renderUI({
     }
   }
 
-  tags$details(
-    id = "ir_display_details",
-    tags$summary(tags$b("Display options")),
-    do.call(tagList, rows)
-  )
+  do.call(tagList, rows)
 })
 
 ## ---- Reactive: current display parameter values ----------------------- ##
@@ -424,3 +425,19 @@ ir_display_params <- reactive({
   }
   vals
 })
+
+## ---- Group filters (left column, box 3) — placeholder ----------------- ##
+## Implemented in stage C (per-group pickerInputs to subset cells for the
+## Clonal UMAP). Placeholder so the box renders meaningfully before then.
+output$ir_group_filters_UI <- renderUI({
+  if (!has_scRepertoire() || is.null(ir_data_raw())) {
+    return(NULL)
+  }
+  helpText("Group filters apply to the Clonal UMAP (coming below).")
+})
+
+## Keep the left-column boxes' dynamic UI alive even while their box is
+## collapsed, so controls exist in the DOM (mirrors the Main tab's pattern).
+outputOptions(output, "ir_additional_params_UI", suspendWhenHidden = FALSE)
+outputOptions(output, "ir_group_filters_UI", suspendWhenHidden = FALSE)
+outputOptions(output, "ir_display_panel", suspendWhenHidden = FALSE)
