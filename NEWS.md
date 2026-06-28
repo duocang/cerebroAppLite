@@ -2,13 +2,23 @@
 
 ## Immune repertoire
 
-- **Clonal UMAP**: new tab overlaying clone-expansion level
+- **Clonal UMAP**: new first tab overlaying clone-expansion level
   (Single/Small/Medium/Large/Hyperexpanded) on the existing cell projection,
   reusing the dataset's UMAP/tSNE coordinates. A Receptor selector (TCR/BCR,
   only the classes present in the data) and a Projection selector drive it.
-- **Generic display options**: a collapsible "Display options" panel adds font
-  size and title to every IR plot, plus point size and opacity for the
-  scatter-type plots (Clonal UMAP, Scatter). Changing them re-renders the plot.
+  A "Show all cells" option (on by default) draws cells without the selected
+  receptor as a grey background, so expanded clones are shown in context.
+  Group filters subset which cells appear by any metadata column.
+- **Generic display options**: font size and title for every IR plot, plus
+  point size and opacity for the scatter-type plots (Clonal UMAP, Scatter),
+  in an "Additional parameters" box. Changing them re-renders the plot.
+- **Reworked layout**: the immune repertoire page now uses the same
+  left-parameters / right-visualization layout as the main projection tab, with
+  Main parameters, Additional parameters, and Group filters boxes on the left.
+- **Parameter help**: the info button on each parameter box opens a dialog
+  explaining, in plain language, exactly the controls shown on the current tab.
+- Clone call is no longer shown on the Clonal UMAP tab, where it only adds
+  noise.
 
 # cerebroAppLite 1.7.3
 

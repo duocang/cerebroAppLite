@@ -68,27 +68,67 @@ ir_data_annotated <- reactive({
   })
 })
 
+## ---- Candidate columns for data splitting ---------------------------- ##
+## Split-by controls the list elements that scRepertoire treats as samples.
+## It is intentionally separate from group.by: split-by defines the comparison
+## units (x/y samples, compare samples), while group.by can still colour/facet
+## within those units when a function supports it.
+ir_sample_col_choices <- reactive({
+  data <- ir_data_annotated()
+  if (is.null(data)) {
+    return(character(0))
+  }
+  shared <- Reduce(intersect, lapply(data, colnames))
+  candidates <- setdiff(shared, ir_scr_cols)
+  ok <- vapply(
+    candidates,
+    function(col) {
+      vals <- unique(unlist(lapply(data, function(df) {
+        as.character(df[[col]])
+      })))
+      vals <- vals[!is.na(vals) & nzchar(vals)]
+      length(vals) >= 2L && length(vals) <= 200L
+    },
+    logical(1)
+  )
+  candidates[ok]
+})
+
 ## ---- Reactive: repertoire data --------------------------------------- ##
-## Returns the metadata-annotated repertoire list as stored (one element per
-## sample). Grouping is handled by scRepertoire's native `group.by` (and
-## `x.axis` for the functions that support it), not by re-splitting the list — a
-## re-split duplicated what group.by already does and was removed.
-##
-## Rationale for removal (was: ir_sampleCol / "Split data by"):
-##   The split-by-column control broke the original data.list into a new list
-##   keyed by that column's levels. While this let the user re-split on any
-##   dimension, scRepertoire's group.by already merges all list elements into
-##   a single table and groups internally, so the two mechanisms competed for
-##   the same axis. In every common scenario, group.by alone suffices.
-##
-##   The one scenario the split did support that group.by alone cannot: using
-##   different split and group dimensions simultaneously (e.g. split by
-##   "condition" while grouping by "cell_type" to see per-condition cell-type
-##   breakdowns). If this scenario is ever needed, a cleaner approach is to
-##   use clonalDiversity's x.axis parameter (condition on x, cell_type as
-##   group.by colour) or clonalScatter's x.axis/y.axis pair.
+## Returns the metadata-annotated repertoire list, optionally re-split by a
+## user-selected metadata column. "(original)" preserves the loaded list
+## elements; choosing a column such as sample, condition, treatment, or cell
+## type makes those levels the scRepertoire comparison units.
 ir_data <- reactive({
-  ir_data_annotated()
+  data <- ir_data_annotated()
+  if (is.null(data)) {
+    return(NULL)
+  }
+  col <- input$ir_sampleCol
+  if (is.null(col) || col == "" || col == "(original)") {
+    return(data)
+  }
+  merged <- do.call(
+    rbind,
+    lapply(names(data), function(nm) {
+      df <- data[[nm]]
+      df$.orig_sample <- nm
+      df
+    })
+  )
+  if (is.null(merged) || nrow(merged) == 0L || !(col %in% colnames(merged))) {
+    return(data)
+  }
+  keep <- !is.na(merged[[col]]) & nzchar(as.character(merged[[col]]))
+  merged <- merged[keep, , drop = FALSE]
+  if (nrow(merged) == 0L) {
+    return(data)
+  }
+  split_list <- split(merged, merged[[col]])
+  lapply(split_list, function(df) {
+    df$.orig_sample <- NULL
+    df
+  })
 })
 
 ## ---- Helper: read a dynamic function-specific parameter --------------- ##

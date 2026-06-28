@@ -86,6 +86,12 @@ test_that("Group by is visible on plots whose grouping it drives", {
       "(function(){var e=document.querySelector('#ir_groupBy');return e!==null && e.offsetParent!==null;})();"
     )
   }
+  n_options <- function(id) {
+    app$get_js(sprintf(
+      "(function(){var e=document.querySelector('#%s');return e?e.querySelectorAll('option').length:0;})();",
+      id
+    ))
+  }
 
   app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
   app$wait_for_idle(timeout = 15000)
@@ -105,7 +111,32 @@ test_that("Group by is visible on plots whose grouping it drives", {
 
   app$set_inputs(ir_tabs = "Paired Scatter", wait_ = FALSE)
   app$wait_for_idle(timeout = 15000)
-  expect_false(isTRUE(groupby_visible()))
+  expect_true(isTRUE(groupby_visible()))
+  expect_equal(
+    app$get_js(
+      "(function(){var e=document.querySelector('#ir_groupBy');return e?e.value:null;})();"
+    ),
+    ""
+  )
+  expect_equal(as.numeric(n_options("ir_sampleCol")), 0)
+  expect_true(isTRUE(app$get_js(
+    "(function(){return document.querySelector('#ir_pair_x_group') !== null && document.querySelector('#ir_pair_y_group') !== null;})();"
+  )))
+  expect_gte(as.numeric(n_options("ir_pair_x_group")), 2)
+  expect_gte(as.numeric(n_options("ir_pair_y_group")), 2)
+  expect_true(isTRUE(app$get_js(
+    "(function(){return document.querySelector('#ir_groupBy option[value=\"cell_type\"]') !== null;})();"
+  )))
+  app$set_inputs(ir_groupBy = "cell_type", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+  expect_equal(
+    app$get_js(
+      "(function(){var e=document.querySelector('#ir_groupBy');return e?e.value:null;})();"
+    ),
+    "cell_type"
+  )
+  expect_gte(as.numeric(n_options("ir_pair_x_group")), 2)
+  expect_gte(as.numeric(n_options("ir_pair_y_group")), 2)
 
   app$stop()
 })
@@ -423,6 +454,129 @@ test_that("Display options panel exposes scatter params on scatter-type tabs", {
   app$wait_for_idle(timeout = 15000)
   expect_true(isTRUE(control_exists("ir_d_point_size")))
   expect_true(isTRUE(control_exists("ir_d_alpha")))
+
+  app$stop()
+})
+
+test_that("IR page uses the Main-tab layout (Main/Additional/Group boxes)", {
+  local_app_support(inst_dir)
+  app <- AppDriver$new(
+    inst_dir,
+    name = "ir_layout",
+    height = 950,
+    width = 1619
+  )
+  app$wait_for_idle(timeout = 20000)
+  app$run_js(
+    'document.querySelector(\'a[href="#shiny-tab-immune_repertoire"]\').click();'
+  )
+  app$wait_for_idle(timeout = 20000)
+
+  # The three left-column parameter boxes (by their info buttons) and the
+  # right-column visualization tab strip should all be present.
+  exists_el <- function(sel) {
+    app$get_js(sprintf("document.querySelector('%s') !== null;", sel))
+  }
+  expect_true(isTRUE(exists_el("#ir_main_parameters_info")))
+  expect_true(isTRUE(exists_el("#ir_additional_parameters_info")))
+  expect_true(isTRUE(exists_el("#ir_group_filters_info")))
+  expect_true(isTRUE(exists_el("#ir_tabs")))
+
+  app$stop()
+})
+
+test_that("Clonal UMAP has Show-all toggle and group filters", {
+  local_app_support(inst_dir)
+  app <- AppDriver$new(
+    inst_dir,
+    name = "ir_umap_filters",
+    height = 950,
+    width = 1619
+  )
+  app$wait_for_idle(timeout = 20000)
+  app$run_js(
+    'document.querySelector(\'a[href="#shiny-tab-immune_repertoire"]\').click();'
+  )
+  app$wait_for_idle(timeout = 20000)
+
+  exists_el <- function(sel) {
+    app$get_js(sprintf("document.querySelector('%s') !== null;", sel))
+  }
+
+  # Default tab is Clonal UMAP: the Show-all checkbox should exist, and at least
+  # one per-group filter picker (e.g. ir_group_filter_sample) should render.
+  expect_true(isTRUE(exists_el("#ir_p_umap_show_all")))
+  has_group_filter <- app$get_js(
+    "document.querySelector('[id^=\"ir_group_filter_\"]') !== null;"
+  )
+  expect_true(isTRUE(has_group_filter))
+
+  # The UMAP plot should render without surfacing a raw R error.
+  v <- app$get_value(output = "ir_plot_clonalUMAP")
+  expect_false(isTRUE(grepl(
+    "Error|undefined columns|subscript out of bounds",
+    v$html,
+    ignore.case = TRUE
+  )))
+
+  app$stop()
+})
+
+test_that("Clone call is hidden on the Clonal UMAP tab", {
+  local_app_support(inst_dir)
+  app <- AppDriver$new(
+    inst_dir,
+    name = "ir_umap_no_clonecall",
+    height = 950,
+    width = 1619
+  )
+  app$wait_for_idle(timeout = 20000)
+  app$run_js(
+    'document.querySelector(\'a[href="#shiny-tab-immune_repertoire"]\').click();'
+  )
+  app$wait_for_idle(timeout = 20000)
+
+  exists_el <- function(sel) {
+    app$get_js(sprintf("document.querySelector('%s') !== null;", sel))
+  }
+
+  # Default tab is Clonal UMAP: the global Clone call should be omitted there.
+  expect_false(isTRUE(exists_el("#ir_cloneCall")))
+
+  # On Abundance it should be back.
+  app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+  expect_true(isTRUE(exists_el("#ir_cloneCall")))
+
+  app$stop()
+})
+
+test_that("Main parameters info button opens a help dialog", {
+  local_app_support(inst_dir)
+  app <- AppDriver$new(
+    inst_dir,
+    name = "ir_info_dialog",
+    height = 950,
+    width = 1619
+  )
+  app$wait_for_idle(timeout = 20000)
+  app$run_js(
+    'document.querySelector(\'a[href="#shiny-tab-immune_repertoire"]\').click();'
+  )
+  app$wait_for_idle(timeout = 20000)
+
+  # Move to a tab with several controls, then click the Main parameters info.
+  app$set_inputs(ir_tabs = "Diversity", wait_ = FALSE)
+  app$wait_for_idle(timeout = 15000)
+  app$run_js("document.querySelector('#ir_main_parameters_info').click();")
+  app$wait_for_idle(timeout = 10000)
+
+  # A modal with help cards should appear, containing the param help text.
+  modal_html <- app$get_js(
+    "(function(){var m=document.querySelector('.modal-body');return m?m.innerHTML:'';})();"
+  )
+  expect_true(grepl("ir-help-card", modal_html))
+  expect_true(grepl("Metric|Clone call|Bootstrap", modal_html))
 
   app$stop()
 })

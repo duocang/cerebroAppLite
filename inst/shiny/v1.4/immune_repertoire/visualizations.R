@@ -342,83 +342,102 @@ output$ir_plot_shmProxy <- renderPlot({
 
 ## ---- Paired Scatter (generic) ------------------------------------------- ##
 ir_sample_meta <- reactive({
-  data <- ir_data()
+  data <- ir_data_annotated()
   if (is.null(data) || length(data) < 2) {
     return(NULL)
   }
   sample_level_meta(data)
 })
 
+ir_paired_scatter_groups <- reactive({
+  data <- ir_data_annotated()
+  if (is.null(data)) {
+    return(character(0))
+  }
+  gb <- input$ir_groupBy
+  if (is.null(gb) || !nzchar(gb)) {
+    return(names(data))
+  }
+  vals <- unique(unlist(lapply(data, function(df) {
+    if (gb %in% colnames(df)) as.character(df[[gb]]) else character(0)
+  })))
+  vals <- vals[!is.na(vals) & nzchar(vals)]
+  if (length(vals) == 0) names(data) else sort(vals)
+})
+
 output$ir_ui_pairedScatter <- renderUI({
-  meta <- ir_sample_meta()
-  if (is.null(meta) || nrow(meta) < 2) {
+  groups <- ir_paired_scatter_groups()
+  if (length(groups) < 2) {
     return(div(
       class = "alert alert-info",
-      "Paired scatter requires >= 2 samples with shared metadata columns."
+      "Paired scatter requires at least two groups to compare. Use Compare by to choose a metadata column with multiple levels."
     ))
   }
-  meta_cols <- setdiff(colnames(meta), ".sample_name")
-  compare_candidates <- meta_cols[vapply(
-    meta_cols,
-    function(col) {
-      length(unique(meta[[col]])) == 2L
-    },
-    logical(1)
-  )]
-  facet_candidates <- meta_cols[vapply(
-    meta_cols,
-    function(col) {
-      length(unique(meta[[col]])) >= 2L
-    },
-    logical(1)
-  )]
-  if (length(compare_candidates) == 0L) {
-    return(div(
-      class = "alert alert-info",
-      "No metadata column with exactly 2 levels found for paired comparison.",
-      tags$br(),
-      "Available sample-level columns: ",
-      paste(meta_cols, collapse = ", ")
-    ))
+  meta <- ir_sample_meta()
+  choices <- ir_paired_scatter_choices(meta)
+  pair_choices <- c("Manual group comparison" = "", choices$compare_candidates)
+  pair_mode <- input$ir_pair_compare
+  if (is.null(pair_mode) || !(pair_mode %in% pair_choices)) {
+    pair_mode <- ""
+  }
+  x <- input$ir_pair_x_group
+  y <- input$ir_pair_y_group
+  if (is.null(x) || !(x %in% groups)) {
+    x <- groups[1]
+  }
+  if (is.null(y) || !(y %in% groups) || identical(y, x)) {
+    y <- groups[min(2L, length(groups))]
+  }
+
+  controls <- list(
+    selectInput(
+      "ir_pair_compare",
+      "Pair by:",
+      choices = pair_choices,
+      selected = pair_mode,
+      selectize = FALSE
+    )
+  )
+  if (identical(pair_mode, "")) {
+    controls <- c(
+      controls,
+      list(
+        selectInput(
+          "ir_pair_x_group",
+          "X group:",
+          choices = groups,
+          selected = x,
+          selectize = FALSE
+        ),
+        selectInput(
+          "ir_pair_y_group",
+          "Y group:",
+          choices = groups,
+          selected = y,
+          selectize = FALSE
+        )
+      )
+    )
+  } else {
+    facet_candidates <- choices$facet_candidates
+    default_facet <- ir_paired_scatter_default_facet(
+      meta,
+      pair_mode,
+      facet_candidates
+    )
+    controls <- c(
+      controls,
+      list(selectInput(
+        "ir_pair_facet",
+        "Facet by:",
+        choices = c("(none)" = "", facet_candidates),
+        selected = default_facet,
+        selectize = FALSE
+      ))
+    )
   }
   tagList(
-    fluidRow(
-      column(
-        6,
-        selectInput(
-          "ir_pair_compare",
-          "Compare (2-level column):",
-          choices = compare_candidates,
-          selected = compare_candidates[1],
-          selectize = FALSE
-        )
-      ),
-      column(6, {
-        default_facet <- ""
-        cmp1 <- compare_candidates[1]
-        for (fc in facet_candidates[facet_candidates != cmp1]) {
-          ok <- all(vapply(
-            unique(meta[[fc]]),
-            function(lv) {
-              subs <- meta[meta[[fc]] == lv, , drop = FALSE]
-              length(unique(subs[[cmp1]])) >= 2L
-            },
-            logical(1)
-          ))
-          if (ok) {
-            default_facet <- fc
-            break
-          }
-        }
-        selectInput(
-          "ir_pair_facet",
-          "Facet by:",
-          choices = c("(none)" = "", facet_candidates),
-          selected = default_facet,
-          selectize = FALSE
-        )
-      })
-    ),
+    ir_flow_controls(controls),
     shinycssloaders::withSpinner(
       uiOutput("ir_ui_pairedScatter_plot")
     )
@@ -426,10 +445,12 @@ output$ir_ui_pairedScatter <- renderUI({
 })
 
 output$ir_ui_pairedScatter_plot <- renderUI({
+  pair_mode <- input$ir_pair_compare
+  if (is.null(pair_mode) || !nzchar(pair_mode)) {
+    return(plotOutput("ir_plot_pairedScatter", height = "500px"))
+  }
   meta <- ir_sample_meta()
   req(!is.null(meta))
-  compare_col <- input$ir_pair_compare
-  req(!is.null(compare_col))
   facet_col <- input$ir_pair_facet
   if (is.null(facet_col) || facet_col == "") {
     h <- 500
@@ -445,79 +466,105 @@ output$ir_ui_pairedScatter_plot <- renderUI({
 output$ir_plot_pairedScatter <- renderPlot({
   req(has_scRepertoire())
   req_plot_space("ir_plot_pairedScatter")
-  data <- ir_data()
+  data <- ir_data_annotated()
   req(!is.null(data))
   meta <- ir_sample_meta()
-  req(!is.null(meta))
   pars <- ir_params()
-  compare_col <- input$ir_pair_compare
-  req(!is.null(compare_col))
+  groups <- ir_paired_scatter_groups()
+  req(length(groups) >= 2)
+  pair_mode <- input$ir_pair_compare
   facet_col <- input$ir_pair_facet
-
-  lvls <- sort(unique(meta[[compare_col]]))
-  req(length(lvls) == 2L)
 
   safeRenderPlot(
     {
-      if (is.null(facet_col) || facet_col == "") {
-        s_a <- meta$.sample_name[meta[[compare_col]] == lvls[1]][1]
-        s_b <- meta$.sample_name[meta[[compare_col]] == lvls[2]][1]
+      if (is.null(pair_mode) || !nzchar(pair_mode)) {
+        x <- input$ir_pair_x_group
+        y <- input$ir_pair_y_group
+        validate(
+          need(x %in% groups, "Select an X group."),
+          need(y %in% groups, "Select a Y group."),
+          need(x != y, "Select two different groups.")
+        )
         p <- scRepertoire::clonalScatter(
           data,
           cloneCall = pars$cloneCall,
           chain = pars$chain,
-          x.axis = s_a,
-          y.axis = s_b,
-          dot.size = "total",
-          graph = "proportion",
+          group.by = pars$groupBy,
+          x.axis = x,
+          y.axis = y,
+          dot.size = ir_param("ir_p_dot_size", "total"),
+          graph = ir_param("ir_p_graph", "proportion"),
           exportTable = FALSE,
           palette = "inferno"
         )
-        p <- p + ggplot2::ggtitle(paste(lvls[1], "vs", lvls[2]))
+        p <- p + ggplot2::ggtitle(paste(x, "vs", y))
         p
       } else {
-        facet_lvls <- unique(meta[[facet_col]])
-        panels <- list()
-        for (fl in facet_lvls) {
-          rows <- meta[meta[[facet_col]] == fl, , drop = FALSE]
-          s_a <- rows$.sample_name[rows[[compare_col]] == lvls[1]]
-          s_b <- rows$.sample_name[rows[[compare_col]] == lvls[2]]
-          if (length(s_a) == 0L || length(s_b) == 0L) {
-            next
-          }
-          tryCatch(
-            {
-              p <- scRepertoire::clonalScatter(
-                data,
-                cloneCall = pars$cloneCall,
-                chain = pars$chain,
-                x.axis = s_a[1],
-                y.axis = s_b[1],
-                dot.size = "total",
-                graph = "proportion",
-                exportTable = FALSE,
-                palette = "inferno"
-              )
-              p <- p +
-                ggplot2::ggtitle(paste0(fl, ": ", lvls[1], " vs ", lvls[2]))
-              panels[[length(panels) + 1L]] <- p
-            },
-            error = function(e) {
-              message("[IR] Paired scatter for ", fl, " failed: ", e$message)
+        req(!is.null(meta))
+        compare_col <- pair_mode
+        req(!is.null(compare_col))
+        lvls <- sort(unique(meta[[compare_col]]))
+        req(length(lvls) == 2L)
+        if (!is.null(facet_col) && nzchar(facet_col)) {
+          facet_lvls <- unique(meta[[facet_col]])
+          panels <- list()
+          for (fl in facet_lvls) {
+            rows <- meta[meta[[facet_col]] == fl, , drop = FALSE]
+            s_a <- rows$.sample_name[rows[[compare_col]] == lvls[1]]
+            s_b <- rows$.sample_name[rows[[compare_col]] == lvls[2]]
+            if (length(s_a) == 0L || length(s_b) == 0L) {
+              next
             }
-          )
-        }
-        if (length(panels) == 0L) {
-          plot.new()
-          text(
-            0.5,
-            0.5,
-            "No valid pairs found for the selected columns.",
-            cex = 0.9
-          )
+            tryCatch(
+              {
+                p <- scRepertoire::clonalScatter(
+                  data,
+                  cloneCall = pars$cloneCall,
+                  chain = pars$chain,
+                  x.axis = s_a[1],
+                  y.axis = s_b[1],
+                  dot.size = ir_param("ir_p_dot_size", "total"),
+                  graph = ir_param("ir_p_graph", "proportion"),
+                  exportTable = FALSE,
+                  palette = "inferno"
+                )
+                p <- p +
+                  ggplot2::ggtitle(paste0(fl, ": ", lvls[1], " vs ", lvls[2]))
+                panels[[length(panels) + 1L]] <- p
+              },
+              error = function(e) {
+                message("[IR] Paired scatter for ", fl, " failed: ", e$message)
+              }
+            )
+          }
+          if (length(panels) == 0L) {
+            plot.new()
+            text(
+              0.5,
+              0.5,
+              "No valid pairs found for the selected columns.",
+              cex = 0.9
+            )
+          } else {
+            ncol_p <- min(4L, length(panels))
+            patchwork::wrap_plots(panels, ncol = ncol_p)
+          }
         } else {
-          ncol_p <- min(4L, length(panels))
-          patchwork::wrap_plots(panels, ncol = ncol_p)
+          s_a <- meta$.sample_name[meta[[compare_col]] == lvls[1]][1]
+          s_b <- meta$.sample_name[meta[[compare_col]] == lvls[2]][1]
+          p <- scRepertoire::clonalScatter(
+            data,
+            cloneCall = pars$cloneCall,
+            chain = pars$chain,
+            x.axis = s_a,
+            y.axis = s_b,
+            dot.size = ir_param("ir_p_dot_size", "total"),
+            graph = ir_param("ir_p_graph", "proportion"),
+            exportTable = FALSE,
+            palette = "inferno"
+          )
+          p <- p + ggplot2::ggtitle(paste(lvls[1], "vs", lvls[2]))
+          p
         }
       }
     },
@@ -529,7 +576,11 @@ output$ir_plot_pairedScatter <- renderPlot({
     input$ir_chain,
     input$ir_groupBy,
     input$ir_pair_compare,
-    input$ir_pair_facet
+    input$ir_pair_facet,
+    input$ir_pair_x_group,
+    input$ir_pair_y_group,
+    input$ir_p_graph,
+    input$ir_p_dot_size
   )
 
 output$ir_plot_clonalAbundance <- renderPlot({

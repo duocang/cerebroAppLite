@@ -100,6 +100,23 @@ IR_PARAM_SPEC <- list(
     )
   ),
 
+  "Paired Scatter" = list(
+    list(
+      id = "ir_p_graph",
+      label = "Graph:",
+      type = "select",
+      choices = c("proportion", "count"),
+      value = "proportion"
+    ),
+    list(
+      id = "ir_p_dot_size",
+      label = "Dot size:",
+      type = "select",
+      choices = c("total", "x", "y"),
+      value = "total"
+    )
+  ),
+
   "vizGenes" = list(
     list(
       id = "ir_p_vg_x_axis",
@@ -448,7 +465,7 @@ IR_DISPLAY_SCATTER <- list(
 )
 
 ## Tabs whose plots are point clouds (scatter-type): get the scatter extras.
-IR_SCATTER_TABS <- c("Clonal UMAP", "Scatter")
+IR_SCATTER_TABS <- c("Clonal UMAP", "Scatter", "Paired Scatter")
 
 ## Assemble the display params applicable to a given tab.
 ir_display_params_for <- function(tab) {
@@ -458,3 +475,85 @@ ir_display_params_for <- function(tab) {
   }
   params
 }
+
+## ---------------------------------------------------------------------------
+## IR_PARAM_DESC — plain-language help for every control, keyed by input id.
+##
+## Single source of truth for the info dialogs (see ir_param_help_cards in
+## settings.R). Kept central (not per IR_PARAM_SPEC entry) because many params
+## are reused across tabs (scale, bootstrap, summary, aa_length ...), so each is
+## explained once. Covers the global controls, the per-tab analysis params, and
+## the display options. Written for a biologist who is not a scRepertoire user:
+## say what the control does and how reading the plot changes, not the API.
+## ---------------------------------------------------------------------------
+IR_PARAM_DESC <- list(
+  ## ---- Global controls ----
+  ir_cloneCall = "How a 'clone' is defined when counting cells. gene = same V(D)J genes; nt = identical CDR3 nucleotide sequence; aa = identical CDR3 amino-acid sequence; strict = same genes AND same CDR3 nucleotides (most specific). Stricter definitions split near-identical cells into separate clones.",
+  ir_chain = "Which receptor chain to analyse. 'All chains' combines them; otherwise restrict to one chain (e.g. TRB for the T-cell beta chain, IGH for the B-cell heavy chain). Choose a single chain when a plot should reflect just that chain's diversity or genes.",
+  ir_groupBy = "Metadata regrouping inside scRepertoire. On Paired Scatter this is shown as Compare by and directly defines the X/Y candidates: None uses original samples; a metadata column uses that column's levels. On Scatter and Compare it overrides the Comparison units when selected.",
+  ir_sampleCol = "Defines the comparison units that scRepertoire treats as samples. '(original)' uses the loaded repertoire list; choosing sample, condition, treatment, or cell type re-splits the repertoire so cross-sample plots compare those levels.",
+
+  ## ---- Clonal UMAP ----
+  ir_p_umap_receptor = "Which receptor to colour by: TCR (T cells) or BCR (B cells). Only the types present in your data are offered.",
+  ir_p_umap_projection = "The cell map to draw on — the same UMAP/tSNE projections used elsewhere in the app. Pick which one to overlay the clones on.",
+  ir_p_umap_show_all = "When on, every cell is drawn: cells without the selected receptor appear light grey, so the coloured (expanded) clones stand out in context. When off, only cells carrying the receptor are shown.",
+
+  ## ---- Diversity ----
+  ir_p_metric = "The diversity index. shannon/norm.entropy balance richness and evenness; inv.simpson/gini.simpson emphasise the dominant clones; chao1/ace estimate unseen clones; d50 is how many clones make up half the cells. Higher usually means a broader, more even repertoire.",
+  ir_p_x_axis = "A metadata column to spread the groups along the x-axis (e.g. condition), so diversity is compared across that variable.",
+  ir_p_n_boots = "How many bootstrap resamples to average over for the diversity estimate and its spread. More iterations give a smoother, more stable estimate but take longer.",
+
+  ## ---- Scatter ----
+  ir_p_graph = "Whether the axes show each clone's proportion (share of the repertoire) or raw count. Proportion makes samples of different sizes comparable.",
+  ir_p_dot_size = "What the dot size encodes: the clone's total size, or its size on the x or the y sample only.",
+
+  ## ---- vizGenes / gene usage ----
+  ir_p_vg_x_axis = "Which gene-segment family to put on the x-axis (e.g. TRBV for TCR beta V genes).",
+  ir_p_vg_plot = "Heatmap (compact overview of many genes/groups) or barplot (easier to read exact values for few genes).",
+  ir_p_vg_summary = "How values are scaled: percent or proportion (share within each group) or raw count.",
+  ir_p_gu_genes = "Which gene-segment family to summarise (e.g. TRBV, IGHV).",
+  ir_p_gu_plot_type = "Heatmap or barplot, as above.",
+  ir_p_gu_summary = "percent / proportion (share within each group) or raw count.",
+  ir_p_pg_gene = "Which gene segment to break down: V, D or J gene.",
+  ir_p_pg_summary = "percent / proportion or raw count.",
+  ir_p_vj_summary = "percent / proportion or raw count for the V–J gene pairings.",
+
+  ## ---- Overlap ----
+  ir_p_overlap_method = "How clonotype sharing between two groups is scored. overlap/jaccard/cosine/morisita differ in how they weight clone sizes; raw is the count of shared clones. Higher means the groups share more of their repertoire.",
+
+  ## ---- K-mer ----
+  ir_p_motif_length = "Length (in amino acids) of the short CDR3 sub-sequences (k-mers) to count. Longer motifs are more specific but rarer.",
+  ir_p_min_depth = "Minimum number of times a motif must occur to be kept, filtering out noise.",
+  ir_p_top_motifs = "How many of the most frequent motifs to display.",
+
+  ## ---- scale-only / structure ----
+  ir_p_scale = "Show proportions (share of the repertoire) instead of raw cell counts, so samples of different sizes are comparable.",
+  ir_p_clonal_split = "The size thresholds (comma-separated) that bin clones into proportion categories, from rare to expanded.",
+
+  ## ---- Rarefaction ----
+  ir_p_rare_plot_type = "What the rarefaction curve shows: diversity vs sample size, vs sequencing coverage, or sample completeness.",
+  ir_p_hill_numbers = "Which diversity order (Hill number q) to plot: q=0 counts clones (richness), q=1 weights by Shannon, q=2 emphasises the dominant clones.",
+  ir_p_rare_n_boots = "Bootstrap resamples for the rarefaction confidence band. More is smoother but slower.",
+
+  ## ---- SizeDist ----
+  ir_p_sd_method = "Linkage method for clustering samples by their clone-size distribution (ward.D2 is a common default).",
+  ir_p_sd_threshold = "Minimum clone size considered when fitting the distribution.",
+
+  ## ---- Compare ----
+  ir_p_compare_graph = "alluvial (ribbons tracking clones between groups) or area (stacked bands).",
+  ir_p_compare_prop = "Plot each clone's proportion instead of raw counts, so groups of different sizes are comparable.",
+  ir_p_top_clones = "How many of the largest clones to track across the groups.",
+
+  ## ---- CDR3 amino-acid composition ----
+  ir_p_aa_length = "CDR3 length (in amino acids) to analyse position-by-position. Sequences of a different length are excluded.",
+  ir_p_pe_aa_length = "CDR3 length (in amino acids) to analyse position-by-position.",
+  ir_p_pe_method = "Which entropy/diversity measure to compute at each CDR3 position.",
+  ir_property_method = "The amino-acid property scale to profile along the CDR3 (e.g. Atchley, Kidera) — captures physico-chemical character such as hydrophobicity.",
+  ir_p_pp_aa_length = "CDR3 length (in amino acids) to profile position-by-position.",
+
+  ## ---- Display options ----
+  ir_d_base_size = "Base font size for the plot's text (axis labels, legend, title).",
+  ir_d_title = "A custom title shown above the plot. Leave blank for none.",
+  ir_d_point_size = "Diameter of the scatter points.",
+  ir_d_alpha = "Point opacity (0 = transparent, 1 = solid). Lower values help when points overlap heavily."
+)

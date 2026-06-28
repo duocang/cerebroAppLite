@@ -1,5 +1,9 @@
-## ---- Settings UI ------------------------------------------------------ ##
-output$ir_settings_UI <- renderUI({
+## ---- Main parameters (left column, box 1) ----------------------------- ##
+## Core controls needed to select a plot: the global cloneCall / chain /
+## group-by (shown only on tabs they apply to) plus the current tab's
+## function-specific analysis parameters (IR_PARAM_SPEC). Scatter / Compare
+## sample selectors live here too, scoped to their tabs.
+output$ir_main_params_UI <- renderUI({
   if (!has_scRepertoire()) {
     return(ir_scRepertoire_missing_ui())
   }
@@ -42,6 +46,10 @@ output$ir_settings_UI <- renderUI({
   # left as an empty grid cell). Server-side filtering keeps the layout compact.
   tab <- input$ir_tabs
   clonecall_hidden <- c(
+    # Clonal UMAP colours by clone size and uses its own Receptor selector;
+    # the global Clone call only nudges what counts as the "same" clone and is
+    # noise for this view, so omit it here.
+    "Clonal UMAP",
     "Isotype",
     "SHM Proxy",
     "Gene usage",
@@ -54,8 +62,9 @@ output$ir_settings_UI <- renderUI({
   )
   # Clonal UMAP uses its own Receptor selector instead of the global Chain, and
   # colours by clone size rather than a group.by split, so hide both there.
-  groupby_hidden <- c("Paired Scatter", "Clonal UMAP")
+  groupby_hidden <- c("Clonal UMAP")
   chain_hidden <- c("vizGenes", "Clonal UMAP")
+  samplecol_hidden <- c("Clonal UMAP", "Paired Scatter")
 
   # Collect only the controls that apply to the current tab, then flow them into
   # rows so a hidden control never leaves a blank gap.
@@ -85,25 +94,48 @@ output$ir_settings_UI <- renderUI({
     )
   }
   if (is.null(tab) || !(tab %in% groupby_hidden)) {
-    # Default to the first available grouping variable (generic — NOT hardcoded
-    # to "sample", since a data set may not have a "sample" column) so the
-    # control reflects the grouping the plot actually uses. None still means
-    # "group by list element". Preserve the user's choice across tab switches.
+    # Default to None so the comparison units come from Split/Compare units
+    # (the loaded samples, or the selected split column). Choosing Group by is
+    # an explicit override for functions where scRepertoire regroups internally.
     prev_gb <- isolate(input$ir_groupBy)
-    default_gb <- if (!is.null(prev_gb)) {
+    default_gb <- if (!is.null(prev_gb) && prev_gb %in% available_groups) {
       prev_gb
-    } else if (length(available_groups) > 0) {
-      available_groups[1]
     } else {
       ""
+    }
+    group_label <- if (identical(tab, "Paired Scatter")) {
+      "Compare by:"
+    } else if (tab %in% c("Scatter", "Compare")) {
+      "Override comparison groups:"
+    } else {
+      "Group results by:"
     }
     controls <- c(
       controls,
       list(selectInput(
         "ir_groupBy",
-        "Group by:",
+        group_label,
         choices = c("None" = "", available_groups),
         selected = default_gb,
+        selectize = FALSE
+      ))
+    )
+  }
+  if (is.null(tab) || !(tab %in% samplecol_hidden)) {
+    sample_col_opts <- c("(original)" = "(original)", ir_sample_col_choices())
+    prev_sc <- isolate(input$ir_sampleCol)
+    default_sc <- if (!is.null(prev_sc) && prev_sc %in% sample_col_opts) {
+      prev_sc
+    } else {
+      "(original)"
+    }
+    controls <- c(
+      controls,
+      list(selectInput(
+        "ir_sampleCol",
+        "Comparison units:",
+        choices = sample_col_opts,
+        selected = default_sc,
         selectize = FALSE
       ))
     )
@@ -115,17 +147,8 @@ output$ir_settings_UI <- renderUI({
     ),
     # Global controls, flowed two-per-row so no hidden control leaves a gap.
     ir_flow_controls(controls),
-    helpText(
-      tags$b("Group by"),
-      "is the scRepertoire grouping variable: it splits the repertoire by a",
-      "metadata column (sample, condition, cell type, ...). It defaults to the",
-      "first available grouping variable; \"None\" groups by list element."
-    ),
     # Function-specific analysis parameters (IR_PARAM_SPEC for the current tab).
     uiOutput("ir_param_panel"),
-    # Generic display options (font/title, scatter point size/opacity),
-    # collapsible so they don't crowd the panel.
-    uiOutput("ir_display_panel"),
     # Scatter / Compare sample selectors only on their own tabs.
     conditionalPanel(
       condition = "input.ir_tabs == 'Scatter'",
@@ -138,28 +161,35 @@ output$ir_settings_UI <- renderUI({
   )
 })
 
-## ---- Helper: flow a list of controls into rows (2 per row) ------------ ##
-## Renders only the supplied (visible) controls, packed two per fluidRow, so a
-## hidden control never leaves an empty grid cell.
+observeEvent(
+  input$ir_sampleCol,
+  {
+    if (identical(input$ir_tabs, "Paired Scatter")) {
+      updateSelectInput(session, "ir_groupBy", selected = "")
+    }
+  },
+  ignoreInit = TRUE
+)
+
+## ---- Additional parameters (left column, box 2) ----------------------- ##
+## Secondary / presentation controls: the generic display options
+## (font, title, and for scatter-type plots point size + opacity).
+output$ir_additional_params_UI <- renderUI({
+  if (!has_scRepertoire() || is.null(ir_data_raw())) {
+    return(NULL)
+  }
+  uiOutput("ir_display_panel")
+})
+
+## ---- Helper: flow a list of controls, one per full-width row ---------- ##
+## The left parameter column is narrow (width = 3), so each control gets its
+## own full-width row rather than being packed two-per-row.
 ir_flow_controls <- function(controls) {
   controls <- Filter(Negate(is.null), controls)
   if (length(controls) == 0) {
     return(NULL)
   }
-  rows <- list()
-  i <- 1
-  while (i <= length(controls)) {
-    if (i + 1 <= length(controls)) {
-      rows[[length(rows) + 1]] <- fluidRow(
-        column(6, controls[[i]]),
-        column(6, controls[[i + 1]])
-      )
-      i <- i + 2
-    } else {
-      rows[[length(rows) + 1]] <- fluidRow(column(6, controls[[i]]))
-      i <- i + 1
-    }
-  }
+  rows <- lapply(controls, function(ctrl) fluidRow(column(12, ctrl)))
   do.call(tagList, rows)
 }
 
@@ -324,22 +354,8 @@ output$ir_param_panel <- renderUI({
     )
   })
 
-  # two controls per row
-  rows <- list()
-  i <- 1
-  while (i <= length(controls)) {
-    if (i + 1 <= length(controls)) {
-      rows[[length(rows) + 1]] <- fluidRow(
-        column(6, controls[[i]]),
-        column(6, controls[[i + 1]])
-      )
-      i <- i + 2
-    } else {
-      rows[[length(rows) + 1]] <- fluidRow(column(6, controls[[i]]))
-      i <- i + 1
-    }
-  }
-  do.call(tagList, rows)
+  # one control per full-width row (narrow left column)
+  ir_flow_controls(controls)
 })
 
 ## ---- Reactive: number of samples -------------------------------------- ##
@@ -348,10 +364,10 @@ n_samples <- reactive({
   if (is.null(data)) 0L else length(data)
 })
 
-## ---- Generic display options (collapsible) ---------------------------- ##
-## Renders the IR_DISPLAY_SPEC controls applicable to the current tab inside a
-## collapsible <details> block, kept separate from the analysis params so the
-## panel stays compact. Defaults collapsed (no `open` attribute).
+## ---- Generic display options ------------------------------------------ ##
+## Renders the IR_DISPLAY_SPEC controls applicable to the current tab. Lives in
+## the collapsible "Additional parameters" box (see UI.R), so it needs no extra
+## collapse of its own.
 output$ir_display_panel <- renderUI({
   tab <- input$ir_tabs
   if (!exists("ir_display_params_for")) {
@@ -393,11 +409,7 @@ output$ir_display_panel <- renderUI({
     }
   }
 
-  tags$details(
-    id = "ir_display_details",
-    tags$summary(tags$b("Display options")),
-    do.call(tagList, rows)
-  )
+  do.call(tagList, rows)
 })
 
 ## ---- Reactive: current display parameter values ----------------------- ##
@@ -424,3 +436,219 @@ ir_display_params <- reactive({
   }
   vals
 })
+
+## ---- Group filters (left column, box 3) ------------------------------- ##
+## Per-group-column pickerInputs to subset which cells appear in the Clonal
+## UMAP (mirrors the Main tab's group filters). Only meaningful on the Clonal
+## UMAP tab; other tabs see a short note. All levels selected by default.
+output$ir_group_filters_UI <- renderUI({
+  if (!has_scRepertoire() || is.null(ir_data_raw())) {
+    return(NULL)
+  }
+  if (!identical(input$ir_tabs, "Clonal UMAP")) {
+    return(helpText("Group filters apply to the Clonal UMAP tab."))
+  }
+  groups <- tryCatch(getGroups(), error = function(e) character(0))
+  if (length(groups) == 0) {
+    return(helpText("No grouping columns available to filter by."))
+  }
+  filters <- lapply(groups, function(g) {
+    lvls <- tryCatch(getGroupLevels(g), error = function(e) character(0))
+    shinyWidgets::pickerInput(
+      paste0("ir_group_filter_", g),
+      label = g,
+      choices = lvls,
+      selected = lvls,
+      options = list("actions-box" = TRUE),
+      multiple = TRUE
+    )
+  })
+  do.call(tagList, filters)
+})
+
+## ---- Barcodes to show in the Clonal UMAP (from Group filters) ---------- ##
+## Reads the per-group pickerInputs and returns the barcodes whose cells pass
+## every active filter. Returns NULL when no filtering is in effect (every
+## level of every group still selected) so the renderer shows all cells.
+## Overrides the NULL default defined in data.R.
+ir_umap_cells_to_show <- reactive({
+  groups <- tryCatch(getGroups(), error = function(e) character(0))
+  md <- tryCatch(getMetaData(), error = function(e) NULL)
+  if (
+    length(groups) == 0 ||
+      is.null(md) ||
+      !("cell_barcode" %in% colnames(md))
+  ) {
+    return(NULL)
+  }
+  keep <- rep(TRUE, nrow(md))
+  any_filter <- FALSE
+  for (g in groups) {
+    sel <- input[[paste0("ir_group_filter_", g)]]
+    if (is.null(sel) || !(g %in% colnames(md))) {
+      next
+    }
+    all_lvls <- tryCatch(getGroupLevels(g), error = function(e) character(0))
+    # Only treat it as an active filter when the user has deselected something.
+    if (length(sel) < length(all_lvls)) {
+      any_filter <- TRUE
+      keep <- keep & (as.character(md[[g]]) %in% sel)
+    }
+  }
+  if (!any_filter) {
+    return(NULL)
+  }
+  as.character(md$cell_barcode[keep])
+})
+
+## ---- Info dialogs: explain the parameters shown on the current tab ---- ##
+## The info buttons next to each left-column box open a modal that explains,
+## in plain language, exactly the controls visible on the current tab. Text
+## comes from IR_PARAM_DESC (param_spec.R) so it never drifts from the controls.
+
+## Which global controls (cloneCall/chain/groupBy) are shown on a given tab —
+## mirrors the hidden-lists logic in ir_main_params_UI above.
+ir_visible_global_ids <- function(tab) {
+  clonecall_hidden <- c(
+    "Clonal UMAP",
+    "Isotype",
+    "SHM Proxy",
+    "Gene usage",
+    "vizGenes",
+    "percentGenes",
+    "percentVJ",
+    "AA %",
+    "Entropy",
+    "Property"
+  )
+  groupby_hidden <- c("Clonal UMAP")
+  chain_hidden <- c("vizGenes", "Clonal UMAP")
+  samplecol_hidden <- c("Clonal UMAP", "Paired Scatter")
+  ids <- character(0)
+  if (is.null(tab) || !(tab %in% clonecall_hidden)) {
+    ids <- c(ids, "ir_cloneCall")
+  }
+  if (is.null(tab) || !(tab %in% chain_hidden)) {
+    ids <- c(ids, "ir_chain")
+  }
+  if (is.null(tab) || !(tab %in% groupby_hidden)) {
+    ids <- c(ids, "ir_groupBy")
+  }
+  if (is.null(tab) || !(tab %in% samplecol_hidden)) {
+    ids <- c(ids, "ir_sampleCol")
+  }
+  ids
+}
+
+## Render a list of param ids as styled help cards (bold name + plain text).
+ir_param_help_cards <- function(ids) {
+  ids <- ids[ids %in% names(IR_PARAM_DESC)]
+  if (length(ids) == 0) {
+    return(tags$p(
+      style = "color:#888;",
+      "No adjustable parameters on this tab."
+    ))
+  }
+  cards <- lapply(ids, function(id) {
+    label <- IR_PARAM_LABELS[[id]] %||% id
+    div(
+      class = "ir-help-card",
+      div(class = "ir-help-card-title", label),
+      div(class = "ir-help-card-body", IR_PARAM_DESC[[id]])
+    )
+  })
+  tagList(
+    ir_help_card_style,
+    div(class = "ir-help-cards", do.call(tagList, cards))
+  )
+}
+
+## Lookup: input id -> human label (from IR_PARAM_SPEC / display / globals).
+IR_PARAM_LABELS <- local({
+  labs <- list(
+    ir_cloneCall = "Clone call",
+    ir_chain = "Chain",
+    ir_groupBy = "Group by",
+    ir_sampleCol = "Comparison units"
+  )
+  for (tab in names(IR_PARAM_SPEC)) {
+    for (p in IR_PARAM_SPEC[[tab]]) {
+      labs[[p$id]] <- sub(":\\s*$", "", p$label)
+    }
+  }
+  for (p in c(IR_DISPLAY_BASE, IR_DISPLAY_SCATTER)) {
+    labs[[p$id]] <- sub(":\\s*$", "", p$label)
+  }
+  labs
+})
+
+## Card styling — compact, clearly separated, with a coloured accent bar.
+ir_help_card_style <- tags$style(HTML(
+  "
+  .ir-help-cards { display:flex; flex-direction:column; gap:10px; }
+  .ir-help-card {
+    border:1px solid #e3e6ea; border-left:4px solid #3c8dbc;
+    border-radius:6px; padding:10px 14px; background:#fafbfc;
+  }
+  .ir-help-card-title { font-weight:600; color:#2c3e50; margin-bottom:3px; }
+  .ir-help-card-body { color:#4a4a4a; font-size:13px; line-height:1.5; }
+  "
+))
+
+## Main parameters info: global controls + this tab's analysis params.
+observeEvent(input$ir_main_parameters_info, {
+  tab <- input$ir_tabs
+  spec_ids <- if (
+    !is.null(tab) && exists("IR_PARAM_SPEC") && !is.null(IR_PARAM_SPEC[[tab]])
+  ) {
+    vapply(IR_PARAM_SPEC[[tab]], function(p) p$id, character(1))
+  } else {
+    character(0)
+  }
+  ids <- c(ir_visible_global_ids(tab), spec_ids)
+  showModal(modalDialog(
+    title = paste0("Main parameters", if (!is.null(tab)) paste0(" — ", tab)),
+    ir_param_help_cards(ids),
+    easyClose = TRUE,
+    footer = modalButton("Close"),
+    size = "l"
+  ))
+})
+
+## Additional parameters info: the display options for this tab.
+observeEvent(input$ir_additional_parameters_info, {
+  tab <- input$ir_tabs
+  ids <- if (exists("ir_display_params_for")) {
+    vapply(ir_display_params_for(tab), function(p) p$id, character(1))
+  } else {
+    character(0)
+  }
+  showModal(modalDialog(
+    title = "Additional parameters — display options",
+    ir_param_help_cards(ids),
+    easyClose = TRUE,
+    footer = modalButton("Close"),
+    size = "l"
+  ))
+})
+
+## Group filters info.
+observeEvent(input$ir_group_filters_info, {
+  showModal(modalDialog(
+    title = "Group filters",
+    tags$p(
+      "Restrict the Clonal UMAP to a subset of cells by metadata column ",
+      "(sample, condition, cell type, ...). Deselect levels to hide those ",
+      "cells; with everything selected, all cells are shown."
+    ),
+    easyClose = TRUE,
+    footer = modalButton("Close"),
+    size = "l"
+  ))
+})
+
+## Keep the left-column boxes' dynamic UI alive even while their box is
+## collapsed, so controls exist in the DOM (mirrors the Main tab's pattern).
+outputOptions(output, "ir_additional_params_UI", suspendWhenHidden = FALSE)
+outputOptions(output, "ir_group_filters_UI", suspendWhenHidden = FALSE)
+outputOptions(output, "ir_display_panel", suspendWhenHidden = FALSE)
