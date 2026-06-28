@@ -1,4 +1,4 @@
-# cerebroAppLite 1.7.4
+# cerebroAppLite 1.7.3
 
 ## Immune repertoire
 
@@ -134,7 +134,6 @@ previous releases and refreshes documentation for the current codebase.
 - Switched Nix environment to `fixed-date` to avoid constant rebuilding
 - simplified workflow by removing `dev` and `sync-dev`
 
-
 # cerebroAppLite 1.6.0
 
 ## Bug fixes
@@ -166,7 +165,6 @@ previous releases and refreshes documentation for the current codebase.
 
 - Added pkgdown site at <https://mihem.github.io/cerebroAppLite/> with light/dark/auto theme switch, search, and all vignettes as articles
 - Site automatically builds and deploys to GitHub Pages on push to master
-
 
 # cerebroAppLite 1.5.3
 
