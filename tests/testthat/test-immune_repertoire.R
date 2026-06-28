@@ -337,6 +337,31 @@ test_that("ir_bindCache injects dataset identity into cache key", {
   expect_match(content, 'cache\\s*=\\s*"session"')
 })
 
+test_that("ir_bindCache keeps only global cache keys centralized", {
+  # Plot-specific controls must live in the renderer's own bindCache call. The
+  # shared helper should not make Homeostasis cloneSize, order.by, or scatter
+  # point options invalidate every IR plot.
+  srv <- file.path(shiny_root, "immune_repertoire", "server.R")
+  skip_if_not(file.exists(srv))
+  content <- paste(readLines(srv), collapse = "\n")
+  helper <- regmatches(
+    content,
+    regexpr(
+      "ir_bindCache <- function\\(x, \\.\\.\\., cache = \"session\"\\) \\{[\\s\\S]*?\\n\\}",
+      content,
+      perl = TRUE
+    )
+  )
+  expect_length(helper, 1)
+  expect_no_match(
+    helper,
+    "ir_p_order_by|ir_p_clone_size|ir_d_point_size|ir_d_alpha"
+  )
+  expect_match(helper, "ir_d_base_size")
+  expect_match(helper, "ir_d_title")
+  expect_match(helper, "data_to_load\\$path")
+})
+
 test_that("example.crb preserves core data fields", {
   skip_if_not(file.exists(example_crb))
   crb <- readRDS(example_crb)
@@ -374,6 +399,24 @@ test_that("renderers enforce scRepertoire parameter constraints", {
     "is.na\\(aa_len\\)[\\s\\S]{0,40}aa_len < 1[\\s\\S]{0,60}aa_len <- 20",
     perl = TRUE
   )
+})
+
+test_that("Clonal UMAP does not depend on the hidden Clone call control", {
+  viz <- file.path(shiny_root, "immune_repertoire", "visualizations.R")
+  skip_if_not(file.exists(viz))
+  content <- paste(readLines(viz), collapse = "\n")
+  block <- regmatches(
+    content,
+    regexpr(
+      "output\\$ir_plot_clonalUMAP <- renderPlot\\(\\{[\\s\\S]*?## ---- BCR-specific renderers",
+      content,
+      perl = TRUE
+    )
+  )
+  expect_length(block, 1)
+  expect_match(block, 'clone_call <- "gene"')
+  expect_no_match(block, "ir_params\\(\\)\\$cloneCall")
+  expect_no_match(block, "input\\$ir_cloneCall")
 })
 
 test_that("ir_bindCache keys cover all per-plot ir_param() calls", {

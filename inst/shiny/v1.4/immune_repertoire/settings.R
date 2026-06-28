@@ -42,33 +42,14 @@ output$ir_main_params_UI <- renderUI({
   groups <- tryCatch(getGroups(), error = function(e) character(0))
   available_groups <- intersect(groups, data_cols)
 
-  # Which tabs each global control does NOT apply to (so it is omitted, not
-  # left as an empty grid cell). Server-side filtering keeps the layout compact.
+  # Global control visibility comes from IR_GLOBAL_CONTROL_HIDDEN
+  # (param_spec.R), so the UI and help dialogs cannot drift.
   tab <- input$ir_tabs
-  clonecall_hidden <- c(
-    # Clonal UMAP colours by clone size and uses its own Receptor selector;
-    # the global Clone call only nudges what counts as the "same" clone and is
-    # noise for this view, so omit it here.
-    "Clonal UMAP",
-    "Isotype",
-    "SHM Proxy",
-    "Gene usage",
-    "vizGenes",
-    "percentGenes",
-    "percentVJ",
-    "AA %",
-    "Entropy",
-    "Property"
-  )
-  # Clonal UMAP uses its own Receptor selector instead of the global Chain, and
-  # colours by clone size rather than a group.by split, so hide both there.
-  groupby_hidden <- c("Clonal UMAP")
-  chain_hidden <- c("vizGenes", "Clonal UMAP")
 
   # Collect only the controls that apply to the current tab, then flow them into
   # rows so a hidden control never leaves a blank gap.
   controls <- list()
-  if (is.null(tab) || !(tab %in% clonecall_hidden)) {
+  if (ir_global_control_visible("ir_cloneCall", tab)) {
     controls <- c(
       controls,
       list(selectInput(
@@ -80,7 +61,7 @@ output$ir_main_params_UI <- renderUI({
       ))
     )
   }
-  if (is.null(tab) || !(tab %in% chain_hidden)) {
+  if (ir_global_control_visible("ir_chain", tab)) {
     controls <- c(
       controls,
       list(selectInput(
@@ -92,7 +73,7 @@ output$ir_main_params_UI <- renderUI({
       ))
     )
   }
-  if (is.null(tab) || !(tab %in% groupby_hidden)) {
+  if (ir_global_control_visible("ir_groupBy", tab)) {
     # group.by is the single grouping control: None compares the loaded samples
     # (the repertoire list elements); a metadata column makes that column's
     # levels the comparison units. scRepertoire rbinds + re-splits internally
@@ -516,36 +497,6 @@ ir_umap_cells_to_show <- reactive({
 ## The info buttons next to each left-column box open a modal that explains,
 ## in plain language, exactly the controls visible on the current tab. Text
 ## comes from IR_PARAM_DESC (param_spec.R) so it never drifts from the controls.
-
-## Which global controls (cloneCall/chain/groupBy) are shown on a given tab —
-## mirrors the hidden-lists logic in ir_main_params_UI above.
-ir_visible_global_ids <- function(tab) {
-  clonecall_hidden <- c(
-    "Clonal UMAP",
-    "Isotype",
-    "SHM Proxy",
-    "Gene usage",
-    "vizGenes",
-    "percentGenes",
-    "percentVJ",
-    "AA %",
-    "Entropy",
-    "Property"
-  )
-  groupby_hidden <- c("Clonal UMAP")
-  chain_hidden <- c("vizGenes", "Clonal UMAP")
-  ids <- character(0)
-  if (is.null(tab) || !(tab %in% clonecall_hidden)) {
-    ids <- c(ids, "ir_cloneCall")
-  }
-  if (is.null(tab) || !(tab %in% chain_hidden)) {
-    ids <- c(ids, "ir_chain")
-  }
-  if (is.null(tab) || !(tab %in% groupby_hidden)) {
-    ids <- c(ids, "ir_groupBy")
-  }
-  ids
-}
 
 ## Render a list of param ids as styled help cards (bold name + plain text).
 ir_param_help_cards <- function(ids) {

@@ -146,7 +146,7 @@ ir_compare_groups <- reactive({
   vals <- unique(unlist(lapply(data, function(df) {
     if (gb %in% colnames(df)) as.character(df[[gb]]) else character(0)
   })))
-  vals <- vals[!is.na(vals)]
+  vals <- vals[!is.na(vals) & nzchar(vals)]
   if (length(vals) == 0) names(data) else sort(vals)
 })
 
@@ -280,13 +280,6 @@ ir_receptor_types <- reactive({
 ir_umap_chains <- function(receptor) {
   if (identical(receptor, "BCR")) IR_BCR_CHAINS else IR_TCR_CHAINS
 }
-
-## ---- Barcodes to show in the Clonal UMAP (Group filters) -------------- ##
-## Returns the barcodes left after applying the per-group-column filters from
-## the left-column "Group filters" box, or NULL when no filtering is active
-## (show every cell). Replaced by a reactive in settings.R once the filter UI
-## exists; this default keeps the renderer safe (NULL = no filter).
-ir_umap_cells_to_show <- function() NULL
 
 ## ---- Clone-size bin breaks / labels (scRepertoire cloneSize defaults) -- ##
 ## A clone's size = number of cells carrying that clonotype (within the

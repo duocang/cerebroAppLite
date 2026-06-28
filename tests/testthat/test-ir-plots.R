@@ -79,6 +79,12 @@ length_helpers <- file.path(
   local_inst,
   "shiny/v1.4/immune_repertoire/length_helpers.R"
 )
+if (is.na(local_inst)) {
+  length_helpers <- system.file(
+    "shiny/v1.4/immune_repertoire/length_helpers.R",
+    package = "cerebroAppLite"
+  )
+}
 
 test_that("ir_length_facet_plot draws one panel per group", {
   skip_if_not(file.exists(example_crb))
@@ -118,6 +124,45 @@ test_that("ir_length_facet_plot scale=TRUE yields within-group proportions", {
   # Proportions: every bar height is within [0, 1].
   ys <- unlist(lapply(built$data, function(d) d$y[!is.na(d$y)]))
   expect_true(all(ys >= 0 & ys <= 1))
+})
+
+test_that("ir_length_facet_plot preserves export table group order", {
+  source(length_helpers, local = TRUE)
+  tbl <- data.frame(
+    length = c(10, 11, 10, 12),
+    values = factor(
+      c("zeta", "zeta", "alpha", "alpha"),
+      levels = c("zeta", "alpha")
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  p <- ir_length_facet_plot(tbl, scale = FALSE)
+
+  expect_identical(levels(p$data$group), c("zeta", "alpha"))
+})
+
+test_that("ir_length_facet_plot can facet by the selected group column", {
+  source(length_helpers, local = TRUE)
+  tbl <- data.frame(
+    length = c(10, 11, 12, 13),
+    values = c("sample_1", "sample_1", "sample_2", "sample_2"),
+    cell_type = c("T cells", "Monocytes", "T cells", "Monocytes"),
+    stringsAsFactors = FALSE
+  )
+
+  p <- ir_length_facet_plot(
+    tbl,
+    scale = FALSE,
+    group_col = "cell_type",
+    group_levels = c("Monocytes", "T cells")
+  )
+
+  expect_identical(levels(p$data$group), c("Monocytes", "T cells"))
+  expect_identical(
+    as.character(ggplot2::ggplot_build(p)$layout$layout$group),
+    c("Monocytes", "T cells")
+  )
 })
 
 test_that("core clonal plots render a non-empty ggplot on example.crb", {
