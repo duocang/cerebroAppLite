@@ -64,7 +64,6 @@ output$ir_main_params_UI <- renderUI({
   # colours by clone size rather than a group.by split, so hide both there.
   groupby_hidden <- c("Clonal UMAP")
   chain_hidden <- c("vizGenes", "Clonal UMAP")
-  samplecol_hidden <- c("Clonal UMAP", "Paired Scatter")
 
   # Collect only the controls that apply to the current tab, then flow them into
   # rows so a hidden control never leaves a blank gap.
@@ -94,19 +93,20 @@ output$ir_main_params_UI <- renderUI({
     )
   }
   if (is.null(tab) || !(tab %in% groupby_hidden)) {
-    # Default to None so the comparison units come from Split/Compare units
-    # (the loaded samples, or the selected split column). Choosing Group by is
-    # an explicit override for functions where scRepertoire regroups internally.
+    # group.by is the single grouping control: None compares the loaded samples
+    # (the repertoire list elements); a metadata column makes that column's
+    # levels the comparison units. scRepertoire rbinds + re-splits internally
+    # (.groupList), so this fully defines what a plot compares.
     prev_gb <- isolate(input$ir_groupBy)
     default_gb <- if (!is.null(prev_gb) && prev_gb %in% available_groups) {
       prev_gb
     } else {
       ""
     }
-    group_label <- if (identical(tab, "Paired Scatter")) {
+    group_label <- if (
+      !is.null(tab) && tab %in% c("Paired Scatter", "Scatter", "Compare")
+    ) {
       "Compare by:"
-    } else if (tab %in% c("Scatter", "Compare")) {
-      "Override comparison groups:"
     } else {
       "Group results by:"
     }
@@ -121,26 +121,6 @@ output$ir_main_params_UI <- renderUI({
       ))
     )
   }
-  if (is.null(tab) || !(tab %in% samplecol_hidden)) {
-    sample_col_opts <- c("(original)" = "(original)", ir_sample_col_choices())
-    prev_sc <- isolate(input$ir_sampleCol)
-    default_sc <- if (!is.null(prev_sc) && prev_sc %in% sample_col_opts) {
-      prev_sc
-    } else {
-      "(original)"
-    }
-    controls <- c(
-      controls,
-      list(selectInput(
-        "ir_sampleCol",
-        "Comparison units:",
-        choices = sample_col_opts,
-        selected = default_sc,
-        selectize = FALSE
-      ))
-    )
-  }
-
   tagList(
     tags$style(
       "#ir_chain + .selectize-control .selectize-dropdown-content { max-height: none; }"
@@ -160,16 +140,6 @@ output$ir_main_params_UI <- renderUI({
     )
   )
 })
-
-observeEvent(
-  input$ir_sampleCol,
-  {
-    if (identical(input$ir_tabs, "Paired Scatter")) {
-      updateSelectInput(session, "ir_groupBy", selected = "")
-    }
-  },
-  ignoreInit = TRUE
-)
 
 ## ---- Additional parameters (left column, box 2) ----------------------- ##
 ## Secondary / presentation controls: the generic display options
@@ -564,7 +534,6 @@ ir_visible_global_ids <- function(tab) {
   )
   groupby_hidden <- c("Clonal UMAP")
   chain_hidden <- c("vizGenes", "Clonal UMAP")
-  samplecol_hidden <- c("Clonal UMAP", "Paired Scatter")
   ids <- character(0)
   if (is.null(tab) || !(tab %in% clonecall_hidden)) {
     ids <- c(ids, "ir_cloneCall")
@@ -574,9 +543,6 @@ ir_visible_global_ids <- function(tab) {
   }
   if (is.null(tab) || !(tab %in% groupby_hidden)) {
     ids <- c(ids, "ir_groupBy")
-  }
-  if (is.null(tab) || !(tab %in% samplecol_hidden)) {
-    ids <- c(ids, "ir_sampleCol")
   }
   ids
 }
@@ -609,8 +575,7 @@ IR_PARAM_LABELS <- local({
   labs <- list(
     ir_cloneCall = "Clone call",
     ir_chain = "Chain",
-    ir_groupBy = "Group by",
-    ir_sampleCol = "Comparison units"
+    ir_groupBy = "Group by"
   )
   for (tab in names(IR_PARAM_SPEC)) {
     for (p in IR_PARAM_SPEC[[tab]]) {

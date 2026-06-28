@@ -163,8 +163,13 @@ test_that("core IR params update immediately to keep bindCache keys and values a
   ))
 })
 
-test_that("Sample column split control is wired into repertoire data", {
-  mod_files <- c("data.R", "settings.R", "visualizations.R")
+test_that("Comparison-units re-split is removed; grouping is unified on group.by", {
+  # scRepertoire's group.by already rbinds the list and re-splits on the chosen
+  # column (.groupList), so the in-app ir_sampleCol re-split was a redundant,
+  # narrower duplicate of group.by. It has been removed: ir_data() now always
+  # returns the original annotated list and grouping flows solely through
+  # ir_groupBy / group.by.
+  mod_files <- c("data.R", "settings.R", "visualizations.R", "param_spec.R")
   content <- paste(
     vapply(
       mod_files,
@@ -178,10 +183,12 @@ test_that("Sample column split control is wired into repertoire data", {
     ),
     collapse = "\n"
   )
-  expect_match(content, "ir_sample_col_choices")
-  expect_match(content, 'selectInput\\(\\s*"ir_sampleCol"')
-  expect_match(content, "input\\$ir_sampleCol")
-  expect_match(content, "split\\(merged, merged\\[\\[col\\]\\]\\)")
+  # The control, its input, the choice helper, and the split are all gone.
+  expect_no_match(content, "ir_sampleCol")
+  expect_no_match(content, "ir_sample_col_choices")
+  expect_no_match(content, "split\\(merged, merged\\[\\[col\\]\\]\\)")
+  # Grouping still flows through group.by.
+  expect_match(content, "input\\$ir_groupBy")
 })
 
 test_that("renderers pass supported scRepertoire parameters", {
@@ -472,4 +479,46 @@ test_that("order.by control is declared in param_spec", {
   skip_if_not(file.exists(ps))
   content <- paste(readLines(ps), collapse = "\n")
   expect_match(content, "ir_p_order_by", info = "no order.by control declared")
+})
+
+test_that("tab-dependent label uses a NULL-safe %in% guard", {
+  # input$ir_tabs is NULL before the tabset registers; `tab %in% c(...)` then
+  # returns logical(0), and `if (logical(0))` raises
+  # 'argument is of length zero' inside renderUI. Every %in% test on `tab` in
+  # the group-label branch must be guarded by !is.null(tab) && (or the
+  # is.null(tab) || short-circuit used elsewhere in this render).
+  st <- file.path(shiny_root, "immune_repertoire", "settings.R")
+  skip_if_not(file.exists(st))
+  content <- paste(readLines(st), collapse = "\n")
+
+  # The Compare-by label test must be NULL-guarded.
+  expect_match(
+    content,
+    "group_label <- if \\(\\s*!is\\.null\\(tab\\)[\\s\\S]{0,40}tab %in% c\\(",
+    perl = TRUE,
+    info = "group_label branch tests `tab %in% c(...)` without a !is.null guard"
+  )
+})
+
+test_that("Length renderer only facets when a grouping is selected", {
+  # Group results by = None means group.by is NULL: there is no grouping, so the
+  # plot must be a single combined panel (scRepertoire's native overlay), NOT
+  # one facet per loaded sample. Faceting must be gated on a non-NULL groupBy.
+  viz <- file.path(shiny_root, "immune_repertoire", "visualizations.R")
+  skip_if_not(file.exists(viz))
+  content <- paste(readLines(viz), collapse = "\n")
+
+  # The clonalLength renderer branches on whether a grouping is set.
+  expect_match(
+    content,
+    "ir_plot_clonalLength[\\s\\S]{0,1200}is\\.null\\(pars\\$groupBy\\)",
+    perl = TRUE,
+    info = "clonalLength renderer does not gate faceting on is.null(pars$groupBy)"
+  )
+  # facet builder is still used (for the grouped branch).
+  expect_match(
+    content,
+    "ir_plot_clonalLength[\\s\\S]{0,3500}ir_length_facet_plot\\(",
+    perl = TRUE
+  )
 })

@@ -74,6 +74,52 @@ expect_nonempty_ggplot <- function(p, label) {
   expect_gt(n, 0)
 }
 
+# Source the (reactive-free) length helper so its pure plot builder is testable.
+length_helpers <- file.path(
+  local_inst,
+  "shiny/v1.4/immune_repertoire/length_helpers.R"
+)
+
+test_that("ir_length_facet_plot draws one panel per group", {
+  skip_if_not(file.exists(example_crb))
+  source(length_helpers, local = TRUE)
+  ir <- load_ir()
+
+  tbl <- scRepertoire::clonalLength(
+    ir,
+    cloneCall = "aa",
+    group.by = "sample",
+    exportTable = TRUE
+  )
+  n_groups <- length(unique(as.character(tbl$values)))
+  expect_gt(n_groups, 1)
+
+  p <- ir_length_facet_plot(tbl, scale = FALSE)
+  expect_nonempty_ggplot(p, "ir_length_facet_plot")
+
+  # One facet panel per group (the whole point: separate plots per sample).
+  built <- ggplot2::ggplot_build(p)
+  expect_equal(nrow(built$layout$layout), n_groups)
+})
+
+test_that("ir_length_facet_plot scale=TRUE yields within-group proportions", {
+  skip_if_not(file.exists(example_crb))
+  source(length_helpers, local = TRUE)
+  ir <- load_ir()
+
+  tbl <- scRepertoire::clonalLength(
+    ir,
+    cloneCall = "aa",
+    group.by = "sample",
+    exportTable = TRUE
+  )
+  p <- ir_length_facet_plot(tbl, scale = TRUE)
+  built <- ggplot2::ggplot_build(p)
+  # Proportions: every bar height is within [0, 1].
+  ys <- unlist(lapply(built$data, function(d) d$y[!is.na(d$y)]))
+  expect_true(all(ys >= 0 & ys <= 1))
+})
+
 test_that("core clonal plots render a non-empty ggplot on example.crb", {
   skip_if_not(file.exists(example_crb))
   ir <- load_ir()

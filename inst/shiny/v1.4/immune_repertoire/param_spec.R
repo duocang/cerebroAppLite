@@ -531,8 +531,7 @@ IR_PARAM_DESC <- list(
   ## ---- Global controls ----
   ir_cloneCall = "How a 'clone' is defined when counting cells. gene = same V(D)J genes; nt = identical CDR3 nucleotide sequence; aa = identical CDR3 amino-acid sequence; strict = same genes AND same CDR3 nucleotides (most specific). Stricter definitions split near-identical cells into separate clones.",
   ir_chain = "Which receptor chain to analyse. 'All chains' combines them; otherwise restrict to one chain (e.g. TRB for the T-cell beta chain, IGH for the B-cell heavy chain). Choose a single chain when a plot should reflect just that chain's diversity or genes.",
-  ir_groupBy = "Metadata regrouping inside scRepertoire. On Paired Scatter this is shown as Compare by and directly defines the X/Y candidates: None uses original samples; a metadata column uses that column's levels. On Scatter and Compare it overrides the Comparison units when selected.",
-  ir_sampleCol = "Defines the comparison units that scRepertoire treats as samples. '(original)' uses the loaded repertoire list; choosing sample, condition, treatment, or cell type re-splits the repertoire so cross-sample plots compare those levels.",
+  ir_groupBy = "Metadata column that defines the comparison units. None uses the loaded samples (the repertoire list elements); choosing a column (sample, condition, treatment, cell type, ...) makes that column's levels the units scRepertoire compares. On Paired Scatter this is shown as Compare by and directly defines the X/Y candidates.",
 
   ## ---- Clonal UMAP ----
   ir_p_umap_receptor = "Which receptor to colour by: TCR (T cells) or BCR (B cells). Only the types present in your data are offered.",
