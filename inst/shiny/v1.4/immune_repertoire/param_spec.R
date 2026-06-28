@@ -438,7 +438,7 @@ IR_DISPLAY_BASE <- list(
   list(
     id = "ir_d_base_size",
     label = "Font size:",
-    type = "numeric",
+    type = "slider",
     value = 12,
     min = 6,
     max = 30,
@@ -456,7 +456,7 @@ IR_DISPLAY_SCATTER <- list(
   list(
     id = "ir_d_point_size",
     label = "Point size:",
-    type = "numeric",
+    type = "slider",
     value = 1,
     min = 0.1,
     max = 6,
@@ -465,7 +465,7 @@ IR_DISPLAY_SCATTER <- list(
   list(
     id = "ir_d_alpha",
     label = "Point opacity:",
-    type = "numeric",
+    type = "slider",
     value = 0.8,
     min = 0.1,
     max = 1,

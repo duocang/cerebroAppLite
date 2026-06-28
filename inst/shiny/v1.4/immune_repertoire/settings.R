@@ -410,6 +410,16 @@ output$ir_display_panel <- renderUI({
   }
 
   controls <- lapply(spec, function(p) {
+    if (identical(p$type, "slider")) {
+      return(sliderInput(
+        p$id,
+        p$label,
+        min = p$min,
+        max = p$max,
+        step = p$step,
+        value = p$value
+      ))
+    }
     if (identical(p$type, "numeric")) {
       return(numericInput(
         p$id,
