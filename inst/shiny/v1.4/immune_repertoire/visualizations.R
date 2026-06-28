@@ -437,7 +437,9 @@ output$ir_ui_pairedScatter <- renderUI({
     )
   }
   tagList(
-    ir_flow_controls(controls),
+    # Side-by-side (Pair by / X group / Y group [/ Facet by]); wraps only when
+    # the row is too narrow. This panel sits in the wide right-hand column.
+    ir_flow_controls_inline(controls),
     shinycssloaders::withSpinner(
       uiOutput("ir_ui_pairedScatter_plot")
     )

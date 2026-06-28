@@ -193,6 +193,27 @@ ir_flow_controls <- function(controls) {
   do.call(tagList, rows)
 }
 
+## ---- Helper: lay controls out side-by-side, wrapping only when needed -- ##
+## For the wide right-hand visualization area (not the narrow left column):
+## controls sit in one row and share the width, wrapping to the next line only
+## when they no longer fit. Each item has a sensible minimum width.
+ir_flow_controls_inline <- function(controls, min_width = "160px") {
+  controls <- Filter(Negate(is.null), controls)
+  if (length(controls) == 0) {
+    return(NULL)
+  }
+  items <- lapply(controls, function(ctrl) {
+    div(
+      style = sprintf("flex: 1 1 %s; min-width: %s;", min_width, min_width),
+      ctrl
+    )
+  })
+  div(
+    style = "display: flex; flex-wrap: wrap; gap: 0 12px; align-items: flex-end;",
+    do.call(tagList, items)
+  )
+}
+
 ## ---- Scatter sample selectors (Scatter tab only) --------------------- ##
 output$ir_scatter_settings <- renderUI({
   available_samples <- ir_compare_groups()
