@@ -872,19 +872,43 @@ output$ir_plot_clonalLength <- renderPlot({
   } else {
     "aa"
   }
-  safeRenderPlot(
-    scRepertoire::clonalLength(
+  scale_on <- isTRUE(ir_param("ir_p_scale", FALSE))
+  if (is.null(pars$groupBy)) {
+    # No grouping (Group results by = None): a single combined panel with each
+    # loaded sample overlaid by colour, i.e. scRepertoire's native plot. Do NOT
+    # facet — the export table still carries the list-element (sample) names in
+    # `values`, but those are not a user-chosen grouping.
+    safeRenderPlot(
+      scRepertoire::clonalLength(
+        data,
+        cloneCall = clone_call,
+        chain = pars$chain,
+        group.by = NULL,
+        order.by = ir_order_by(),
+        scale = scale_on,
+        exportTable = FALSE,
+        palette = "inferno"
+      ),
+      "clonalLength"
+    )
+  } else {
+    # A grouping is selected: scRepertoire overlays the groups in one panel, so
+    # take its per-clonotype table and redraw with facet_wrap to give each group
+    # its own length-distribution panel on a shared axis.
+    tbl <- scRepertoire::clonalLength(
       data,
       cloneCall = clone_call,
       chain = pars$chain,
       group.by = pars$groupBy,
       order.by = ir_order_by(),
-      scale = isTRUE(ir_param("ir_p_scale", FALSE)),
-      exportTable = FALSE,
+      exportTable = TRUE,
       palette = "inferno"
-    ),
-    "clonalLength"
-  )
+    )
+    safeRenderPlot(
+      ir_length_facet_plot(tbl, scale = scale_on),
+      "clonalLength"
+    )
+  }
 }) %>%
   ir_bindCache(
     input$ir_cloneCall,
@@ -999,16 +1023,18 @@ output$ir_plot_clonalRarefaction <- renderPlot({
     n_boots <- 20
   }
   safeRenderPlot(
-    scRepertoire::clonalRarefaction(
-      data,
-      cloneCall = pars$cloneCall,
-      chain = pars$chain,
-      group.by = pars$groupBy,
-      plot.type = as.numeric(ir_param("ir_p_rare_plot_type", 1)),
-      hill.numbers = as.numeric(ir_param("ir_p_hill_numbers", 0)),
-      n.boots = n_boots,
-      exportTable = FALSE,
-      palette = "inferno"
+    ir_quiet_inext(
+      scRepertoire::clonalRarefaction(
+        data,
+        cloneCall = pars$cloneCall,
+        chain = pars$chain,
+        group.by = pars$groupBy,
+        plot.type = as.numeric(ir_param("ir_p_rare_plot_type", 1)),
+        hill.numbers = as.numeric(ir_param("ir_p_hill_numbers", 0)),
+        n.boots = n_boots,
+        exportTable = FALSE,
+        palette = "inferno"
+      )
     ),
     "clonalRarefaction"
   )
