@@ -163,12 +163,18 @@ output$ir_visualizations_UI <- renderUI({
 ## built in data.R (ir_clonal_umap_data); here we draw the coloured scatter.
 ## Point size / opacity come from the generic display options; font size and
 ## title are applied by safeRenderPlot via ir_apply_display.
-IR_EXPANSION_COLORS <- c(
-  "Single (0 < X <= 1)" = "#C7A0CE",
-  "Small (1 < X <= 5)" = "#9C6FB0",
-  "Medium (5 < X <= 20)" = "#1FA187",
-  "Large (20 < X <= 100)" = "#B8860B",
-  "Hyperexpanded (100 < X)" = "#E8602D"
+## Expansion-level colours: turbo runs cool -> warm, so larger (more expanded)
+## clones read as warmer, which matches the ordering. Keys must match the
+## factor levels produced in data.R (IR_CLONE_LABELS).
+IR_EXPANSION_COLORS <- stats::setNames(
+  viridis::turbo(5, begin = 0.05, end = 0.95),
+  c(
+    "Single (0 < X <= 1)",
+    "Small (1 < X <= 5)",
+    "Medium (5 < X <= 20)",
+    "Large (20 < X <= 100)",
+    "Hyperexpanded (100 < X)"
+  )
 )
 
 output$ir_plot_clonalUMAP <- renderPlot({
