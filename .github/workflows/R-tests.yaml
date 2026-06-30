@@ -30,16 +30,8 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      ## Enable binary caches: rstats-on-nix for R packages
-      - uses: cachix/cachix-action@v17
-        with:
-          name: rstats-on-nix
-     
-     ## mihem contains BPCells and any other packages not in rstats-on-nix
-      - uses: cachix/cachix-action@v17
-        with:
-          name: mihem
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - name: Use latest osmzhlab Attic date
+        run: bash .github/scripts/use-osmzhlab-attic-date.sh
 
       # Install R package dependencies via nix-shell, using the default.nix file in the repository
       - name: Install R package dependencies

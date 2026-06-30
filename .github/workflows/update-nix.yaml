@@ -36,6 +36,9 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
+      - name: Use latest osmzhlab Attic date
+        run: bash .github/scripts/use-osmzhlab-attic-date.sh
+
       - name: Regenerate default.nix via rix
         run: nix-shell -p rPackages.rix R --run "Rscript create_env.R"
 
