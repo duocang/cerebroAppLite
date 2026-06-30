@@ -32,14 +32,8 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: cachix/cachix-action@v17
-        with:
-          name: rstats-on-nix
-
-      - uses: cachix/cachix-action@v17
-        with:
-          name: mihem
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - name: Use latest osmzhlab Attic date
+        run: bash .github/scripts/use-osmzhlab-attic-date.sh
 
       - name: Install R package dependencies
         run: nix-shell default.nix --run "echo 'R package dependencies installed'"

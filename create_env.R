@@ -4,19 +4,41 @@
 
 library(rix)
 
-# Fetch the latest pinned date from rix's available_df.csv so that default.nix
-# uses a fixed nixpkgs snapshot instead of the rolling "bleeding-edge" branch.
-# This ensures cachix hits are reproducible across machines and CI runs.
-available_df <- read.csv(
-  "https://raw.githubusercontent.com/ropensci/rix/refs/heads/main/inst/extdata/available_df.csv"
+# Fetch the latest date published by the osmzhlab Attic cache so that
+# default.nix uses a nixpkgs snapshot with available binary substitutes.
+reports_readme <- readLines(
+  "https://raw.githubusercontent.com/mihem/attic/main/reports/README.md",
+  warn = FALSE
 )
-latest_date <- tail(available_df$date, 1)
+available_dates <- regmatches(
+  reports_readme,
+  gregexpr("[0-9]{4}-[0-9]{2}-[0-9]{2}", reports_readme)
+)
+available_dates <- sort(unique(unlist(available_dates)))
+latest_date <- tail(available_dates, 1)
+if (length(latest_date) == 0 || is.na(latest_date)) {
+  stop("Could not determine latest osmzhlab cache date")
+}
 cat("Using latest_date:", latest_date, "\n")
 
-# Auto-fetch latest BPCells commit SHA from GitHub
-bpcells_sha <- jsonlite::fromJSON(
-  "https://api.github.com/repos/bnprks/BPCells/commits/main"
-)$sha
+# Use the BPCells revision built by the osmzhlab Attic cache, not GitHub main.
+pins_json <- readLines(sprintf(
+  "https://raw.githubusercontent.com/mihem/attic/main/reports/%s/pins.json",
+  latest_date
+), warn = FALSE)
+pin_value <- function(name) {
+  line <- grep(sprintf('"%s"', name), pins_json, value = TRUE)
+  sub(sprintf('.*"%s"[[:space:]]*:[[:space:]]*"([^"]+)".*', name), "\\1", line)
+}
+pins_date <- pin_value("r_nixpkgs_date")
+if (!identical(pins_date, latest_date)) {
+  stop("pins.json date does not match selected osmzhlab cache date")
+}
+bpcells_sha <- pin_value("bp_cells_rev")
+if (length(bpcells_sha) != 1 || !grepl("^[0-9a-f]{40}$", bpcells_sha)) {
+  stop("Could not determine BPCells revision from osmzhlab Attic pins.json")
+}
+cat("Using BPCells revision:", bpcells_sha, "\n")
 
 
 rix(
