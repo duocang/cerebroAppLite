@@ -88,7 +88,7 @@ output$ir_visualizations_UI <- renderUI({
       ir_fill_plot("ir_plot_cloneDefinition", plotly = TRUE)
     ),
     tabPanel(
-      "Sharing",
+      "Clone Sharing",
       ir_fill_plot("ir_plot_cloneSharing", plotly = TRUE)
     )
   )
@@ -1888,49 +1888,11 @@ output$ir_plot_cloneDefinition <- plotly::renderPlotly({
   req(has_scRepertoire())
   req_plot_space("ir_plot_cloneDefinition")
   ir_render_ggplotly(
-    {
-      # NB: do not `return()` from this block — it is evaluated as a promise in
-      # the outer renderPlotly callback, so a `return()` would escape the whole
-      # renderer and bypass ir_render_ggplotly's empty-state fallback. Instead
-      # the block yields NULL as its value, which ir_render_ggplotly turns into
-      # the standard empty plotly message.
-      seg <- ir_parse_segments(ir_data_annotated(), specific_chain())
-      if (is.null(seg) || nrow(seg) == 0) {
-        NULL
-      } else {
-        gb <- ir_params()$groupBy
-        df <- ir_definition_counts(seg, group = gb)
-        p <- ggplot2::ggplot(
-          df,
-          ggplot2::aes(x = definition, y = n, fill = definition)
-        ) +
-          ggplot2::geom_col(width = 0.7) +
-          ggplot2::geom_text(
-            ggplot2::aes(label = scales::comma(n)),
-            vjust = -0.3,
-            size = 3
-          ) +
-          ggplot2::scale_y_continuous(
-            expand = ggplot2::expansion(mult = c(0, 0.15)),
-            labels = scales::comma
-          ) +
-          ggplot2::labs(
-            x = NULL,
-            y = "Unique count",
-            title = "Clone definition resolution"
-          ) +
-          ggplot2::theme_bw(base_size = 11) +
-          ggplot2::theme(
-            axis.text.x = ggplot2::element_text(angle = 30, hjust = 1),
-            legend.position = "none"
-          )
-        if (!is.null(gb) && nzchar(gb) && gb %in% colnames(df)) {
-          p <- p +
-            ggplot2::facet_wrap(stats::as.formula(paste0("~ `", gb, "`")))
-        }
-        p
-      }
-    },
+    ir_build_definition_plot(
+      ir_data_annotated(),
+      specific_chain(),
+      ir_params()$groupBy
+    ),
     "ir_plot_cloneDefinition"
   )
 }) %>%
@@ -1947,61 +1909,12 @@ output$ir_plot_cloneSharing <- plotly::renderPlotly({
   req(has_scRepertoire())
   req_plot_space("ir_plot_cloneSharing")
   ir_render_ggplotly(
-    {
-      # NB: yield NULL as the block value on empty/invalid input — never
-      # `return()` here (it would escape the outer renderPlotly callback and
-      # skip ir_render_ggplotly's empty-state message). See the Definition
-      # renderer above for the same reasoning.
-      seg <- ir_parse_segments(ir_data_annotated(), specific_chain())
-      unit_col <- ir_param("ir_sharing_unit", "sample")
-      cls <- if (is.null(seg) || nrow(seg) == 0) {
-        NULL
-      } else if (!(unit_col %in% colnames(seg))) {
-        NULL
-      } else {
-        ir_sharing_classify(
-          seg,
-          unit_col = unit_col,
-          group_col = ir_params()$groupBy
-        )
-      }
-      if (is.null(cls)) {
-        NULL
-      } else {
-        gb <- ir_params()$groupBy
-        counts <- as.data.frame(table(sharing = cls$sharing))
-        counts$pct <- counts$Freq / sum(counts$Freq) * 100
-        same_col <- !is.null(gb) && nzchar(gb) && identical(gb, unit_col)
-        subtitle <- if (same_col) {
-          "Group and sharing unit are the same column; within/cross is undefined."
-        } else if (is.null(gb) || !nzchar(gb)) {
-          "No group selected — showing Private / Public only."
-        } else {
-          NULL
-        }
-        ggplot2::ggplot(
-          counts,
-          ggplot2::aes(x = sharing, y = Freq, fill = sharing)
-        ) +
-          ggplot2::geom_col(width = 0.6) +
-          ggplot2::geom_text(
-            ggplot2::aes(label = sprintf("%d (%.1f%%)", Freq, pct)),
-            vjust = -0.3,
-            size = 3.2
-          ) +
-          ggplot2::scale_y_continuous(
-            expand = ggplot2::expansion(mult = c(0, 0.15))
-          ) +
-          ggplot2::labs(
-            x = NULL,
-            y = "Number of clonotypes",
-            title = "Clonotype sharing",
-            subtitle = subtitle
-          ) +
-          ggplot2::theme_bw(base_size = 11) +
-          ggplot2::theme(legend.position = "none")
-      }
-    },
+    ir_build_sharing_plot(
+      ir_data_annotated(),
+      specific_chain(),
+      ir_param("ir_sharing_unit", "sample"),
+      ir_params()$groupBy
+    ),
     "ir_plot_cloneSharing"
   )
 }) %>%
