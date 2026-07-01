@@ -115,3 +115,76 @@ test_that("ir_build_motif_groups tags by_v edges with their V gene", {
   expect_setequal(unique(res$edges$v_gene), c("TRBV1", "TRBV2"))
   expect_equal(nrow(res$edges), 2)
 })
+
+# --- ir_build_motif_graph --------------------------------------------------
+
+test_that("ir_build_motif_graph builds a graph, drops isolates, keeps metadata", {
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:4),
+      CTgene = c(
+        "TRBV1..TRBJ1.TRBC1",
+        "TRBV1..TRBJ1.TRBC1",
+        "TRBV1..TRBJ1.TRBC1",
+        "TRBV2..TRBJ2.TRBC2"
+      ),
+      CTaa = c("CASSL", "CASSF", "CASTL", "CWXYZ"),
+      sample = c("s1", "s1", "s1", "s1"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  expect_true(inherits(g, "igraph"))
+  expect_equal(igraph::vcount(g), 3)
+  expect_true("cdr3" %in% igraph::vertex_attr_names(g))
+  expect_true("sample" %in% igraph::vertex_attr_names(g))
+})
+
+test_that("ir_build_motif_graph returns NULL when no cluster survives", {
+  data <- list(
+    s1 = data.frame(
+      barcode = c("b1", "b2"),
+      CTgene = c("TRBV1..TRBJ1.TRBC1", "TRBV1..TRBJ1.TRBC1"),
+      CTaa = c("CASSL", "CWXYZ"),
+      sample = c("s1", "s1"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  expect_null(g)
+})
+
+test_that("ir_build_motif_graph min_size drops small clusters", {
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:2),
+      CTgene = c("TRBV1..TRBJ1.TRBC1", "TRBV1..TRBJ1.TRBC1"),
+      CTaa = c("CASSL", "CASSF"),
+      sample = c("s1", "s1"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 2
+  )
+  expect_null(g)
+})

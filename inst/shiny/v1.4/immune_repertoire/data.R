@@ -1000,3 +1000,101 @@ ir_build_motif_groups <- function(df, by_v = FALSE, threshold = 1) {
   rownames(motif_df) <- NULL
   list(motif_df = motif_df, edges = edges)
 }
+
+## ---- Build the motif igraph from parsed segments ----------------------- ##
+## Parses V/J/CDR3 for `chain`, clusters CDR3 by Hamming<=threshold (optionally
+## within V gene), drops isolated nodes (degree 0), keeps only clusters with
+## > min_size nodes, and returns an igraph whose vertices carry cdr3 / motif_*
+## attributes + per-CDR3 metadata (most common value across cells) + clone_count
+## (# cells with that CDR3). Returns NULL when no cluster survives.
+##
+##   min_size : keep clusters with strictly MORE than this many nodes. min_size
+##              = 1 keeps every connected cluster (>= 2 nodes), dropping only
+##              isolated singletons.
+ir_build_motif_graph <- function(
+  data,
+  chain,
+  threshold = 1,
+  by_v = FALSE,
+  min_size = 1
+) {
+  seg <- ir_parse_segments(data, chain)
+  if (is.null(seg) || nrow(seg) == 0) {
+    return(NULL)
+  }
+  seg$cdr3_length <- nchar(seg$cdr3)
+  # Per-CDR3 aggregation: clone_count = #cells; metadata cols -> most common.
+  meta_cols <- setdiff(
+    colnames(seg),
+    c(
+      "cdr3",
+      "cdr3_length",
+      "v_gene",
+      "j_gene",
+      "clone_vjc",
+      "barcode",
+      "CTgene",
+      "CTnt",
+      "CTaa",
+      "CTstrict",
+      "chain"
+    )
+  )
+  mode_val <- function(x) {
+    x <- x[!is.na(x)]
+    if (length(x) == 0) {
+      return(NA)
+    }
+    names(sort(table(x), decreasing = TRUE))[1]
+  }
+  agg <- do.call(
+    rbind,
+    lapply(split(seg, seg$cdr3), function(d) {
+      row <- data.frame(
+        cdr3 = d$cdr3[1],
+        cdr3_length = d$cdr3_length[1],
+        v_gene = d$v_gene[1],
+        clone_count = nrow(d),
+        stringsAsFactors = FALSE
+      )
+      for (mc in meta_cols) {
+        row[[mc]] <- mode_val(as.character(d[[mc]]))
+      }
+      row
+    })
+  )
+  rownames(agg) <- NULL
+
+  res <- ir_build_motif_groups(agg, by_v = by_v, threshold = threshold)
+  if (is.null(res$edges) || nrow(res$edges) == 0) {
+    return(NULL)
+  }
+  vertices <- res$motif_df
+  vertices$name <- vertices$cdr3
+  vertices <- vertices[, c("name", setdiff(colnames(vertices), "name"))]
+  g <- igraph::graph_from_data_frame(
+    res$edges[, c("from", "to")],
+    vertices = vertices,
+    directed = FALSE
+  )
+  # Keep only connected nodes.
+  g <- igraph::induced_subgraph(g, igraph::V(g)[igraph::degree(g) > 0])
+  if (igraph::vcount(g) == 0) {
+    return(NULL)
+  }
+  # min_size filter: keep clusters with strictly more than min_size nodes.
+  comp <- igraph::components(g)
+  keep <- which(comp$csize > min_size)
+  if (length(keep) == 0) {
+    return(NULL)
+  }
+  g <- igraph::induced_subgraph(
+    g,
+    igraph::V(g)[comp$membership %in% keep]
+  )
+  if (igraph::vcount(g) == 0) {
+    return(NULL)
+  }
+  igraph::V(g)$cluster <- igraph::components(g)$membership
+  g
+}
