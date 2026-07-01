@@ -53,6 +53,7 @@ ir_definition_counts <- ir_env$ir_definition_counts
 ir_sharing_classify <- ir_env$ir_sharing_classify
 ir_build_definition_plot <- ir_env$ir_build_definition_plot
 ir_is_bcr_chain <- ir_env$ir_is_bcr_chain
+ir_build_sharing_plot <- ir_env$ir_build_sharing_plot
 
 # --- ir_parse_segments -----------------------------------------------------
 
@@ -353,4 +354,68 @@ test_that("ir_is_bcr_chain is TRUE for BCR chains, FALSE otherwise and safe on N
   expect_false(ir_is_bcr_chain(NA_character_))
   expect_false(ir_is_bcr_chain(NULL))
   expect_false(ir_is_bcr_chain(""))
+})
+
+# --- ir_build_sharing_plot -------------------------------------------------
+
+test_that("ir_build_sharing_plot returns a ggplot and maps display labels", {
+  data <- list(
+    s1 = data.frame(
+      barcode = c("b1", "b2"),
+      CTgene = c("TRBV6-2..TRBJ2-6.TRBC2", "TRBV14..TRBJ2-3.TRBC2"),
+      CTaa = c("CASSA", "CASSB"),
+      sample = c("s1", "s1"),
+      stringsAsFactors = FALSE
+    )
+  )
+  p <- ir_build_sharing_plot(
+    data,
+    chain = "TRB",
+    unit_col = "sample",
+    group_by = NULL
+  )
+  expect_s3_class(p, "ggplot")
+  # Friendly display labels appear on the x scale, not the raw factor labels.
+  built <- ggplot2::ggplot_build(p)
+  x_labels <- built$layout$panel_params[[1]]$x$get_labels()
+  expect_true(any(grepl("1 sample", x_labels)))
+  expect_false(any(grepl("Public \\(within", x_labels)))
+})
+
+test_that("ir_build_sharing_plot returns NULL when the unit column is absent", {
+  data <- list(
+    s1 = data.frame(
+      barcode = "b1",
+      CTgene = "TRBV6-2..TRBJ2-6.TRBC2",
+      CTaa = "CASSA",
+      sample = "s1",
+      stringsAsFactors = FALSE
+    )
+  )
+  expect_null(ir_build_sharing_plot(
+    data,
+    chain = "TRB",
+    unit_col = "nonexistent_col",
+    group_by = NULL
+  ))
+})
+
+test_that("ir_build_sharing_plot adds a BCR caveat to the subtitle for IGH", {
+  data <- list(
+    s1 = data.frame(
+      barcode = "b1",
+      CTgene = "IGHV4-34..IGHJ6.IGHG1",
+      CTaa = "CARDA",
+      sample = "s1",
+      stringsAsFactors = FALSE
+    )
+  )
+  p <- ir_build_sharing_plot(
+    data,
+    chain = "IGH",
+    unit_col = "sample",
+    group_by = NULL
+  )
+  expect_s3_class(p, "ggplot")
+  expect_true(grepl("SHM", p$labels$subtitle %||% ""))
 })

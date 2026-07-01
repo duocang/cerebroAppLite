@@ -794,3 +794,80 @@ ir_build_definition_plot <- function(data, chain, group_by = NULL) {
   }
   p
 }
+
+## ---- Friendly display labels for the sharing classes ------------------- ##
+## The data layer (ir_sharing_classify) keeps immunology-standard labels
+## (Private / Public (within-group) / Public (cross-group)); the plot maps
+## them to self-explanatory axis labels. Two-class mode reuses the first two.
+IR_SHARING_DISPLAY_LABELS <- c(
+  "Private" = "Private (1 sample)",
+  "Public (within-group)" = "Shared within group",
+  "Public (cross-group)" = "Shared across groups",
+  "Public" = "Shared (≥ 2 samples)"
+)
+
+## ---- Build the Clone Sharing ggplot ------------------------------------ ##
+## Classifies each clonotype (via ir_sharing_classify) and bars the class
+## counts, using friendly x-axis labels. Returns NULL on empty data or when
+## the unit column is absent. Shared by the live renderer and the demo.
+ir_build_sharing_plot <- function(data, chain, unit_col, group_by = NULL) {
+  seg <- ir_parse_segments(data, chain)
+  if (is.null(seg) || nrow(seg) == 0 || !(unit_col %in% colnames(seg))) {
+    return(NULL)
+  }
+  cls <- ir_sharing_classify(seg, unit_col = unit_col, group_col = group_by)
+  if (is.null(cls)) {
+    return(NULL)
+  }
+  counts <- as.data.frame(table(sharing = cls$sharing))
+  counts$pct <- counts$Freq / sum(counts$Freq) * 100
+  # Map the raw class labels to friendly display labels, preserving order.
+  counts$display <- factor(
+    IR_SHARING_DISPLAY_LABELS[as.character(counts$sharing)],
+    levels = IR_SHARING_DISPLAY_LABELS[levels(counts$sharing)]
+  )
+  same_col <- !is.null(group_by) &&
+    nzchar(group_by) &&
+    identical(group_by, unit_col)
+  subtitle <- paste(
+    "Each clonotype = one receptor.",
+    "Private = in a single unit; Shared = in ≥ 2 units."
+  )
+  if (same_col) {
+    subtitle <- paste(
+      subtitle,
+      "Group and sharing unit are the same column; within/cross is undefined.",
+      sep = "\n"
+    )
+  } else if (is.null(group_by) || !nzchar(group_by)) {
+    subtitle <- paste(
+      subtitle,
+      "No group selected — showing Private / Shared only.",
+      sep = "\n"
+    )
+  }
+  if (ir_is_bcr_chain(chain)) {
+    subtitle <- paste(subtitle, IR_BCR_SHM_CAVEAT, sep = "\n")
+  }
+  ggplot2::ggplot(
+    counts,
+    ggplot2::aes(x = display, y = Freq, fill = display)
+  ) +
+    ggplot2::geom_col(width = 0.6) +
+    ggplot2::geom_text(
+      ggplot2::aes(label = sprintf("%d (%.1f%%)", Freq, pct)),
+      vjust = -0.3,
+      size = 3.2
+    ) +
+    ggplot2::scale_y_continuous(
+      expand = ggplot2::expansion(mult = c(0, 0.15))
+    ) +
+    ggplot2::labs(
+      x = NULL,
+      y = "Number of clonotypes",
+      title = "Clonotype sharing",
+      subtitle = subtitle
+    ) +
+    ggplot2::theme_bw(base_size = 11) +
+    ggplot2::theme(legend.position = "none")
+}
