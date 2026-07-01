@@ -198,3 +198,70 @@ test_that("ir_definition_counts returns NULL on empty input", {
     group = NULL
   ))
 })
+
+# --- ir_sharing_classify ---------------------------------------------------
+
+test_that("ir_sharing_classify assigns Private / within / cross correctly", {
+  # clone P: 1 unit only            -> Private
+  # clone W: 2 units, same group    -> Public (within-group)
+  # clone X: 2 units, 2 groups      -> Public (cross-group)
+  seg <- data.frame(
+    clone_vjc = c("P", "W", "W", "X", "X"),
+    unit = c("s1", "s1", "s2", "s1", "s3"),
+    grp = c("A", "A", "A", "A", "B"),
+    stringsAsFactors = FALSE
+  )
+  out <- ir_sharing_classify(seg, unit_col = "unit", group_col = "grp")
+  cls <- setNames(out$sharing, out$clone_vjc)
+  expect_equal(as.character(cls[["P"]]), "Private")
+  expect_equal(as.character(cls[["W"]]), "Public (within-group)")
+  expect_equal(as.character(cls[["X"]]), "Public (cross-group)")
+})
+
+test_that("ir_sharing_classify degrades to two classes without a group", {
+  seg <- data.frame(
+    clone_vjc = c("P", "S", "S"),
+    unit = c("s1", "s1", "s2"),
+    stringsAsFactors = FALSE
+  )
+  out <- ir_sharing_classify(seg, unit_col = "unit", group_col = NULL)
+  cls <- setNames(as.character(out$sharing), out$clone_vjc)
+  expect_equal(cls[["P"]], "Private")
+  expect_equal(cls[["S"]], "Public")
+  expect_false(any(grepl("group", out$sharing)))
+})
+
+test_that("ir_sharing_classify returns NULL on empty input or missing unit col", {
+  expect_null(ir_sharing_classify(NULL, unit_col = "unit", group_col = NULL))
+  expect_null(ir_sharing_classify(
+    data.frame(clone_vjc = character(0), unit = character(0)),
+    unit_col = "unit",
+    group_col = NULL
+  ))
+  expect_null(ir_sharing_classify(
+    data.frame(clone_vjc = "P", other = "x"),
+    unit_col = "unit",
+    group_col = NULL
+  ))
+})
+
+test_that("ir_sharing_classify sharing factor levels match the mode", {
+  seg3 <- data.frame(
+    clone_vjc = c("A", "A"),
+    unit = c("s1", "s2"),
+    grp = c("g1", "g2"),
+    stringsAsFactors = FALSE
+  )
+  out3 <- ir_sharing_classify(seg3, unit_col = "unit", group_col = "grp")
+  expect_equal(
+    levels(out3$sharing),
+    c("Private", "Public (within-group)", "Public (cross-group)")
+  )
+  seg2 <- data.frame(
+    clone_vjc = c("A", "A"),
+    unit = c("s1", "s2"),
+    stringsAsFactors = FALSE
+  )
+  out2 <- ir_sharing_classify(seg2, unit_col = "unit", group_col = NULL)
+  expect_equal(levels(out2$sharing), c("Private", "Public"))
+})

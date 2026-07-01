@@ -637,3 +637,58 @@ ir_definition_counts <- function(seg, group = NULL) {
   rownames(out) <- NULL
   out
 }
+
+## ---- Sharing-class factor levels --------------------------------------- ##
+IR_SHARING_LEVELS_3 <- c(
+  "Private",
+  "Public (within-group)",
+  "Public (cross-group)"
+)
+IR_SHARING_LEVELS_2 <- c("Private", "Public")
+
+## ---- Classify each clonotype by how it is shared ----------------------- ##
+## For every distinct clone_vjc, count how many `unit_col` values carry it and
+## how many `group_col` values it spans, then label it:
+##   Private               : found in exactly 1 unit
+##   Public (within-group) : >= 2 units, all in the same group
+##   Public (cross-group)  : spans >= 2 groups
+## With group_col = NULL there is no group dimension, so it degrades to
+## Private / Public (>= 2 units). Returns one row per clonotype: clone_vjc,
+## n_units, n_groups (0 when ungrouped), sharing (ordered factor).
+ir_sharing_classify <- function(seg, unit_col, group_col = NULL) {
+  if (is.null(seg) || nrow(seg) == 0 || !(unit_col %in% colnames(seg))) {
+    return(NULL)
+  }
+  has_group <- !is.null(group_col) &&
+    nzchar(group_col) &&
+    group_col %in% colnames(seg)
+  by_clone <- split(seg, seg$clone_vjc)
+  out <- do.call(
+    rbind,
+    lapply(names(by_clone), function(cl) {
+      df <- by_clone[[cl]]
+      n_units <- length(unique(df[[unit_col]]))
+      n_groups <- if (has_group) length(unique(df[[group_col]])) else 0L
+      sharing <- if (!has_group) {
+        if (n_units <= 1) "Private" else "Public"
+      } else if (n_units <= 1) {
+        "Private"
+      } else if (n_groups >= 2) {
+        "Public (cross-group)"
+      } else {
+        "Public (within-group)"
+      }
+      data.frame(
+        clone_vjc = cl,
+        n_units = n_units,
+        n_groups = n_groups,
+        sharing = sharing,
+        stringsAsFactors = FALSE
+      )
+    })
+  )
+  lvls <- if (has_group) IR_SHARING_LEVELS_3 else IR_SHARING_LEVELS_2
+  out$sharing <- factor(out$sharing, levels = lvls)
+  rownames(out) <- NULL
+  out
+}
