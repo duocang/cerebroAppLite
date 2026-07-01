@@ -82,6 +82,14 @@ output$ir_visualizations_UI <- renderUI({
       ir_fill_wrap(shinycssloaders::withSpinner(uiOutput(
         "ir_ui_pairedScatter"
       )))
+    ),
+    tabPanel(
+      "Definition",
+      ir_fill_plot("ir_plot_cloneDefinition", plotly = TRUE)
+    ),
+    tabPanel(
+      "Sharing",
+      ir_fill_plot("ir_plot_cloneSharing", plotly = TRUE)
     )
   )
 
@@ -1870,4 +1878,120 @@ output$ir_plot_percentKmer <- renderPlot({
     input$ir_p_top_motifs,
     input$ir_p_motif_length,
     input$ir_p_min_depth
+  )
+
+## ---- Definition: clone-definition resolution waterfall ----------------- ##
+## Bars count unique entities at cells -> V -> J -> V+J -> CDR3 -> V+CDR3 ->
+## V+J+CDR3. The clone definition is parsed from the CT* columns for the active
+## chain (ir_parse_segments); faceted by the active group.by column when chosen.
+output$ir_plot_cloneDefinition <- plotly::renderPlotly({
+  req(has_scRepertoire())
+  req_plot_space("ir_plot_cloneDefinition")
+  ir_render_ggplotly(
+    {
+      seg <- ir_parse_segments(ir_data_annotated(), specific_chain())
+      if (is.null(seg) || nrow(seg) == 0) {
+        return(NULL)
+      }
+      gb <- ir_params()$groupBy
+      df <- ir_definition_counts(seg, group = gb)
+      p <- ggplot2::ggplot(
+        df,
+        ggplot2::aes(x = definition, y = n, fill = definition)
+      ) +
+        ggplot2::geom_col(width = 0.7) +
+        ggplot2::geom_text(
+          ggplot2::aes(label = scales::comma(n)),
+          vjust = -0.3,
+          size = 3
+        ) +
+        ggplot2::scale_y_continuous(
+          expand = ggplot2::expansion(mult = c(0, 0.15)),
+          labels = scales::comma
+        ) +
+        ggplot2::labs(
+          x = NULL,
+          y = "Unique count",
+          title = "Clone definition resolution"
+        ) +
+        ggplot2::theme_bw(base_size = 11) +
+        ggplot2::theme(
+          axis.text.x = ggplot2::element_text(angle = 30, hjust = 1),
+          legend.position = "none"
+        )
+      if (!is.null(gb) && nzchar(gb) && gb %in% colnames(df)) {
+        p <- p +
+          ggplot2::facet_wrap(stats::as.formula(paste0("~ `", gb, "`")))
+      }
+      p
+    },
+    "ir_plot_cloneDefinition"
+  )
+}) %>%
+  ir_bindCache(
+    input$ir_chain,
+    input$ir_groupBy
+  )
+
+## ---- Sharing: cross-group clonotype sharing ---------------------------- ##
+## Classifies each clonotype (V+J+CDR3 of the active chain) as Private /
+## Public(within-group) / Public(cross-group) using the chosen sharing unit and
+## the active group.by, then bars the class counts.
+output$ir_plot_cloneSharing <- plotly::renderPlotly({
+  req(has_scRepertoire())
+  req_plot_space("ir_plot_cloneSharing")
+  ir_render_ggplotly(
+    {
+      seg <- ir_parse_segments(ir_data_annotated(), specific_chain())
+      if (is.null(seg) || nrow(seg) == 0) {
+        return(NULL)
+      }
+      unit_col <- ir_param("ir_sharing_unit", "sample")
+      if (!(unit_col %in% colnames(seg))) {
+        return(NULL)
+      }
+      gb <- ir_params()$groupBy
+      cls <- ir_sharing_classify(seg, unit_col = unit_col, group_col = gb)
+      if (is.null(cls)) {
+        return(NULL)
+      }
+      counts <- as.data.frame(table(sharing = cls$sharing))
+      counts$pct <- counts$Freq / sum(counts$Freq) * 100
+      same_col <- !is.null(gb) && nzchar(gb) && identical(gb, unit_col)
+      subtitle <- if (same_col) {
+        "Group and sharing unit are the same column; within/cross is undefined."
+      } else if (is.null(gb) || !nzchar(gb)) {
+        "No group selected — showing Private / Public only."
+      } else {
+        NULL
+      }
+      ggplot2::ggplot(
+        counts,
+        ggplot2::aes(x = sharing, y = Freq, fill = sharing)
+      ) +
+        ggplot2::geom_col(width = 0.6) +
+        ggplot2::geom_text(
+          ggplot2::aes(label = sprintf("%d (%.1f%%)", Freq, pct)),
+          vjust = -0.3,
+          size = 3.2
+        ) +
+        ggplot2::scale_y_continuous(
+          expand = ggplot2::expansion(mult = c(0, 0.15))
+        ) +
+        ggplot2::labs(
+          x = NULL,
+          y = "Number of clonotypes",
+          title = "Clonotype sharing",
+          subtitle = subtitle
+        ) +
+        ggplot2::theme_bw(base_size = 11) +
+        ggplot2::theme(legend.position = "none")
+    },
+    "ir_plot_cloneSharing"
+  )
+}) %>%
+  ir_bindCache(
+    input$ir_chain,
+    input$ir_groupBy,
+    input$ir_sharing_unit
   )
