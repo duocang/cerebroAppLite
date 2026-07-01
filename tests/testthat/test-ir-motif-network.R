@@ -331,3 +331,96 @@ test_that("ir_build_motif_graph show_isolated renders even with no edges", {
   expect_equal(igraph::vcount(g), 2)
   expect_equal(igraph::ecount(g), 0)
 })
+
+# --- ir_build_motif_plot legend suppression --------------------------------
+
+test_that("ir_build_motif_plot hides the cluster legend when clusters are many", {
+  skip_if_not_installed("ggraph")
+  # 25 mutually dissimilar CDR3s -> 25 singleton clusters via show_isolated.
+  aa <- vapply(
+    1:25,
+    function(i) {
+      paste0("CASS", LETTERS[((i - 1) %% 26) + 1], sprintf("%02d", i))
+    },
+    character(1)
+  )
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", seq_along(aa)),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", length(aa)),
+      CTaa = aa,
+      sample = rep("s1", length(aa)),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1,
+    show_isolated = TRUE
+  )
+  expect_gt(length(unique(igraph::V(g)$cluster)), 20)
+  p <- ir_build_motif_plot(g, color_by = NULL)
+  expect_equal(p$theme$legend.position, "none")
+})
+
+test_that("ir_build_motif_plot keeps the legend for a few clusters", {
+  skip_if_not_installed("ggraph")
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:3),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 3),
+      CTaa = c("CASSL", "CASSF", "CASTL"),
+      sample = rep("s1", 3),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  p <- ir_build_motif_plot(g, color_by = NULL)
+  expect_equal(p$theme$legend.position, "right")
+})
+
+test_that("ir_build_motif_plot keeps a metadata legend even with many clusters", {
+  skip_if_not_installed("ggraph")
+  aa <- vapply(
+    1:25,
+    function(i) {
+      paste0("CASS", LETTERS[((i - 1) %% 26) + 1], sprintf("%02d", i))
+    },
+    character(1)
+  )
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", seq_along(aa)),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", length(aa)),
+      CTaa = aa,
+      sample = rep(c("s1", "s2"), length.out = length(aa)),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1,
+    show_isolated = TRUE
+  )
+  # colouring by a metadata column (few categories) -> legend kept
+  p <- ir_build_motif_plot(g, color_by = "sample")
+  expect_equal(p$theme$legend.position, "right")
+})

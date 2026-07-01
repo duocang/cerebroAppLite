@@ -1128,6 +1128,10 @@ ir_build_motif_graph <- function(
   g
 }
 
+## Above this many clusters, a per-cluster colour legend is just noise (one
+## entry per cluster), so the motif plot hides it. Metadata legends are unaffected.
+IR_MOTIF_MAX_LEGEND_CLUSTERS <- 20
+
 ## ---- Draw the motif network with ggraph -------------------------------- ##
 ## Nodes = CDR3, edges = Hamming-1 neighbours; node size = clone_count. Colour
 ## by motif cluster (color_by = NULL) or by a metadata column. Cluster consensus
@@ -1200,7 +1204,17 @@ ir_build_motif_plot <- function(graph, color_by = NULL, chain = NULL) {
     ggplot2::theme(
       plot.title = ggplot2::element_text(face = "bold", hjust = 0.5),
       plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 9),
-      legend.position = "right"
+      # A per-cluster colour legend is only useful for a handful of clusters;
+      # with many (e.g. when unclustered CDR3s are shown, each an own cluster)
+      # it becomes hundreds of unreadable entries, so drop it. A metadata
+      # colour legend has few categories and is always kept.
+      legend.position = if (
+        color_col == "cluster" && n_clusters > IR_MOTIF_MAX_LEGEND_CLUSTERS
+      ) {
+        "none"
+      } else {
+        "right"
+      }
     )
   p
 }
