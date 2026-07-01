@@ -1053,7 +1053,7 @@ ir_build_motif_graph <- function(
       row <- data.frame(
         cdr3 = d$cdr3[1],
         cdr3_length = d$cdr3_length[1],
-        v_gene = d$v_gene[1],
+        v_gene = mode_val(as.character(d$v_gene)),
         clone_count = nrow(d),
         stringsAsFactors = FALSE
       )
