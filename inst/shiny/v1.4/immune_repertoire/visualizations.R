@@ -808,20 +808,24 @@ output$ir_ui_pairedScatter <- renderUI({
 
 output$ir_ui_pairedScatter_plot <- renderUI({
   pair_mode <- input$ir_pair_compare
+  # Single-plot case (no compare mode): fill the viewport like every other tab.
   if (is.null(pair_mode) || !nzchar(pair_mode)) {
-    return(plotOutput("ir_plot_pairedScatter", height = "500px"))
+    return(plotOutput("ir_plot_pairedScatter", height = IR_PLOT_HEIGHT))
   }
   meta <- ir_sample_meta()
   req(!is.null(meta))
   facet_col <- input$ir_pair_facet
   if (is.null(facet_col) || facet_col == "") {
-    h <- 500
-  } else {
-    n_facets <- length(unique(meta[[facet_col]]))
-    ncol_p <- min(4L, n_facets)
-    nrow_p <- ceiling(n_facets / ncol_p)
-    h <- max(450, nrow_p * 420)
+    # Still a single panel — use the viewport-relative height for consistency.
+    return(plotOutput("ir_plot_pairedScatter", height = IR_PLOT_HEIGHT))
   }
+  # Faceted: size by the number of facet rows so panels aren't squashed. This is
+  # intentionally a fixed pixel height (can exceed the viewport and scroll),
+  # because forcing many facets into one viewport height would flatten them.
+  n_facets <- length(unique(meta[[facet_col]]))
+  ncol_p <- min(4L, n_facets)
+  nrow_p <- ceiling(n_facets / ncol_p)
+  h <- max(450, nrow_p * 420)
   plotOutput("ir_plot_pairedScatter", height = paste0(h, "px"))
 })
 
