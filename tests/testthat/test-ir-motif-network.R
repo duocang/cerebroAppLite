@@ -188,3 +188,59 @@ test_that("ir_build_motif_graph min_size drops small clusters", {
   )
   expect_null(g)
 })
+
+# --- ir_build_motif_plot ---------------------------------------------------
+
+test_that("ir_build_motif_plot returns a ggplot for a valid graph", {
+  skip_if_not_installed("ggraph")
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:3),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 3),
+      CTaa = c("CASSL", "CASSF", "CASTL"),
+      sample = c("s1", "s1", "s1"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  p <- ir_build_motif_plot(g, color_by = NULL)
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("ir_build_motif_plot returns NULL for a NULL graph", {
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  expect_null(ir_build_motif_plot(NULL, color_by = NULL))
+})
+
+test_that("ir_build_motif_plot adds BCR caveat subtitle for IGH", {
+  skip_if_not_installed("ggraph")
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:3),
+      CTgene = rep("IGHV1..IGHJ1.IGHG1", 3),
+      CTaa = c("CARDL", "CARDF", "CARTL"),
+      sample = c("s1", "s1", "s1"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "IGH",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  p <- ir_build_motif_plot(g, color_by = NULL, chain = "IGH")
+  expect_s3_class(p, "ggplot")
+  expect_true(grepl("SHM", p$labels$subtitle %||% ""))
+})

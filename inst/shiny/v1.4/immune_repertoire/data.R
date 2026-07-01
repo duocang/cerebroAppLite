@@ -1098,3 +1098,80 @@ ir_build_motif_graph <- function(
   igraph::V(g)$cluster <- igraph::components(g)$membership
   g
 }
+
+## ---- Draw the motif network with ggraph -------------------------------- ##
+## Nodes = CDR3, edges = Hamming-1 neighbours; node size = clone_count. Colour
+## by motif cluster (color_by = NULL) or by a metadata column. Cluster consensus
+## labels are placed at each component. Returns NULL when the graph is NULL/empty.
+## `chain` (optional) drives the BCR SHM caveat in the subtitle.
+ir_build_motif_plot <- function(graph, color_by = NULL, chain = NULL) {
+  if (is.null(graph) || igraph::vcount(graph) == 0) {
+    return(NULL)
+  }
+  set.seed(42)
+  lay <- ggraph::create_layout(graph, layout = "fr")
+
+  n_clusters <- length(unique(igraph::V(graph)$cluster))
+  subtitle <- sprintf(
+    "%d CDR3 in %d motif cluster(s). Edge = Hamming distance 1.",
+    igraph::vcount(graph),
+    n_clusters
+  )
+  if (ir_is_bcr_chain(chain)) {
+    subtitle <- paste(subtitle, IR_BCR_SHM_CAVEAT, sep = "\n")
+  }
+
+  # Colour aesthetic: cluster (default) or a metadata column present on nodes.
+  color_col <- if (
+    !is.null(color_by) && nzchar(color_by) && color_by %in% colnames(lay)
+  ) {
+    color_by
+  } else {
+    "cluster"
+  }
+
+  # Per-cluster consensus labels, placed above each component.
+  y_pad <- if (diff(range(lay$y)) > 0) diff(range(lay$y)) * 0.05 else 0.5
+  cl_lab <- do.call(
+    rbind,
+    lapply(split(lay, lay$cluster), function(d) {
+      data.frame(
+        x = mean(d$x),
+        y = max(d$y) + y_pad,
+        label = d$motif_consensus[1],
+        stringsAsFactors = FALSE
+      )
+    })
+  )
+
+  p <- ggraph::ggraph(lay) +
+    ggraph::geom_edge_link(colour = "grey60", alpha = 0.6) +
+    ggraph::geom_node_point(
+      ggplot2::aes(
+        size = clone_count,
+        colour = factor(.data[[color_col]])
+      ),
+      alpha = 0.85
+    ) +
+    ggplot2::scale_size_continuous(name = "Clone size", range = c(2, 9)) +
+    ggplot2::labs(
+      title = "CDR3 motif network",
+      subtitle = subtitle,
+      colour = if (color_col == "cluster") "Motif cluster" else color_by
+    ) +
+    ggplot2::geom_label(
+      data = cl_lab,
+      ggplot2::aes(x = x, y = y, label = label),
+      inherit.aes = FALSE,
+      size = 3,
+      fill = "grey95",
+      linewidth = 0.2
+    ) +
+    ggplot2::theme_void(base_size = 12) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(face = "bold", hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 9),
+      legend.position = "right"
+    )
+  p
+}
