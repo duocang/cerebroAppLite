@@ -419,3 +419,43 @@ test_that("ir_build_sharing_plot adds a BCR caveat to the subtitle for IGH", {
   expect_s3_class(p, "ggplot")
   expect_true(grepl("SHM", p$labels$subtitle %||% ""))
 })
+
+test_that("ir_build_sharing_plot keeps 3-class x order Private -> within -> across", {
+  # clone P: 1 sample (s1/A)              -> Private
+  # clone W: s1 + s2, both group A        -> Shared within group
+  # clone X: s1 (A) + s3 (B)              -> Shared across groups
+  mk <- function(barcode, v, sample, grp) {
+    data.frame(
+      barcode = barcode,
+      CTgene = sprintf("%s..TRBJ2-6.TRBC2", v),
+      CTaa = "CASSX",
+      sample = sample,
+      grp = grp,
+      stringsAsFactors = FALSE
+    )
+  }
+  data <- list(
+    all = do.call(
+      rbind,
+      list(
+        mk("b1", "TRBV1", "s1", "A"), # P
+        mk("b2", "TRBV2", "s1", "A"), # W in s1
+        mk("b3", "TRBV2", "s2", "A"), # W in s2 -> within
+        mk("b4", "TRBV3", "s1", "A"), # X in s1
+        mk("b5", "TRBV3", "s3", "B") # X in s3 -> across
+      )
+    )
+  )
+  p <- ir_build_sharing_plot(
+    data,
+    chain = "TRB",
+    unit_col = "sample",
+    group_by = "grp"
+  )
+  built <- ggplot2::ggplot_build(p)
+  x_labels <- built$layout$panel_params[[1]]$x$get_labels()
+  expect_equal(
+    x_labels,
+    c("Private (1 sample)", "Shared within group", "Shared across groups")
+  )
+})
