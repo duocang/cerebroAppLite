@@ -150,6 +150,37 @@ ir_compare_groups <- reactive({
   if (length(vals) == 0) names(data) else sort(vals)
 })
 
+## ---- Candidate columns for the Sharing "unit" selector ---------------- ##
+## The Sharing tab needs a "smallest sharing unit" (default: sample). Offer any
+## metadata column that is categorical (character/factor with > 1 distinct
+## non-empty value) and is not a raw scRepertoire column (ir_scr_cols). `sample`
+## is placed first so it becomes the default selection.
+ir_sharing_unit_choices <- reactive({
+  data <- ir_data()
+  if (is.null(data)) {
+    return(character(0))
+  }
+  common <- Reduce(intersect, lapply(data, colnames))
+  merged <- do.call(
+    rbind,
+    lapply(data, function(df) {
+      df[, common, drop = FALSE]
+    })
+  )
+  cand <- setdiff(common, ir_scr_cols)
+  keep <- vapply(
+    cand,
+    function(col) {
+      v <- merged[[col]]
+      (is.character(v) || is.factor(v)) &&
+        length(unique(v[!is.na(v) & nzchar(as.character(v))])) > 1
+    },
+    logical(1)
+  )
+  cols <- cand[keep]
+  if ("sample" %in% cols) c("sample", setdiff(cols, "sample")) else cols
+})
+
 ## ---- Reactive: parameters --------------------------------------------- ##
 ir_params <- reactive({
   gb <- input$ir_groupBy

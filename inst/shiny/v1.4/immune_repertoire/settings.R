@@ -118,6 +118,20 @@ output$ir_main_params_UI <- renderUI({
     conditionalPanel(
       condition = "input.ir_tabs == 'Compare'",
       uiOutput("ir_compare_settings")
+    ),
+    conditionalPanel(
+      condition = "input.ir_tabs == 'Sharing'",
+      selectInput(
+        "ir_sharing_unit",
+        "Sharing unit:",
+        choices = ir_sharing_unit_choices(),
+        selected = if ("sample" %in% ir_sharing_unit_choices()) {
+          "sample"
+        } else {
+          NULL
+        },
+        selectize = FALSE
+      )
     )
   )
 })
