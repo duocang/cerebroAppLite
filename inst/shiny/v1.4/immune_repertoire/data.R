@@ -1016,15 +1016,20 @@ ir_build_motif_groups <- function(df, by_v = FALSE, threshold = 1) {
 ## attributes + per-CDR3 metadata (most common value across cells) + clone_count
 ## (# cells with that CDR3). Returns NULL when no cluster survives.
 ##
-##   min_size : keep clusters with strictly MORE than this many nodes. min_size
-##              = 1 keeps every connected cluster (>= 2 nodes), dropping only
-##              isolated singletons.
+##   min_size      : keep clusters with strictly MORE than this many nodes.
+##                   min_size = 1 keeps every connected cluster (>= 2 nodes),
+##                   dropping only isolated singletons.
+##   show_isolated : when TRUE, keep every CDR3 as a node — isolated CDR3s (no
+##                   Hamming neighbour) are drawn as unconnected points, so the
+##                   plot shows the full repertoire, not just the motif clusters.
+##                   min_size still hides small *connected* clusters.
 ir_build_motif_graph <- function(
   data,
   chain,
   threshold = 1,
   by_v = FALSE,
-  min_size = 1
+  min_size = 1,
+  show_isolated = FALSE
 ) {
   seg <- ir_parse_segments(data, chain)
   if (is.null(seg) || nrow(seg) == 0) {
@@ -1074,32 +1079,48 @@ ir_build_motif_graph <- function(
   rownames(agg) <- NULL
 
   res <- ir_build_motif_groups(agg, by_v = by_v, threshold = threshold)
-  if (is.null(res$edges) || nrow(res$edges) == 0) {
+  edges <- res$edges
+  has_edges <- !is.null(edges) && nrow(edges) > 0
+  # Without show_isolated the plot is a similarity network, so a graph with no
+  # edges is empty; with show_isolated we still draw every CDR3 as a node.
+  if (!has_edges && !isTRUE(show_isolated)) {
     return(NULL)
   }
   vertices <- res$motif_df
   vertices$name <- vertices$cdr3
   vertices <- vertices[, c("name", setdiff(colnames(vertices), "name"))]
+  edge_df <- if (has_edges) {
+    edges[, c("from", "to")]
+  } else {
+    data.frame(from = character(0), to = character(0), stringsAsFactors = FALSE)
+  }
   g <- igraph::graph_from_data_frame(
-    res$edges[, c("from", "to")],
+    edge_df,
     vertices = vertices,
     directed = FALSE
   )
-  # Keep only connected nodes.
-  g <- igraph::induced_subgraph(g, igraph::V(g)[igraph::degree(g) > 0])
-  if (igraph::vcount(g) == 0) {
-    return(NULL)
+  if (!isTRUE(show_isolated)) {
+    # Similarity-network view: keep only connected nodes, then keep clusters
+    # with strictly more than min_size nodes.
+    g <- igraph::induced_subgraph(g, igraph::V(g)[igraph::degree(g) > 0])
+    if (igraph::vcount(g) == 0) {
+      return(NULL)
+    }
+    comp <- igraph::components(g)
+    keep <- which(comp$csize > min_size)
+    if (length(keep) == 0) {
+      return(NULL)
+    }
+    g <- igraph::induced_subgraph(g, igraph::V(g)[comp$membership %in% keep])
+  } else {
+    # Show-all view: keep every CDR3. min_size still hides small *connected*
+    # clusters, but isolated (degree-0) nodes are always kept.
+    comp <- igraph::components(g)
+    is_isolated <- igraph::degree(g) == 0
+    keep_cluster <- comp$csize[comp$membership] > min_size
+    keep <- is_isolated | keep_cluster
+    g <- igraph::induced_subgraph(g, igraph::V(g)[keep])
   }
-  # min_size filter: keep clusters with strictly more than min_size nodes.
-  comp <- igraph::components(g)
-  keep <- which(comp$csize > min_size)
-  if (length(keep) == 0) {
-    return(NULL)
-  }
-  g <- igraph::induced_subgraph(
-    g,
-    igraph::V(g)[comp$membership %in% keep]
-  )
   if (igraph::vcount(g) == 0) {
     return(NULL)
   }

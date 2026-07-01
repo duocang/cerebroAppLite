@@ -249,3 +249,85 @@ test_that("ir_build_motif_plot adds BCR caveat subtitle for IGH", {
   expect_s3_class(p, "ggplot")
   expect_true(grepl("SHM", p$labels$subtitle %||% ""))
 })
+
+# --- ir_build_motif_graph show_isolated ------------------------------------
+
+test_that("ir_build_motif_graph drops isolated CDR3s by default", {
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:4),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 4),
+      CTaa = c("CASSL", "CASSF", "CASTL", "CWXYZ"),
+      sample = rep("s1", 4),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  # CWXYZ is isolated -> dropped; only the 3-node cluster remains.
+  expect_equal(igraph::vcount(g), 3)
+})
+
+test_that("ir_build_motif_graph show_isolated keeps isolated CDR3s", {
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:4),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 4),
+      CTaa = c("CASSL", "CASSF", "CASTL", "CWXYZ"),
+      sample = rep("s1", 4),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1,
+    show_isolated = TRUE
+  )
+  # All 4 CDR3s are nodes; CWXYZ is an isolated (degree-0) vertex.
+  expect_equal(igraph::vcount(g), 4)
+  expect_true("CWXYZ" %in% igraph::V(g)$cdr3)
+  expect_equal(sum(igraph::degree(g) == 0), 1)
+})
+
+test_that("ir_build_motif_graph show_isolated renders even with no edges", {
+  # Two CDR3s far apart (no Hamming-1 edge) — default returns NULL, but
+  # show_isolated should still yield a 2-node edgeless graph.
+  data <- list(
+    s1 = data.frame(
+      barcode = c("b1", "b2"),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 2),
+      CTaa = c("CASSL", "CWXYZ"),
+      sample = c("s1", "s1"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  expect_null(ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  ))
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1,
+    show_isolated = TRUE
+  )
+  expect_true(inherits(g, "igraph"))
+  expect_equal(igraph::vcount(g), 2)
+  expect_equal(igraph::ecount(g), 0)
+})
