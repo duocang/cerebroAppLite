@@ -733,3 +733,61 @@ ir_sharing_classify <- function(seg, unit_col, group_col = NULL) {
   rownames(out) <- NULL
   out
 }
+
+## ---- Is the chain a BCR chain? ----------------------------------------- ##
+## IGH/IGK/IGL undergo somatic hypermutation, so identical-CDR3 clone calling
+## is over-strict for them (one clone can split into near-neighbour variants).
+## The Definition / Sharing plots surface this as a subtitle caveat.
+ir_is_bcr_chain <- function(chain) {
+  !is.null(chain) && any(startsWith(chain, IR_BCR_CHAINS))
+}
+
+## ---- BCR caveat line appended to plot subtitles ------------------------ ##
+IR_BCR_SHM_CAVEAT <- "BCR: CDR3 not collapsed by SHM; clones may be split."
+
+## ---- Build the Definition (resolution waterfall) ggplot ---------------- ##
+## Parses V/J/CDR3 for `chain`, counts entities at the 7 resolution levels
+## (optionally within `group_by`), and returns the bar ggplot. Returns NULL
+## when there are no cells for the chain (caller renders the empty state).
+## Shared by the live renderer and the Example-modal demo.
+ir_build_definition_plot <- function(data, chain, group_by = NULL) {
+  seg <- ir_parse_segments(data, chain)
+  if (is.null(seg) || nrow(seg) == 0) {
+    return(NULL)
+  }
+  df <- ir_definition_counts(seg, group = group_by)
+  subtitle <- "V = V gene; J = J gene; CDR3 = complementarity region 3."
+  if (ir_is_bcr_chain(chain)) {
+    subtitle <- paste(subtitle, IR_BCR_SHM_CAVEAT, sep = "\n")
+  }
+  p <- ggplot2::ggplot(
+    df,
+    ggplot2::aes(x = definition, y = n, fill = definition)
+  ) +
+    ggplot2::geom_col(width = 0.7) +
+    ggplot2::geom_text(
+      ggplot2::aes(label = scales::comma(n)),
+      vjust = -0.3,
+      size = 3
+    ) +
+    ggplot2::scale_y_continuous(
+      expand = ggplot2::expansion(mult = c(0, 0.15)),
+      labels = scales::comma
+    ) +
+    ggplot2::labs(
+      x = NULL,
+      y = "Unique count",
+      title = "Clone definition resolution",
+      subtitle = subtitle
+    ) +
+    ggplot2::theme_bw(base_size = 11) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(angle = 30, hjust = 1),
+      legend.position = "none"
+    )
+  if (!is.null(group_by) && nzchar(group_by) && group_by %in% colnames(df)) {
+    p <- p +
+      ggplot2::facet_wrap(stats::as.formula(paste0("~ `", group_by, "`")))
+  }
+  p
+}

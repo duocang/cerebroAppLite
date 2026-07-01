@@ -51,6 +51,7 @@ sys.source(data_r, envir = ir_env, keep.source = FALSE)
 ir_parse_segments <- ir_env$ir_parse_segments
 ir_definition_counts <- ir_env$ir_definition_counts
 ir_sharing_classify <- ir_env$ir_sharing_classify
+ir_build_definition_plot <- ir_env$ir_build_definition_plot
 
 # --- ir_parse_segments -----------------------------------------------------
 
@@ -296,4 +297,50 @@ test_that("ir_sharing_classify ignores NA unit/group values when counting", {
   cls <- setNames(as.character(out$sharing), out$clone_vjc)
   expect_equal(cls[["P"]], "Private")
   expect_equal(cls[["Q"]], "Public (within-group)")
+})
+
+# --- ir_build_definition_plot ----------------------------------------------
+
+test_that("ir_build_definition_plot returns a ggplot for valid TCR data", {
+  data <- list(
+    s1 = data.frame(
+      barcode = c("b1", "b2", "b3"),
+      CTgene = c(
+        "TRBV6-2..TRBJ2-6.TRBC2",
+        "TRBV6-2..TRBJ2-6.TRBC2",
+        "TRBV14..TRBJ2-3.TRBC2"
+      ),
+      CTaa = c("CASSA", "CASSA", "CASSB"),
+      sample = c("s1", "s1", "s1"),
+      stringsAsFactors = FALSE
+    )
+  )
+  p <- ir_build_definition_plot(data, chain = "TRB", group_by = NULL)
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("ir_build_definition_plot returns NULL when no cells for the chain", {
+  data <- list(
+    s1 = data.frame(
+      barcode = "b1",
+      CTgene = "TRAV8-6.TRAJ8.TRAC_NA",
+      CTaa = "CAVSA_NA",
+      stringsAsFactors = FALSE
+    )
+  )
+  expect_null(ir_build_definition_plot(data, chain = "TRB", group_by = NULL))
+})
+
+test_that("ir_build_definition_plot adds a BCR caveat to the subtitle for IGH", {
+  data <- list(
+    s1 = data.frame(
+      barcode = "b1",
+      CTgene = "IGHV4-34..IGHJ6.IGHG1",
+      CTaa = "CARDA",
+      stringsAsFactors = FALSE
+    )
+  )
+  p <- ir_build_definition_plot(data, chain = "IGH", group_by = NULL)
+  expect_s3_class(p, "ggplot")
+  expect_true(grepl("SHM", p$labels$subtitle %||% ""))
 })
