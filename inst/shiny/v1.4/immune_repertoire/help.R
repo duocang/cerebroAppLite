@@ -863,8 +863,10 @@ output$ir_demo_plot <- renderPlot({
           group_by = NULL
         ),
         "Clone Sharing" = ir_build_sharing_plot(
-          # demo frames lack a `sample` column; add it from the list names so
-          # the sharing unit ("sample") resolves for the demo.
+          # Ensure a `sample` column (the sharing unit) on each demo frame,
+          # keyed by the list element name. scRepertoire 2.6.2's combineTCR()
+          # already adds one, so this is a defensive/idempotent guard that keeps
+          # the demo working regardless of the combineTCR version's behaviour.
           Map(
             function(df, nm) {
               df$sample <- nm
