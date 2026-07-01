@@ -35,7 +35,8 @@ IR_GLOBAL_CONTROL_HIDDEN <- list(
     "Entropy",
     "Property",
     "Definition",
-    "Clone Sharing"
+    "Clone Sharing",
+    "Motif Network"
   ),
   ir_chain = c("vizGenes", "Clonal UMAP"),
   ir_groupBy = c("Clonal UMAP")

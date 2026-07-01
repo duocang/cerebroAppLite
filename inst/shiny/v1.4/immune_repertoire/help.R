@@ -128,6 +128,26 @@ ir_tab_help <- list(
       sep = "\n"
     )
   ),
+  "Motif Network" = list(
+    short = "CDR3 Hamming motif network",
+    summary = "Clusters CDR3 sequences that differ by at most one amino acid into motif networks, revealing convergent receptors.",
+    detail = paste(
+      "Different clonotypes can converge on nearly identical CDR3 sequences — a sign they may recognise the same antigen. This plot links CDR3s that differ by at most one amino acid (Hamming distance) into motif clusters.",
+      "",
+      "• Nodes are CDR3 sequences; node size reflects clone size.",
+      "• Edges connect CDR3s one substitution apart.",
+      "• Each connected cluster is a motif; its consensus (variable positions shown as 'x') labels the cluster.",
+      "",
+      "Controls:",
+      "• Hamming threshold — 1 (default) or 2 substitutions for an edge.",
+      "• Min cluster size — hide small clusters; 1 keeps every connected motif and drops only isolated CDR3s.",
+      "• Split by V gene — require the same V gene for an edge (stricter, more biologically grounded).",
+      "• Colour nodes by — by motif cluster (default) or any metadata column.",
+      "",
+      "The chain follows the 'Chain' selector (TCR defaults to TRB, BCR to IGH).",
+      sep = "\n"
+    )
+  ),
   Abundance = list(
     short = "Clonal abundance distribution",
     summary = "Ranks clonotypes by cell count. Steep drop-off indicates oligoclonal dominance; gradual decline indicates diverse repertoire.",
@@ -879,6 +899,29 @@ output$ir_demo_plot <- renderPlot({
           unit_col = "sample",
           group_by = NULL
         ),
+        "Motif Network" = if (has_motif_deps()) {
+          ir_build_motif_plot(
+            ir_build_motif_graph(
+              Map(
+                function(df, nm) {
+                  df$sample <- nm
+                  df
+                },
+                demo,
+                names(demo)
+              ),
+              chain = "TRB",
+              threshold = 1,
+              by_v = FALSE,
+              min_size = 1
+            ),
+            color_by = NULL,
+            chain = "TRB"
+          )
+        } else {
+          plot.new()
+          text(0.5, 0.5, "Motif Network needs stringdist + ggraph", cex = 1)
+        },
         "Isotype" = bcr_isotype_plot(demo, group_col = "sample"),
         "SHM Proxy" = bcr_shm_proxy_plot(demo, group_col = "sample"),
         {
