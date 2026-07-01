@@ -145,3 +145,56 @@ test_that("ir_parse_segments preserves per-sample metadata via column union", {
   expect_equal(out$condition, c("A", NA))
   expect_equal(out$treatment, c(NA, "X"))
 })
+
+# --- ir_definition_counts --------------------------------------------------
+
+test_that("ir_definition_counts returns the 7 resolution levels in order", {
+  seg <- data.frame(
+    barcode = paste0("bc", 1:4),
+    v_gene = c("TRBV1", "TRBV1", "TRBV2", "TRBV2"),
+    j_gene = c("TRBJ1", "TRBJ1", "TRBJ1", "TRBJ2"),
+    cdr3 = c("CAAA", "CAAA", "CBBB", "CBBB"),
+    stringsAsFactors = FALSE
+  )
+  seg$clone_vjc <- paste(seg$v_gene, seg$j_gene, seg$cdr3, sep = ";")
+  out <- ir_definition_counts(seg, group = NULL)
+  expect_equal(
+    as.character(out$definition),
+    c("cells", "V", "J", "V+J", "CDR3", "V+CDR3", "V+J+CDR3")
+  )
+  # 4 cells; V: {TRBV1,TRBV2}=2; J: {TRBJ1,TRBJ2}=2; V+J: {V1J1,V2J1,V2J2}=3;
+  # CDR3: {CAAA,CBBB}=2; V+CDR3: {V1CAAA,V2CBBB}=2; V+J+CDR3: 3 distinct
+  expect_equal(out$n[out$definition == "cells"], 4)
+  expect_equal(out$n[out$definition == "V"], 2)
+  expect_equal(out$n[out$definition == "V+J"], 3)
+  expect_equal(out$n[out$definition == "V+J+CDR3"], 3)
+})
+
+test_that("ir_definition_counts splits by group when given", {
+  seg <- data.frame(
+    barcode = paste0("bc", 1:4),
+    v_gene = c("TRBV1", "TRBV1", "TRBV2", "TRBV2"),
+    j_gene = c("TRBJ1", "TRBJ1", "TRBJ1", "TRBJ1"),
+    cdr3 = c("CAAA", "CAAA", "CBBB", "CBBB"),
+    grp = c("A", "A", "B", "B"),
+    stringsAsFactors = FALSE
+  )
+  seg$clone_vjc <- paste(seg$v_gene, seg$j_gene, seg$cdr3, sep = ";")
+  out <- ir_definition_counts(seg, group = "grp")
+  expect_true("grp" %in% colnames(out))
+  expect_setequal(unique(out$grp), c("A", "B"))
+  expect_equal(out$n[out$grp == "A" & out$definition == "cells"], 2)
+})
+
+test_that("ir_definition_counts returns NULL on empty input", {
+  expect_null(ir_definition_counts(NULL, group = NULL))
+  expect_null(ir_definition_counts(
+    data.frame(
+      v_gene = character(0),
+      j_gene = character(0),
+      cdr3 = character(0),
+      clone_vjc = character(0)
+    ),
+    group = NULL
+  ))
+})

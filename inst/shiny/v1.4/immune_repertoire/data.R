@@ -584,3 +584,56 @@ ir_parse_segments <- function(data, chain) {
   rownames(out) <- NULL
   out
 }
+
+## ---- Definition-resolution level order (used by the Definition tab) ----- ##
+IR_DEFINITION_LEVELS <- c(
+  "cells",
+  "V",
+  "J",
+  "V+J",
+  "CDR3",
+  "V+CDR3",
+  "V+J+CDR3"
+)
+
+## ---- Count unique entities at each clone-definition resolution --------- ##
+## Given the per-cell segment table from ir_parse_segments(), count how many
+## distinct entities exist at each of the 7 resolution levels:
+##   cells -> V -> J -> V+J -> CDR3 -> V+CDR3 -> V+J+CDR3
+## When `group` names a column, counts are computed within each group value.
+## Returns a long data.frame: definition (factor, ordered), n, and (if grouped)
+## the group column.
+ir_definition_counts <- function(seg, group = NULL) {
+  if (is.null(seg) || nrow(seg) == 0) {
+    return(NULL)
+  }
+  count_block <- function(df) {
+    data.frame(
+      definition = factor(IR_DEFINITION_LEVELS, levels = IR_DEFINITION_LEVELS),
+      n = c(
+        nrow(df),
+        length(unique(df$v_gene)),
+        length(unique(df$j_gene)),
+        length(unique(paste(df$v_gene, df$j_gene))),
+        length(unique(df$cdr3)),
+        length(unique(paste(df$v_gene, df$cdr3))),
+        length(unique(df$clone_vjc))
+      ),
+      stringsAsFactors = FALSE
+    )
+  }
+  if (is.null(group) || !nzchar(group) || !(group %in% colnames(seg))) {
+    return(count_block(seg))
+  }
+  groups <- split(seg, seg[[group]])
+  out <- do.call(
+    rbind,
+    lapply(names(groups), function(g) {
+      blk <- count_block(groups[[g]])
+      blk[[group]] <- g
+      blk
+    })
+  )
+  rownames(out) <- NULL
+  out
+}
