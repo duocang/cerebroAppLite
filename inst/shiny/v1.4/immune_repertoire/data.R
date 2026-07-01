@@ -614,9 +614,9 @@ ir_definition_counts <- function(seg, group = NULL) {
         nrow(df),
         length(unique(df$v_gene)),
         length(unique(df$j_gene)),
-        length(unique(paste(df$v_gene, df$j_gene))),
+        length(unique(paste(df$v_gene, df$j_gene, sep = ";"))),
         length(unique(df$cdr3)),
-        length(unique(paste(df$v_gene, df$cdr3))),
+        length(unique(paste(df$v_gene, df$cdr3, sep = ";"))),
         length(unique(df$clone_vjc))
       ),
       stringsAsFactors = FALSE
@@ -625,7 +625,7 @@ ir_definition_counts <- function(seg, group = NULL) {
   if (is.null(group) || !nzchar(group) || !(group %in% colnames(seg))) {
     return(count_block(seg))
   }
-  groups <- split(seg, seg[[group]])
+  groups <- split(seg, seg[[group]], drop = TRUE)
   out <- do.call(
     rbind,
     lapply(names(groups), function(g) {
