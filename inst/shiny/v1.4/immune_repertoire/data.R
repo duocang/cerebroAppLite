@@ -871,3 +871,132 @@ ir_build_sharing_plot <- function(data, chain, unit_col, group_by = NULL) {
     ggplot2::theme_bw(base_size = 11) +
     ggplot2::theme(legend.position = "none")
 }
+
+##----------------------------------------------------------------------------##
+## Motif network (Hamming clustering) — ported from tmp/utils/tcr_motif.R,
+## de-HLA'd and column-renamed to ir_parse_segments' output (cdr3 / v_gene).
+##----------------------------------------------------------------------------##
+
+## ---- Are the motif-network optional deps available? -------------------- ##
+has_motif_deps <- function() {
+  requireNamespace("stringdist", quietly = TRUE) &&
+    requireNamespace("igraph", quietly = TRUE) &&
+    requireNamespace("ggraph", quietly = TRUE)
+}
+
+## ---- Consensus of equal-length seqs; differing positions -> "x" -------- ##
+ir_make_consensus <- function(seqs) {
+  if (length(seqs) == 1) {
+    return(seqs[1])
+  }
+  m <- do.call(rbind, strsplit(seqs, ""))
+  paste0(
+    apply(m, 2, function(col) {
+      if (length(unique(col)) == 1) col[1] else "x"
+    }),
+    collapse = ""
+  )
+}
+
+## ---- Residue(s) a sequence carries at the consensus "x" slots ---------- ##
+ir_motif_variable_aa <- function(seq, cons) {
+  if (is.na(seq) || is.na(cons)) {
+    return("")
+  }
+  cs <- strsplit(cons, "")[[1]]
+  ss <- strsplit(seq, "")[[1]]
+  vp <- which(cs == "x")
+  if (length(vp) == 0) "" else paste(ss[vp], collapse = "")
+}
+
+## ---- Cluster CDR3s within one equal-length bin ------------------------- ##
+## `df` rows are all the same cdr3 length. Returns list(df = df + motif cols,
+## edges = Hamming==1 pairs).
+ir_process_length_group <- function(df, threshold = 1) {
+  seqs <- df$cdr3
+  n <- length(seqs)
+  len_label <- df$cdr3_length[1]
+
+  dist_mat <- stringdist::stringdistmatrix(seqs, seqs, method = "hamming")
+  adj <- dist_mat <= threshold
+  diag(adj) <- FALSE
+  g <- igraph::graph_from_adjacency_matrix(adj, mode = "undirected")
+  comps <- igraph::components(g)
+
+  diam <- vapply(
+    seq_len(comps$no),
+    function(k) {
+      members <- which(comps$membership == k)
+      if (length(members) < 2) {
+        return(0L)
+      }
+      as.integer(max(dist_mat[members, members]))
+    },
+    integer(1)
+  )
+  consensus <- vapply(
+    seq_len(comps$no),
+    function(k) ir_make_consensus(seqs[which(comps$membership == k)]),
+    character(1)
+  )
+
+  df$motif_group <- paste0("M", len_label, "_", comps$membership)
+  df$motif_size <- comps$csize[comps$membership]
+  df$motif_diameter <- diam[comps$membership]
+  df$motif_consensus <- consensus[comps$membership]
+
+  edges <- NULL
+  if (n > 1) {
+    idx <- which(dist_mat == 1 & upper.tri(dist_mat), arr.ind = TRUE)
+    if (nrow(idx) > 0) {
+      edges <- data.frame(
+        from = seqs[idx[, 1]],
+        to = seqs[idx[, 2]],
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  list(df = df, edges = edges)
+}
+
+## ---- Build motif groups over all length (or V+length) bins ------------- ##
+## `df` needs columns cdr3, cdr3_length (+ v_gene when by_v). Returns
+## list(motif_df = per-CDR3 assignment, edges = Hamming==1 pairs).
+ir_build_motif_groups <- function(df, by_v = FALSE, threshold = 1) {
+  key_cols <- c("cdr3", "cdr3_length", if (by_v) "v_gene")
+  uniq <- df[!duplicated(df[, key_cols, drop = FALSE]), , drop = FALSE]
+
+  split_key <- if (by_v) {
+    interaction(uniq$v_gene, uniq$cdr3_length, drop = TRUE)
+  } else {
+    factor(uniq$cdr3_length)
+  }
+  results <- lapply(
+    split(uniq, split_key),
+    ir_process_length_group,
+    threshold = threshold
+  )
+
+  motif_df <- do.call(rbind, lapply(results, `[[`, "df"))
+  edge_list <- lapply(results, `[[`, "edges")
+  edge_list <- edge_list[!vapply(edge_list, is.null, logical(1))]
+  edges <- if (length(edge_list) == 0) NULL else do.call(rbind, edge_list)
+
+  if (by_v && !is.null(edges)) {
+    edge_list2 <- lapply(names(results), function(nm) {
+      e <- results[[nm]]$edges
+      if (is.null(e)) {
+        return(NULL)
+      }
+      e$v_gene <- results[[nm]]$df$v_gene[1]
+      e
+    })
+    edge_list2 <- edge_list2[!vapply(edge_list2, is.null, logical(1))]
+    edges <- if (length(edge_list2) == 0) NULL else do.call(rbind, edge_list2)
+  }
+  if (by_v) {
+    motif_df$motif_group <- paste0(motif_df$v_gene, "::", motif_df$motif_group)
+  }
+  rownames(motif_df) <- NULL
+  list(motif_df = motif_df, edges = edges)
+}
