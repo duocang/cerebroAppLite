@@ -30,8 +30,8 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Use latest osmzhlab Attic date
-        run: bash .github/scripts/use-osmzhlab-attic-date.sh
+      - name: Configure osmzhlab Attic cache
+        run: bash .github/scripts/setup-osmzhlab-cache.sh
 
       # Install R package dependencies via nix-shell, using the default.nix file in the repository
       - name: Install R package dependencies

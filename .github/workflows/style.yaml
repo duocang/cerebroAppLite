@@ -35,19 +35,21 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Use latest osmzhlab Attic date
-        run: bash .github/scripts/use-osmzhlab-attic-date.sh
-
       - name: Run Air
         run: nix-shell --quiet -p air-formatter --run "air format ."
 
       - name: Check for changes
         id: diff
         run: |
-          if git diff --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
+          # Air should only create formatting PRs for R/Rmd files. Ignore any
+          # unrelated file changes that may be produced by setup tooling.
+          changed_files="$RUNNER_TEMP/air-changed-files.txt"
+          git ls-files --modified --others --exclude-standard -- '*.R' '*.r' '*.Rmd' '*.rmd' > "$changed_files"
+
+          if [ -s "$changed_files" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Create PR if files were reformatted
@@ -58,11 +60,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
 
-          # Use git ls-files with case-insensitive grep instead of glob *.R
-          # because R files can have lowercase .r extension (e.g. send_enrichr_query.r)
-          # and shell globs are case-sensitive on Linux.
-          # The || true prevents failure if no R files are found at all.
-          git add $(git ls-files --modified --others --exclude-standard | grep -iE '\.(R|Rmd)$') || true
+          # Stage the same R/Rmd file set checked above, preserving filenames
+          # with spaces and avoiding non-formatting changes such as default.nix.
+          changed_files="$RUNNER_TEMP/air-changed-files.txt"
+          git ls-files --modified --others --exclude-standard -- '*.R' '*.r' '*.Rmd' '*.rmd' > "$changed_files"
+          git add --pathspec-from-file="$changed_files"
 
           git commit -m "style: format code via air"
           git push origin "$BRANCH"
