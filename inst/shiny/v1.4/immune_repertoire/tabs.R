@@ -38,7 +38,7 @@ observeEvent(input$ir_tabs, {
         "SHM Proxy",
         "Paired Scatter",
         "Definition",
-        "Sharing"
+        "Clone Sharing"
       )
   ) {
     updateSelectInput(session, "ir_cloneCall", choices = NULL, selected = NULL)
