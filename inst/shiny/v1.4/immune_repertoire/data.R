@@ -658,7 +658,9 @@ IR_SHARING_LEVELS_2 <- c("Private", "Public")
 ##   Public (cross-group)  : spans >= 2 groups
 ## With group_col = NULL there is no group dimension, so it degrades to
 ## Private / Public (>= 2 units). Returns one row per clonotype: clone_vjc,
-## n_units, n_groups (0 when ungrouped), sharing (ordered factor).
+## n_units, n_groups (0 when ungrouped), sharing (factor). NA unit/group
+## values are ignored when counting, so a stray NA row cannot inflate a
+## clonotype into a spurious Public / cross-group classification.
 ir_sharing_classify <- function(seg, unit_col, group_col = NULL) {
   if (is.null(seg) || nrow(seg) == 0 || !(unit_col %in% colnames(seg))) {
     return(NULL)
@@ -671,8 +673,12 @@ ir_sharing_classify <- function(seg, unit_col, group_col = NULL) {
     rbind,
     lapply(names(by_clone), function(cl) {
       df <- by_clone[[cl]]
-      n_units <- length(unique(df[[unit_col]]))
-      n_groups <- if (has_group) length(unique(df[[group_col]])) else 0L
+      n_units <- length(unique(df[[unit_col]][!is.na(df[[unit_col]])]))
+      n_groups <- if (has_group) {
+        length(unique(df[[group_col]][!is.na(df[[group_col]])]))
+      } else {
+        0L
+      }
       sharing <- if (!has_group) {
         if (n_units <= 1) "Private" else "Public"
       } else if (n_units <= 1) {

@@ -269,3 +269,18 @@ test_that("ir_sharing_classify sharing factor levels match the mode", {
   out2 <- ir_sharing_classify(seg2, unit_col = "unit", group_col = NULL)
   expect_equal(levels(out2$sharing), c("Private", "Public"))
 })
+
+test_that("ir_sharing_classify ignores NA unit/group values when counting", {
+  # clone P: 1 real unit + 1 NA-unit row -> still Private (NA must not count)
+  # clone Q: 2 units in 1 real group + 1 NA-group row -> within-group, not cross
+  seg <- data.frame(
+    clone_vjc = c("P", "P", "Q", "Q", "Q"),
+    unit = c("s1", NA, "s1", "s2", "s2"),
+    grp = c("A", "A", "A", "A", NA),
+    stringsAsFactors = FALSE
+  )
+  out <- ir_sharing_classify(seg, unit_col = "unit", group_col = "grp")
+  cls <- setNames(as.character(out$sharing), out$clone_vjc)
+  expect_equal(cls[["P"]], "Private")
+  expect_equal(cls[["Q"]], "Public (within-group)")
+})
