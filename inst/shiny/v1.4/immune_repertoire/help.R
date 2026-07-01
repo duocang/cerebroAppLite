@@ -142,6 +142,7 @@ ir_tab_help <- list(
       "• Hamming threshold — 1 (default) or 2 substitutions for an edge.",
       "• Hide clusters ≤ N nodes — drop motifs with N or fewer CDR3s; the default 1 keeps every connected motif (isolated CDR3s are always removed).",
       "• Split by V gene — require the same V gene for an edge (stricter, more biologically grounded).",
+      "• Show unclustered CDR3s — also draw CDR3s that have no similar neighbour, as unconnected points, to see the whole repertoire (off by default; can be dense on large data).",
       "• Colour nodes by — by motif cluster (default) or any metadata column.",
       "",
       "The chain follows the 'Chain' selector (TCR defaults to TRB, BCR to IGH).",

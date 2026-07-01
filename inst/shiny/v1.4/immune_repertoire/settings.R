@@ -156,6 +156,11 @@ output$ir_main_params_UI <- renderUI({
         "Split by V gene",
         value = FALSE
       ),
+      checkboxInput(
+        "ir_motif_show_isolated",
+        "Show unclustered CDR3s",
+        value = FALSE
+      ),
       selectInput(
         "ir_motif_color_by",
         "Colour nodes by:",

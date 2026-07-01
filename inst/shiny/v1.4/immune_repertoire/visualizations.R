@@ -1970,6 +1970,7 @@ output$ir_plot_motifNetwork <- renderPlot({
     min_size <- 1
   }
   by_v <- isTRUE(ir_param("ir_motif_by_v", FALSE))
+  show_isolated <- isTRUE(ir_param("ir_motif_show_isolated", FALSE))
   color_by <- ir_param("ir_motif_color_by", "")
   safeRenderPlot(
     {
@@ -1978,7 +1979,8 @@ output$ir_plot_motifNetwork <- renderPlot({
         specific_chain(),
         threshold = threshold,
         by_v = by_v,
-        min_size = min_size
+        min_size = min_size,
+        show_isolated = show_isolated
       )
       if (is.null(g)) {
         NULL
@@ -1994,5 +1996,6 @@ output$ir_plot_motifNetwork <- renderPlot({
     input$ir_motif_threshold,
     input$ir_motif_min_size,
     input$ir_motif_by_v,
+    input$ir_motif_show_isolated,
     input$ir_motif_color_by
   )
