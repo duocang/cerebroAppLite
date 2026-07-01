@@ -109,7 +109,7 @@ ir_tab_help <- list(
       sep = "\n"
     )
   ),
-  Sharing = list(
+  "Clone Sharing" = list(
     short = "Cross-group clonotype sharing",
     summary = "Classifies each clonotype as private to one unit, public within a group, or shared across groups.",
     detail = paste(
@@ -700,7 +700,11 @@ observeEvent(input$ir_help_example_btn, {
       tags$hr(),
       tags$p(
         style = "color: var(--neutral-tertiary); font-size: 12px;",
-        "Generated from scRepertoire built-in demo data (2 TCR samples: Healthy vs Disease)."
+        if (tab %in% c("Isotype", "SHM Proxy")) {
+          "Generated from a synthetic BCR demo (2 samples: Pre- vs Post-vaccination)."
+        } else {
+          "Generated from scRepertoire built-in demo data (2 TCR samples: Healthy vs Disease)."
+        }
       ),
       plotOutput("ir_demo_plot", height = "450px")
     ),
@@ -852,6 +856,26 @@ output$ir_demo_plot <- renderPlot({
           demo,
           cloneCall = "gene",
           method = "ward.D2"
+        ),
+        "Definition" = ir_build_definition_plot(
+          demo,
+          chain = "TRB",
+          group_by = NULL
+        ),
+        "Clone Sharing" = ir_build_sharing_plot(
+          # demo frames lack a `sample` column; add it from the list names so
+          # the sharing unit ("sample") resolves for the demo.
+          Map(
+            function(df, nm) {
+              df$sample <- nm
+              df
+            },
+            demo,
+            names(demo)
+          ),
+          chain = "TRB",
+          unit_col = "sample",
+          group_by = NULL
         ),
         "Isotype" = bcr_isotype_plot(demo, group_col = "sample"),
         "SHM Proxy" = bcr_shm_proxy_plot(demo, group_col = "sample"),
