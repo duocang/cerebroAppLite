@@ -8,6 +8,13 @@
 ## resolved parent height collapses a static plot to zero.
 IR_PLOT_HEIGHT <- "calc(100vh - 250px)"
 
+## Paired Scatter carries an extra in-tab "Pair by" control row above the plot
+## (~74px measured), which the other tabs don't have. Subtract that on top of
+## the standard 250px chrome so the single (non-faceted) plot ends level with
+## the other tabs' plots and keeps the same ~25px bottom gap, instead of
+## overflowing past the viewport.
+IR_PAIRED_PLOT_HEIGHT <- "calc(100vh - 324px)"
+
 ## Static single plot tab body. `plotly = TRUE` emits an interactive
 ## plotlyOutput (zoom/pan/hover) instead of a static plotOutput.
 ir_fill_plot <- function(
@@ -808,16 +815,17 @@ output$ir_ui_pairedScatter <- renderUI({
 
 output$ir_ui_pairedScatter_plot <- renderUI({
   pair_mode <- input$ir_pair_compare
-  # Single-plot case (no compare mode): fill the viewport like every other tab.
+  # Single-plot case (no compare mode): fill the viewport like every other tab,
+  # accounting for the extra Pair-by control row (IR_PAIRED_PLOT_HEIGHT).
   if (is.null(pair_mode) || !nzchar(pair_mode)) {
-    return(plotOutput("ir_plot_pairedScatter", height = IR_PLOT_HEIGHT))
+    return(plotOutput("ir_plot_pairedScatter", height = IR_PAIRED_PLOT_HEIGHT))
   }
   meta <- ir_sample_meta()
   req(!is.null(meta))
   facet_col <- input$ir_pair_facet
   if (is.null(facet_col) || facet_col == "") {
-    # Still a single panel — use the viewport-relative height for consistency.
-    return(plotOutput("ir_plot_pairedScatter", height = IR_PLOT_HEIGHT))
+    # Still a single panel — viewport-relative height, less the Pair-by row.
+    return(plotOutput("ir_plot_pairedScatter", height = IR_PAIRED_PLOT_HEIGHT))
   }
   # Faceted: size by the number of facet rows so panels aren't squashed. This is
   # intentionally a fixed pixel height (can exceed the viewport and scroll),
