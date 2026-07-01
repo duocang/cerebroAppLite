@@ -492,7 +492,7 @@ ir_parse_segments <- function(data, chain) {
     return(NULL)
   }
   # For each cell's CT* string (chains joined by "_"), find the positional index
-  # (0-based) of the chain matching `chain`, then return that slot's value from
+  # (1-based) of the chain matching `chain`, then return that slot's value from
   # both CTgene and CTaa in parallel so gene and CDR3 stay aligned.
   # Returns NA when the chain is absent or its slot is "NA".
   chain_slot_index <- function(ct_gene_vec) {
@@ -568,7 +568,19 @@ ir_parse_segments <- function(data, chain) {
   if (length(rows) == 0) {
     return(NULL)
   }
-  # Align columns before rbind (samples may carry different metadata columns).
-  common <- Reduce(intersect, lapply(rows, colnames))
-  do.call(rbind, lapply(rows, function(df) df[, common, drop = FALSE]))
+  # Align columns before rbind. Use the UNION of all sample columns and NA-fill
+  # any a given sample lacks, so per-cohort metadata columns are never silently
+  # dropped (intersect would lose them). Column order follows the first sample,
+  # with any extra columns from later samples appended.
+  all_cols <- unique(unlist(lapply(rows, colnames)))
+  rows <- lapply(rows, function(df) {
+    miss <- setdiff(all_cols, colnames(df))
+    for (col in miss) {
+      df[[col]] <- NA
+    }
+    df[, all_cols, drop = FALSE]
+  })
+  out <- do.call(rbind, rows)
+  rownames(out) <- NULL
+  out
 }

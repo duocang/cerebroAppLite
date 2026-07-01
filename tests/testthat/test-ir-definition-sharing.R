@@ -104,3 +104,44 @@ test_that("ir_parse_segments carries metadata columns through", {
   expect_true(all(c("condition", "sample") %in% colnames(out)))
   expect_equal(out$condition, "A")
 })
+
+test_that("ir_parse_segments returns NULL on empty or null input", {
+  expect_null(ir_parse_segments(NULL, "TRB"))
+  expect_null(ir_parse_segments(list(), "TRB"))
+})
+
+test_that("ir_parse_segments returns NULL when no row has the chain", {
+  data <- list(
+    s1 = data.frame(
+      barcode = c("bc1", "bc2"),
+      CTgene = c("TRAV8-6.TRAJ8.TRAC_NA", "TRAV3.TRAJ26.TRAC_NA"),
+      CTaa = c("CAVSAFFQKLVF_NA", "CAVTHYGQNFVF_NA"),
+      stringsAsFactors = FALSE
+    )
+  )
+  expect_null(ir_parse_segments(data, chain = "TRB"))
+})
+
+test_that("ir_parse_segments preserves per-sample metadata via column union", {
+  data <- list(
+    s1 = data.frame(
+      barcode = "bc1",
+      CTgene = "TRBV6-2..TRBJ2-6.TRBC2",
+      CTaa = "CASSYLPRRQDRESSGANVLTF",
+      condition = "A",
+      stringsAsFactors = FALSE
+    ),
+    s2 = data.frame(
+      barcode = "bc2",
+      CTgene = "TRBV14..TRBJ2-3.TRBC2",
+      CTaa = "CASSPGGQNTQYF",
+      treatment = "X",
+      stringsAsFactors = FALSE
+    )
+  )
+  out <- ir_parse_segments(data, chain = "TRB")
+  expect_equal(nrow(out), 2)
+  expect_true(all(c("condition", "treatment") %in% colnames(out)))
+  expect_equal(out$condition, c("A", NA))
+  expect_equal(out$treatment, c(NA, "X"))
+})
