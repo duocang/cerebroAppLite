@@ -213,6 +213,11 @@ test_that("ir_build_motif_plot returns a ggplot for a valid graph", {
   )
   p <- ir_build_motif_plot(g, color_by = NULL)
   expect_s3_class(p, "ggplot")
+  # ggplot objects are lazy; force a full build so rendering-time errors
+  # (broken aes, deprecated geom args) are actually caught by CI.
+  built <- ggplot2::ggplot_build(p)
+  expect_s3_class(built, "ggplot_built")
+  expect_gt(nrow(built$data[[which.max(lengths(built$data))]]), 0)
 })
 
 test_that("ir_build_motif_plot returns NULL for a NULL graph", {
