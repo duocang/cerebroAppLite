@@ -33,7 +33,9 @@ IR_GLOBAL_CONTROL_HIDDEN <- list(
     "percentVJ",
     "AA %",
     "Entropy",
-    "Property"
+    "Property",
+    "Definition",
+    "Sharing"
   ),
   ir_chain = c("vizGenes", "Clonal UMAP"),
   ir_groupBy = c("Clonal UMAP")
