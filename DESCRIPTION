@@ -65,6 +65,7 @@ Suggests:
   BPCells,
   DelayedArray,
   formattable (>= 0.2.0.1),
+  ggraph,
   ggtree,
   HDF5Array (>= 1.18.1),
   jsonlite,
@@ -76,6 +77,7 @@ Suggests:
   Seurat (>= 3.0.0),
   SeuratObject,
   SingleCellExperiment,
+  stringdist,
   SummarizedExperiment,
   testthat (>= 3.0.0),
   shinytest2 (>= 0.2.0)

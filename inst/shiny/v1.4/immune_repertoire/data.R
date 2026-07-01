@@ -181,6 +181,14 @@ ir_sharing_unit_choices <- reactive({
   if ("sample" %in% cols) c("sample", setdiff(cols, "sample")) else cols
 })
 
+## ---- Node-colour choices for the Motif Network tab --------------------- ##
+## "By motif cluster" (value "") plus every categorical metadata column, so the
+## user can recolour nodes by sample / condition / cell type etc.
+ir_motif_color_choices <- reactive({
+  cols <- ir_sharing_unit_choices()
+  c("By motif cluster" = "", cols)
+})
+
 ## ---- Reactive: parameters --------------------------------------------- ##
 ir_params <- reactive({
   gb <- input$ir_groupBy
