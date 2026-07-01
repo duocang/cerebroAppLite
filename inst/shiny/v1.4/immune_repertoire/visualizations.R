@@ -97,6 +97,10 @@ output$ir_visualizations_UI <- renderUI({
     tabPanel(
       "Clone Sharing",
       ir_fill_plot("ir_plot_cloneSharing", plotly = TRUE)
+    ),
+    tabPanel(
+      "Motif Network",
+      ir_fill_plot("ir_plot_motifNetwork")
     )
   )
 
@@ -1934,4 +1938,61 @@ output$ir_plot_cloneSharing <- plotly::renderPlotly({
     input$ir_chain,
     input$ir_groupBy,
     input$ir_sharing_unit
+  )
+
+## ---- Motif Network: Hamming CDR3 motif clusters ------------------------ ##
+## Builds the motif igraph from the active chain's CDR3s and draws it with
+## ggraph. Needs stringdist + ggraph (Suggests); shows an install hint if
+## missing. Node colour follows the "Colour nodes by" control.
+output$ir_plot_motifNetwork <- renderPlot({
+  req(has_scRepertoire())
+  req_plot_space("ir_plot_motifNetwork")
+  if (!has_motif_deps()) {
+    plot.new()
+    text(
+      0.5,
+      0.5,
+      paste(
+        "Motif Network requires the 'stringdist' and 'ggraph' packages.",
+        'Install with: install.packages(c("stringdist", "ggraph"))',
+        sep = "\n"
+      ),
+      cex = 1
+    )
+    return()
+  }
+  threshold <- as.numeric(ir_param("ir_motif_threshold", 1))
+  if (is.na(threshold) || threshold < 1) {
+    threshold <- 1
+  }
+  min_size <- as.numeric(ir_param("ir_motif_min_size", 1))
+  if (is.na(min_size) || min_size < 1) {
+    min_size <- 1
+  }
+  by_v <- isTRUE(ir_param("ir_motif_by_v", FALSE))
+  color_by <- ir_param("ir_motif_color_by", "")
+  safeRenderPlot(
+    {
+      g <- ir_build_motif_graph(
+        ir_data_annotated(),
+        specific_chain(),
+        threshold = threshold,
+        by_v = by_v,
+        min_size = min_size
+      )
+      if (is.null(g)) {
+        NULL
+      } else {
+        ir_build_motif_plot(g, color_by = color_by, chain = specific_chain())
+      }
+    },
+    "motifNetwork"
+  )
+}) %>%
+  ir_bindCache(
+    input$ir_chain,
+    input$ir_motif_threshold,
+    input$ir_motif_min_size,
+    input$ir_motif_by_v,
+    input$ir_motif_color_by
   )
