@@ -1,0 +1,106 @@
+# test-ir-definition-sharing.R — pure-function tests for the Definition /
+# Sharing tabs. These test the data-layer helpers directly (no Shiny reactive
+# context needed), so they source data.R's function definitions.
+#
+# data.R is a Shiny module fragment: its reactives reference `input`/`session`,
+# but the three pure helpers below (ir_parse_segments / ir_definition_counts /
+# ir_sharing_classify) are plain functions. We source data.R inside a throwaway
+# environment that stubs the reactive machinery, then lift just the helpers out.
+
+inst_candidates <- c(
+  normalizePath("inst", mustWork = FALSE),
+  normalizePath("../../inst", mustWork = FALSE),
+  normalizePath(testthat::test_path("../../inst"), mustWork = FALSE)
+)
+local_inst <- inst_candidates[
+  file.exists(file.path(inst_candidates, "shiny/v1.4"))
+][1]
+data_r <- file.path(local_inst, "shiny/v1.4/immune_repertoire/data.R")
+
+# Stub environment: reactive()/req()/etc. are no-ops that just capture the
+# function bodies. We only need the three pure helpers, which don't call these.
+ir_env <- new.env()
+ir_env$reactive <- function(x) function() eval(substitute(x))
+ir_env$reactiveVal <- function(...) function(...) NULL
+ir_env$req <- function(...) invisible(NULL)
+ir_env$observeEvent <- function(...) invisible(NULL)
+ir_env$`%||%` <- function(a, b) if (is.null(a)) b else a
+# Stub out cerebroAppLite package functions referenced at top-level in data.R
+ir_env$getImmuneRepertoire <- function(...) NULL
+ir_env$getMetaData <- function(...) NULL
+ir_env$availableProjections <- function(...) character(0)
+ir_env$getProjection <- function(...) NULL
+ir_env$detect_chains <- function(...) character(0)
+ir_env$input <- list()
+ir_env$session <- list()
+sys.source(data_r, envir = ir_env, keep.source = FALSE)
+
+ir_parse_segments <- ir_env$ir_parse_segments
+ir_definition_counts <- ir_env$ir_definition_counts
+ir_sharing_classify <- ir_env$ir_sharing_classify
+
+# --- ir_parse_segments -----------------------------------------------------
+
+test_that("ir_parse_segments extracts TRB V/J/CDR3 from CT* columns", {
+  data <- list(
+    s1 = data.frame(
+      barcode = c("bc1", "bc2", "bc3"),
+      CTgene = c(
+        "TRAV8-6.TRAJ8.TRAC_TRBV6-2..TRBJ2-6.TRBC2",
+        "NA_TRBV18..TRBJ2-5.TRBC2",
+        "TRAV3.TRAJ26.TRAC;TRAV16.TRAJ5.TRAC_TRBV14..TRBJ2-3.TRBC2"
+      ),
+      CTaa = c(
+        "CAVSAFFQKLVF_CASSYLPRRQDRESSGANVLTF",
+        "NA_CASSPMEPIGTQYF",
+        "CAVTHYGQNFVF;CASYTGRRALTF_CASSPGGQNTQYF"
+      ),
+      stringsAsFactors = FALSE
+    )
+  )
+  out <- ir_parse_segments(data, chain = "TRB")
+  expect_equal(nrow(out), 3)
+  expect_equal(out$v_gene, c("TRBV6-2", "TRBV18", "TRBV14"))
+  expect_equal(out$j_gene, c("TRBJ2-6", "TRBJ2-5", "TRBJ2-3"))
+  expect_equal(
+    out$cdr3,
+    c("CASSYLPRRQDRESSGANVLTF", "CASSPMEPIGTQYF", "CASSPGGQNTQYF")
+  )
+  expect_equal(
+    out$clone_vjc,
+    paste(out$v_gene, out$j_gene, out$cdr3, sep = ";")
+  )
+})
+
+test_that("ir_parse_segments drops rows lacking the requested chain", {
+  data <- list(
+    s1 = data.frame(
+      barcode = c("bc1", "bc2"),
+      CTgene = c(
+        "TRAV8-6.TRAJ8.TRAC_NA",
+        "TRAV3.TRAJ26.TRAC_TRBV14..TRBJ2-3.TRBC2"
+      ),
+      CTaa = c("CAVSAFFQKLVF_NA", "CAVTHYGQNFVF_CASSPGGQNTQYF"),
+      stringsAsFactors = FALSE
+    )
+  )
+  out <- ir_parse_segments(data, chain = "TRB")
+  expect_equal(nrow(out), 1)
+  expect_equal(out$barcode, "bc2")
+})
+
+test_that("ir_parse_segments carries metadata columns through", {
+  data <- list(
+    s1 = data.frame(
+      barcode = "bc1",
+      CTgene = "TRBV6-2..TRBJ2-6.TRBC2",
+      CTaa = "CASSYLPRRQDRESSGANVLTF",
+      condition = "A",
+      sample = "s1",
+      stringsAsFactors = FALSE
+    )
+  )
+  out <- ir_parse_segments(data, chain = "TRB")
+  expect_true(all(c("condition", "sample") %in% colnames(out)))
+  expect_equal(out$condition, "A")
+})

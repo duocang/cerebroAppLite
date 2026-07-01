@@ -469,3 +469,106 @@ ir_clonal_umap_data <- function(
   }
   out
 }
+
+##----------------------------------------------------------------------------##
+## Clone-segment parsing (shared by the Definition and Sharing tabs)
+##----------------------------------------------------------------------------##
+
+## ---- Parse V / J / CDR3 for one chain out of the CT* columns ----------- ##
+## scRepertoire packs all chains of a cell into single strings:
+##   CTgene : "<chainA gene segs>_<chainB gene segs>"  (chains joined by "_")
+##            each chain's segs are V.D.J.C joined by "."  (empty D -> "..")
+##            a chain's two alleles are joined by ";"      (take the first)
+##   CTaa   : "<chainA CDR3>_<chainB CDR3>"              (chains joined by "_")
+## "NA" marks a missing chain. This returns one row per cell that HAS the
+## requested chain, with parsed v_gene / j_gene / cdr3 and a combined
+## clone_vjc = "v;j;cdr3" id, plus every metadata column already joined onto
+## the IR data (so callers can group/split by any of them).
+##
+##   data  : the metadata-annotated IR list (ir_data_annotated())
+##   chain : chain prefix, e.g. "TRB" / "TRA" / "IGH"
+ir_parse_segments <- function(data, chain) {
+  if (is.null(data) || length(data) == 0 || is.null(chain) || !nzchar(chain)) {
+    return(NULL)
+  }
+  # For each cell's CT* string (chains joined by "_"), find the positional index
+  # (0-based) of the chain matching `chain`, then return that slot's value from
+  # both CTgene and CTaa in parallel so gene and CDR3 stay aligned.
+  # Returns NA when the chain is absent or its slot is "NA".
+  chain_slot_index <- function(ct_gene_vec) {
+    ct_gene_vec <- as.character(ct_gene_vec)
+    vapply(
+      strsplit(ct_gene_vec, "_", fixed = TRUE),
+      function(parts) {
+        # Take first allele of each slot to test chain membership.
+        first <- sub(";.*$", "", parts)
+        idx <- which(grepl(chain, first, fixed = TRUE) & first != "NA")
+        if (length(idx) == 0) NA_integer_ else idx[1]
+      },
+      integer(1)
+    )
+  }
+  # Given a CT* vector and a per-row slot index, pick that slot's value.
+  pick_slot <- function(ct_vec, slot_idx) {
+    ct_vec <- as.character(ct_vec)
+    vapply(
+      seq_along(ct_vec),
+      function(i) {
+        if (is.na(slot_idx[i])) {
+          return(NA_character_)
+        }
+        parts <- strsplit(ct_vec[i], "_", fixed = TRUE)[[1]]
+        if (slot_idx[i] > length(parts)) {
+          return(NA_character_)
+        }
+        val <- parts[slot_idx[i]]
+        if (is.na(val) || val == "NA" || !nzchar(val)) NA_character_ else val
+      },
+      character(1)
+    )
+  }
+  # Take the first allele (before ";") of a chain segment.
+  first_allele <- function(x) {
+    ifelse(is.na(x), NA_character_, sub(";.*$", "", x))
+  }
+
+  rows <- lapply(data, function(df) {
+    if (is.null(df) || !all(c("barcode", "CTgene", "CTaa") %in% colnames(df))) {
+      return(NULL)
+    }
+    slot_idx <- chain_slot_index(df$CTgene)
+    gene_seg <- first_allele(pick_slot(df$CTgene, slot_idx))
+    cdr3 <- first_allele(pick_slot(df$CTaa, slot_idx))
+    # From "TRBV6-2..TRBJ2-6.TRBC2" pull the V and J tokens (segs split on ".").
+    # NA gene_seg -> strsplit yields NA -> no token matches -> NA gene, dropped.
+    pull_token <- function(prefix) {
+      vapply(
+        strsplit(gene_seg, ".", fixed = TRUE),
+        function(toks) {
+          hit <- toks[grepl(paste0("^", chain, prefix), toks)]
+          if (length(hit) == 0) NA_character_ else hit[1]
+        },
+        character(1)
+      )
+    }
+    v_gene <- pull_token("V")
+    j_gene <- pull_token("J")
+    keep <- !is.na(v_gene) & !is.na(j_gene) & !is.na(cdr3) & nzchar(cdr3)
+    if (!any(keep)) {
+      return(NULL)
+    }
+    out <- df[keep, , drop = FALSE]
+    out$v_gene <- v_gene[keep]
+    out$j_gene <- j_gene[keep]
+    out$cdr3 <- cdr3[keep]
+    out$clone_vjc <- paste(out$v_gene, out$j_gene, out$cdr3, sep = ";")
+    out
+  })
+  rows <- rows[!vapply(rows, is.null, logical(1))]
+  if (length(rows) == 0) {
+    return(NULL)
+  }
+  # Align columns before rbind (samples may carry different metadata columns).
+  common <- Reduce(intersect, lapply(rows, colnames))
+  do.call(rbind, lapply(rows, function(df) df[, common, drop = FALSE]))
+}
