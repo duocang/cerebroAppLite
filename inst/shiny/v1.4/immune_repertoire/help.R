@@ -140,7 +140,7 @@ ir_tab_help <- list(
       "",
       "Controls:",
       "• Hamming threshold — 1 (default) or 2 substitutions for an edge.",
-      "• Min cluster size — hide small clusters; 1 keeps every connected motif and drops only isolated CDR3s.",
+      "• Hide clusters ≤ N nodes — drop motifs with N or fewer CDR3s; the default 1 keeps every connected motif (isolated CDR3s are always removed).",
       "• Split by V gene — require the same V gene for an edge (stricter, more biologically grounded).",
       "• Colour nodes by — by motif cluster (default) or any metadata column.",
       "",

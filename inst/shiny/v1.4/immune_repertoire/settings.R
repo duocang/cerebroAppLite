@@ -145,7 +145,7 @@ output$ir_main_params_UI <- renderUI({
       ),
       sliderInput(
         "ir_motif_min_size",
-        "Min cluster size:",
+        "Hide clusters ≤ N nodes:",
         min = 1,
         max = 10,
         value = 1,
