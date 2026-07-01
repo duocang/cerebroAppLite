@@ -166,8 +166,12 @@ test_that("ir_definition_counts returns the 7 resolution levels in order", {
   # CDR3: {CAAA,CBBB}=2; V+CDR3: {V1CAAA,V2CBBB}=2; V+J+CDR3: 3 distinct
   expect_equal(out$n[out$definition == "cells"], 4)
   expect_equal(out$n[out$definition == "V"], 2)
+  expect_equal(out$n[out$definition == "J"], 2)
   expect_equal(out$n[out$definition == "V+J"], 3)
+  expect_equal(out$n[out$definition == "CDR3"], 2)
+  expect_equal(out$n[out$definition == "V+CDR3"], 2)
   expect_equal(out$n[out$definition == "V+J+CDR3"], 3)
+  expect_true(is.ordered(out$definition))
 })
 
 test_that("ir_definition_counts splits by group when given", {

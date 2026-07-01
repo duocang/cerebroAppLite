@@ -609,7 +609,11 @@ ir_definition_counts <- function(seg, group = NULL) {
   }
   count_block <- function(df) {
     data.frame(
-      definition = factor(IR_DEFINITION_LEVELS, levels = IR_DEFINITION_LEVELS),
+      definition = factor(
+        IR_DEFINITION_LEVELS,
+        levels = IR_DEFINITION_LEVELS,
+        ordered = TRUE
+      ),
       n = c(
         nrow(df),
         length(unique(df$v_gene)),
