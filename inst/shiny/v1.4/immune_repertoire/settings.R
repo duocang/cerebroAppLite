@@ -132,6 +132,37 @@ output$ir_main_params_UI <- renderUI({
         },
         selectize = FALSE
       )
+    ),
+    conditionalPanel(
+      condition = "input.ir_tabs == 'Motif Network'",
+      sliderInput(
+        "ir_motif_threshold",
+        "Hamming threshold:",
+        min = 1,
+        max = 2,
+        value = 1,
+        step = 1
+      ),
+      sliderInput(
+        "ir_motif_min_size",
+        "Min cluster size:",
+        min = 1,
+        max = 10,
+        value = 1,
+        step = 1
+      ),
+      checkboxInput(
+        "ir_motif_by_v",
+        "Split by V gene",
+        value = FALSE
+      ),
+      selectInput(
+        "ir_motif_color_by",
+        "Colour nodes by:",
+        choices = ir_motif_color_choices(),
+        selected = "",
+        selectize = FALSE
+      )
     )
   )
 })
