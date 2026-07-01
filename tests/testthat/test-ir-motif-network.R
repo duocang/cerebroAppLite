@@ -92,3 +92,26 @@ test_that("ir_build_motif_groups by_v keeps different-V CDR3s apart", {
   res <- ir_build_motif_groups(df, by_v = TRUE, threshold = 1)
   expect_equal(unname(res$motif_df$motif_size), c(1, 1))
 })
+
+test_that("ir_build_motif_groups handles a single-row length bin without crashing", {
+  df <- data.frame(cdr3 = "CASSL", stringsAsFactors = FALSE)
+  df$cdr3_length <- nchar(df$cdr3)
+  res <- ir_build_motif_groups(df, by_v = FALSE, threshold = 1)
+  expect_equal(unname(res$motif_df$motif_size), 1)
+  expect_null(res$edges)
+})
+
+test_that("ir_build_motif_groups tags by_v edges with their V gene", {
+  # Two CASSL/CASSF pairs, one per V gene: each V forms its own edge, and the
+  # edge should carry the v_gene of its bin.
+  df <- data.frame(
+    cdr3 = c("CASSL", "CASSF", "CASSL", "CASSF"),
+    v_gene = c("TRBV1", "TRBV1", "TRBV2", "TRBV2"),
+    stringsAsFactors = FALSE
+  )
+  df$cdr3_length <- nchar(df$cdr3)
+  res <- ir_build_motif_groups(df, by_v = TRUE, threshold = 1)
+  expect_true("v_gene" %in% colnames(res$edges))
+  expect_setequal(unique(res$edges$v_gene), c("TRBV1", "TRBV2"))
+  expect_equal(nrow(res$edges), 2)
+})
