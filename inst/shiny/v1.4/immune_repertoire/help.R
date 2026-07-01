@@ -902,6 +902,9 @@ output$ir_demo_plot <- renderPlot({
         "Motif Network" = if (has_motif_deps()) {
           ir_build_motif_plot(
             ir_build_motif_graph(
+              # demo frames lack a `sample` column, which ir_build_motif_graph's
+              # per-CDR3 metadata aggregation needs; inject it from the list
+              # names (same guard as the Clone Sharing demo case above).
               Map(
                 function(df, nm) {
                   df$sample <- nm
