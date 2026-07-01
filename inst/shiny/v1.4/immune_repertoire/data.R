@@ -739,7 +739,10 @@ ir_sharing_classify <- function(seg, unit_col, group_col = NULL) {
 ## is over-strict for them (one clone can split into near-neighbour variants).
 ## The Definition / Sharing plots surface this as a subtitle caveat.
 ir_is_bcr_chain <- function(chain) {
-  !is.null(chain) && any(startsWith(chain, IR_BCR_CHAINS))
+  is.character(chain) &&
+    length(chain) == 1 &&
+    !is.na(chain) &&
+    any(startsWith(chain, IR_BCR_CHAINS))
 }
 
 ## ---- BCR caveat line appended to plot subtitles ------------------------ ##

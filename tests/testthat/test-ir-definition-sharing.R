@@ -52,6 +52,7 @@ ir_parse_segments <- ir_env$ir_parse_segments
 ir_definition_counts <- ir_env$ir_definition_counts
 ir_sharing_classify <- ir_env$ir_sharing_classify
 ir_build_definition_plot <- ir_env$ir_build_definition_plot
+ir_is_bcr_chain <- ir_env$ir_is_bcr_chain
 
 # --- ir_parse_segments -----------------------------------------------------
 
@@ -343,4 +344,13 @@ test_that("ir_build_definition_plot adds a BCR caveat to the subtitle for IGH", 
   p <- ir_build_definition_plot(data, chain = "IGH", group_by = NULL)
   expect_s3_class(p, "ggplot")
   expect_true(grepl("SHM", p$labels$subtitle %||% ""))
+})
+
+test_that("ir_is_bcr_chain is TRUE for BCR chains, FALSE otherwise and safe on NA/NULL", {
+  expect_true(ir_is_bcr_chain("IGH"))
+  expect_true(ir_is_bcr_chain("IGK"))
+  expect_false(ir_is_bcr_chain("TRB"))
+  expect_false(ir_is_bcr_chain(NA_character_))
+  expect_false(ir_is_bcr_chain(NULL))
+  expect_false(ir_is_bcr_chain(""))
 })
