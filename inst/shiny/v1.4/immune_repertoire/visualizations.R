@@ -21,10 +21,13 @@ ir_fill_plot <- function(
   id,
   spinner = TRUE,
   height = IR_PLOT_HEIGHT,
-  plotly = FALSE
+  plotly = FALSE,
+  visnet = FALSE
 ) {
   plot <- if (plotly) {
     plotly::plotlyOutput(id, height = height)
+  } else if (visnet) {
+    visNetwork::visNetworkOutput(id, height = height)
   } else {
     plotOutput(id, height = height)
   }
@@ -100,7 +103,7 @@ output$ir_visualizations_UI <- renderUI({
     ),
     tabPanel(
       "Motif Network",
-      ir_fill_plot("ir_plot_motifNetwork")
+      ir_fill_plot("ir_plot_motifNetwork", visnet = TRUE)
     )
   )
 
@@ -2015,54 +2018,61 @@ observeEvent(
   ignoreInit = FALSE
 )
 
-output$ir_plot_motifNetwork <- renderPlot({
+output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
   req(has_scRepertoire())
   req_plot_space("ir_plot_motifNetwork")
   if (!has_motif_deps()) {
-    plot.new()
-    text(
-      0.5,
-      0.5,
-      paste(
-        "Motif Network requires the 'stringdist' and 'ggraph' packages.",
-        'Install with: install.packages(c("stringdist", "ggraph"))',
-        sep = "\n"
-      ),
-      cex = 1
+    return(
+      visNetwork::visNetwork(
+        nodes = data.frame(
+          id = 1,
+          label = paste(
+            "Motif Network requires 'stringdist', 'ggraph', 'visNetwork'.",
+            'Install: install.packages(c("stringdist","ggraph","visNetwork"))',
+            sep = "\n"
+          ),
+          stringsAsFactors = FALSE
+        ),
+        edges = data.frame(from = integer(0), to = integer(0))
+      )
     )
-    return()
   }
   color_by <- ir_param("ir_motif_color_by", "")
   # Generic display-panel legend controls (shared with the other tabs).
   dp <- tryCatch(ir_display_params(), error = function(e) list())
   show_legend <- dp[["ir_d_legend_show"]] %||% "show"
   legend_pos <- dp[["ir_d_legend_pos"]] %||% "right"
-  safeRenderPlot(
-    {
-      g <- ir_motif_graph()
-      if (is.null(g)) {
-        NULL
-      } else {
-        ir_build_motif_plot(
-          g,
-          color_by = color_by,
-          chain = specific_chain(),
-          show_legend = show_legend,
-          legend_pos = legend_pos
-        )
-      }
-    },
-    "motifNetwork",
-    skip_legend = TRUE
+  vn <- ir_build_motif_visnet(
+    ir_motif_graph(),
+    color_by = color_by,
+    chain = specific_chain(),
+    show_legend = show_legend,
+    legend_pos = legend_pos
   )
-}) %>%
-  ir_bindCache(
-    input$ir_chain,
-    input$ir_motif_threshold,
-    input$ir_motif_min_size,
-    input$ir_motif_by_v,
-    input$ir_motif_show_isolated,
-    input$ir_motif_color_by,
-    input$ir_d_legend_show,
-    input$ir_d_legend_pos
-  )
+  if (is.null(vn)) {
+    return(
+      visNetwork::visNetwork(
+        nodes = data.frame(
+          id = integer(0),
+          label = character(0),
+          stringsAsFactors = FALSE
+        ),
+        edges = data.frame(from = integer(0), to = integer(0))
+      )
+    )
+  }
+  net <- visNetwork::visNetwork(vn$nodes, vn$edges) %>%
+    visNetwork::visNodes(scaling = list(min = 8, max = 40)) %>%
+    visNetwork::visEdges(color = list(color = "grey60")) %>%
+    visNetwork::visPhysics(
+      solver = "forceAtlas2Based",
+      stabilization = list(iterations = 100)
+    ) %>%
+    visNetwork::visOptions(
+      highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE)
+    )
+  if (!vn$hide_legend) {
+    net <- net %>% visNetwork::visLegend(enabled = TRUE)
+  }
+  net
+})
