@@ -182,10 +182,21 @@ ir_sharing_unit_choices <- reactive({
 })
 
 ## ---- Node-colour choices for the Motif Network tab --------------------- ##
-## "By motif cluster" (value "") plus every categorical metadata column, so the
-## user can recolour nodes by sample / condition / cell type etc.
+## "By motif cluster" (value "") plus categorical metadata columns. Scanning
+## every column surfaces technical/redundant ones (orig.ident, RNA_snn_res.*)
+## that the rest of Cerebro hides, so the candidates are restricted to the
+## registered grouping variables (getGroups(), the same whitelist the Groups
+## tab uses), intersected with the columns actually present on the repertoire
+## data. `sample` is always kept — it is the primary repertoire unit and shown
+## on the Groups tab too. Falls back to the full scan when no grouping variables
+## are registered, so the control never collapses to just "By motif cluster".
 ir_motif_color_choices <- reactive({
   cols <- ir_sharing_unit_choices()
+  groups <- tryCatch(getGroups(), error = function(e) NULL)
+  if (length(groups) > 0) {
+    allowed <- union("sample", groups)
+    cols <- cols[cols %in% allowed]
+  }
   c("By motif cluster" = "", cols)
 })
 
