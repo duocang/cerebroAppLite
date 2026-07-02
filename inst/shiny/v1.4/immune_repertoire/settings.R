@@ -451,12 +451,36 @@ output$ir_display_panel <- renderUI({
         step = p$step
       ))
     }
-    # text (the only other display type)
+    if (identical(p$type, "select")) {
+      return(selectInput(
+        p$id,
+        p$label,
+        choices = p$choices,
+        selected = p$value,
+        selectize = FALSE
+      ))
+    }
+    # text fallback for any other display type
     textInput(p$id, p$label, value = p$value)
   })
 
-  # one control per row
-  rows <- lapply(controls, function(ctrl) fluidRow(column(12, ctrl)))
+  # One control per row. Controls flagged `gated_by_legend` are wrapped in a
+  # conditionalPanel so they disappear when the "Legend" control is set to Hide.
+  rows <- Map(
+    function(ctrl, p) {
+      row <- fluidRow(column(12, ctrl))
+      if (isTRUE(p$gated_by_legend)) {
+        conditionalPanel(
+          condition = "input.ir_d_legend_show == 'show'",
+          row
+        )
+      } else {
+        row
+      }
+    },
+    controls,
+    spec
+  )
 
   do.call(tagList, rows)
 })

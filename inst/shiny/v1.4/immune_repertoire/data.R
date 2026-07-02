@@ -1130,7 +1130,7 @@ ir_build_motif_graph <- function(
 
 ## Above this many clusters, a per-cluster colour legend is just noise (one
 ## entry per cluster), so the motif plot hides it. Metadata legends are unaffected.
-IR_MOTIF_MAX_LEGEND_CLUSTERS <- 20
+IR_MOTIF_MAX_LEGEND_CLUSTERS <- 10
 
 ## ---- Draw the motif network with ggraph -------------------------------- ##
 ## Nodes = CDR3, edges = Hamming-1 neighbours; node size = clone_count. Colour

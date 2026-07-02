@@ -47,6 +47,7 @@ ir_make_consensus <- ir_env$ir_make_consensus
 ir_motif_variable_aa <- ir_env$ir_motif_variable_aa
 ir_process_length_group <- ir_env$ir_process_length_group
 ir_build_motif_groups <- ir_env$ir_build_motif_groups
+IR_MOTIF_MAX_LEGEND_CLUSTERS <- ir_env$IR_MOTIF_MAX_LEGEND_CLUSTERS
 
 test_that("ir_make_consensus marks differing positions with x", {
   expect_equal(ir_make_consensus(c("CASSL", "CASSF")), "CASSx")
@@ -363,7 +364,10 @@ test_that("ir_build_motif_plot hides the cluster legend when clusters are many",
     min_size = 1,
     show_isolated = TRUE
   )
-  expect_gt(length(unique(igraph::V(g)$cluster)), 20)
+  expect_gt(
+    length(unique(igraph::V(g)$cluster)),
+    IR_MOTIF_MAX_LEGEND_CLUSTERS
+  )
   p <- ir_build_motif_plot(g, color_by = NULL)
   expect_equal(p$theme$legend.position, "none")
 })

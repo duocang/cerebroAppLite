@@ -540,8 +540,9 @@ output$ir_plot_clonalUMAP <- plotly::renderPlotly({
         if (!is.character(legend_pos) || length(legend_pos) != 1) {
           legend_pos <- "right"
         }
-        # Map the shared position choices onto plotly's legend orientation/anchor.
-        show_legend <- legend_pos != "none"
+        # Legend visibility is driven by the dedicated Show/Hide control; the
+        # position choices only place it when shown.
+        show_legend <- !identical(dp[["ir_d_legend_show"]], "hide")
         legend_cfg <- list(
           itemsizing = "constant",
           font = list(size = legend_size),

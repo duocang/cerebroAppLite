@@ -77,11 +77,17 @@ ir_apply_display <- function(p, params = NULL) {
         )
       )
   }
-  legend_pos <- params[["ir_d_legend_pos"]]
-  if (
-    is.character(legend_pos) && length(legend_pos) == 1 && nzchar(legend_pos)
-  ) {
-    p <- p + ggplot2::theme(legend.position = legend_pos)
+  # Visibility comes from the dedicated Show/Hide control; position only places
+  # the legend when it is shown.
+  if (identical(params[["ir_d_legend_show"]], "hide")) {
+    p <- p + ggplot2::theme(legend.position = "none")
+  } else {
+    legend_pos <- params[["ir_d_legend_pos"]]
+    if (
+      is.character(legend_pos) && length(legend_pos) == 1 && nzchar(legend_pos)
+    ) {
+      p <- p + ggplot2::theme(legend.position = legend_pos)
+    }
   }
   p
 }
