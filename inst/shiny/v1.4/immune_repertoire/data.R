@@ -1295,3 +1295,94 @@ ir_build_motif_plot <- function(
     )
   p
 }
+
+## ---- Build interactive motif network (visNetwork) --------------------- ##
+## igraph -> list(nodes, edges, ...) for visNetwork. Node size follows
+## clone_count; colour follows cluster (default) or a metadata column; the HTML
+## tooltip (title) shows CDR3, clone size, cell-type distribution, chain, and
+## V/J genes. Returns NULL for a NULL/empty graph (same contract as
+## ir_build_motif_plot). Legend suppression reuses IR_MOTIF_MAX_LEGEND_CLUSTERS.
+ir_build_motif_visnet <- function(
+  graph,
+  color_by = NULL,
+  chain = NULL,
+  show_legend = "show",
+  legend_pos = "right"
+) {
+  if (is.null(graph) || igraph::vcount(graph) == 0) {
+    return(NULL)
+  }
+  va <- igraph::vertex_attr(graph)
+  n <- igraph::vcount(graph)
+
+  # Colour aesthetic: cluster (default) or a metadata column present on nodes.
+  color_col <- if (
+    !is.null(color_by) && nzchar(color_by) && color_by %in% names(va)
+  ) {
+    color_by
+  } else {
+    "cluster"
+  }
+
+  get_attr <- function(nm) if (nm %in% names(va)) va[[nm]] else rep(NA, n)
+  cdr3 <- get_attr("name")
+  clone_count <- get_attr("clone_count")
+  v_gene <- get_attr("v_gene")
+  j_gene <- get_attr("j_gene")
+  cell_dist <- get_attr("cell_type_dist")
+
+  # HTML tooltip lines; a line is dropped when its value is missing.
+  esc <- function(x) {
+    x <- as.character(x)
+    x <- gsub("&", "&amp;", x, fixed = TRUE)
+    x <- gsub("<", "&lt;", x, fixed = TRUE)
+    gsub(">", "&gt;", x, fixed = TRUE)
+  }
+  has_chain <- !is.null(chain) &&
+    length(chain) == 1 &&
+    !is.na(chain) &&
+    nzchar(chain)
+  titles <- vapply(
+    seq_len(n),
+    function(i) {
+      lines <- c(
+        sprintf("<b>%s</b>", esc(cdr3[i])),
+        sprintf("Clone size: %s", esc(clone_count[i])),
+        if (!is.na(cell_dist[i])) esc(cell_dist[i]) else NULL,
+        if (has_chain) sprintf("Chain: %s", esc(chain)) else NULL,
+        sprintf("V/J: %s / %s", esc(v_gene[i]), esc(j_gene[i]))
+      )
+      paste(lines, collapse = "<br>")
+    },
+    character(1)
+  )
+
+  nodes <- data.frame(
+    id = seq_len(n),
+    label = as.character(cdr3),
+    value = as.numeric(clone_count),
+    group = as.character(get_attr(color_col)),
+    title = titles,
+    stringsAsFactors = FALSE
+  )
+
+  el <- igraph::as_edgelist(graph, names = FALSE)
+  edges <- if (nrow(el) == 0) {
+    data.frame(from = integer(0), to = integer(0))
+  } else {
+    data.frame(from = el[, 1], to = el[, 2])
+  }
+
+  # Suppress a legend that would be hundreds of unreadable cluster entries, or
+  # when the user asked to hide it. Mirrors ir_build_motif_plot's gate.
+  n_levels <- length(unique(nodes$group))
+  hide_legend <- identical(show_legend, "hide") ||
+    (color_col == "cluster" && n_levels > IR_MOTIF_MAX_LEGEND_CLUSTERS)
+
+  list(
+    nodes = nodes,
+    edges = edges,
+    color_col = color_col,
+    hide_legend = hide_legend
+  )
+}

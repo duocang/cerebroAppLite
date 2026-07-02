@@ -300,6 +300,62 @@ test_that("ir_build_motif_plot returns NULL for a NULL graph", {
   expect_null(ir_build_motif_plot(NULL, color_by = NULL))
 })
 
+# --- ir_build_motif_visnet -------------------------------------------------
+
+test_that("ir_build_motif_visnet builds nodes/edges with tooltips", {
+  skip_if_not_installed("igraph")
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:4),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 4),
+      CTaa = c("CASSL", "CASSL", "CASSF", "CASSF"),
+      sample = c("s1", "s1", "s1", "s1"),
+      cell_type = c("CD8 T", "CD4 T", "CD8 T", "CD8 T"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
+  expect_true(all(c("nodes", "edges") %in% names(vn)))
+  expect_equal(nrow(vn$nodes), igraph::vcount(g))
+  expect_true(all(c("CASSL", "CASSF") %in% vn$nodes$label))
+  # Tooltip (title) carries the CDR3 + clone size + cell-type distribution.
+  expect_true(all(grepl("CASS", vn$nodes$title)))
+  expect_true(any(grepl("Clone size", vn$nodes$title)))
+  expect_true(any(grepl("type", vn$nodes$title)))
+  # Node size (value) follows clone_count.
+  expect_true("value" %in% names(vn$nodes))
+})
+
+test_that("ir_build_motif_visnet returns NULL for a NULL graph", {
+  ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
+  expect_null(ir_build_motif_visnet(NULL, color_by = NULL, chain = "TRB"))
+})
+
+test_that("ir_build_motif_visnet hides legend past the cluster threshold", {
+  skip_if_not_installed("igraph")
+  # Build many singleton clusters so the level count exceeds the threshold.
+  ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
+  n <- IR_MOTIF_MAX_LEGEND_CLUSTERS + 3
+  g <- igraph::make_empty_graph(n = n, directed = FALSE)
+  igraph::V(g)$name <- paste0("C", seq_len(n))
+  igraph::V(g)$cluster <- seq_len(n)
+  igraph::V(g)$clone_count <- 1
+  igraph::V(g)$v_gene <- "TRBV1"
+  igraph::V(g)$j_gene <- "TRBJ1"
+  igraph::V(g)$cell_type_dist <- NA_character_
+  vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
+  expect_true(vn$hide_legend)
+})
+
 test_that("ir_build_motif_plot adds BCR caveat subtitle for IGH", {
   skip_if_not_installed("ggraph")
   data <- list(
