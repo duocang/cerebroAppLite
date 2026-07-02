@@ -49,6 +49,45 @@ ir_process_length_group <- ir_env$ir_process_length_group
 ir_build_motif_groups <- ir_env$ir_build_motif_groups
 IR_MOTIF_MAX_LEGEND_CLUSTERS <- ir_env$IR_MOTIF_MAX_LEGEND_CLUSTERS
 
+# Lift ir_apply_display out of server.R so we can test that the generic display
+# hook does NOT clobber the legend.position a plot set for itself. server.R is
+# full of reactive()/output$ top-level code that needs a live Shiny session, so
+# we extract just the ir_apply_display definition rather than sourcing the file.
+server_r <- if (!is.na(local_inst)) {
+  file.path(local_inst, "shiny/v1.4/immune_repertoire/server.R")
+} else {
+  system.file(
+    "shiny/v1.4/immune_repertoire/server.R",
+    package = "cerebroAppLite"
+  )
+}
+if (nzchar(server_r) && file.exists(server_r)) {
+  src <- paste(readLines(server_r, warn = FALSE), collapse = "\n")
+  # Grab the ir_apply_display <- function(...) { ... } block by brace-matching.
+  start <- regexpr("ir_apply_display\\s*<-\\s*function", src)
+  if (start > 0) {
+    tail_src <- substring(src, start)
+    open_brace <- regexpr("\\{", tail_src)
+    depth <- 0L
+    end_pos <- NA_integer_
+    chars <- strsplit(substring(tail_src, open_brace), "")[[1]]
+    for (i in seq_along(chars)) {
+      if (chars[i] == "{") {
+        depth <- depth + 1L
+      } else if (chars[i] == "}") {
+        depth <- depth - 1L
+        if (depth == 0L) {
+          end_pos <- i
+          break
+        }
+      }
+    }
+    def <- substring(tail_src, 1, open_brace + end_pos - 1)
+    eval(parse(text = def), envir = ir_env)
+  }
+}
+ir_apply_display <- ir_env$ir_apply_display
+
 test_that("ir_make_consensus marks differing positions with x", {
   expect_equal(ir_make_consensus(c("CASSL", "CASSF")), "CASSx")
   expect_equal(ir_make_consensus("CASSL"), "CASSL")
@@ -599,4 +638,85 @@ test_that("ir_build_motif_plot subtitle counts only multi-node clusters", {
   # Only the single multi-node cluster is a real motif cluster; the 24
   # singletons must not inflate the count.
   expect_match(p$labels$subtitle %||% "", "1 motif cluster")
+})
+
+# --- ir_apply_display legend precedence ------------------------------------
+# Motif Network sets its own legend.position (manual Hide / auto-hide / place),
+# then the plot flows through safeRenderPlot -> ir_apply_display. That hook must
+# NOT re-apply legend.position when skip_legend = TRUE, or it clobbers the plot's
+# own decision (the "legend flickers on then off" bug). These tests lock that in.
+
+test_that("ir_apply_display leaves legend.position alone when skip_legend = TRUE", {
+  skip_if(is.null(ir_apply_display), "ir_apply_display not extractable")
+  # A plot that hid its own legend, as ir_build_motif_plot does for auto-hide.
+  p <- ggplot2::ggplot(
+    data.frame(x = 1:3, y = 1:3, g = letters[1:3]),
+    ggplot2::aes(x, y, colour = g)
+  ) +
+    ggplot2::geom_point() +
+    ggplot2::theme(legend.position = "none")
+  params <- list(ir_d_legend_show = "show", ir_d_legend_pos = "right")
+  out <- ir_apply_display(p, params = params, skip_legend = TRUE)
+  # skip_legend must preserve the plot's own "none".
+  expect_equal(out$theme$legend.position, "none")
+})
+
+test_that("ir_apply_display DOES apply legend.position when skip_legend = FALSE", {
+  skip_if(is.null(ir_apply_display), "ir_apply_display not extractable")
+  # Same plot; without skip_legend the generic hook takes over positioning,
+  # overriding the plot's own value. This is the behaviour Motif Network must
+  # opt out of, and the reason skip_legend exists.
+  p <- ggplot2::ggplot(
+    data.frame(x = 1:3, y = 1:3, g = letters[1:3]),
+    ggplot2::aes(x, y, colour = g)
+  ) +
+    ggplot2::geom_point() +
+    ggplot2::theme(legend.position = "none")
+  params <- list(ir_d_legend_show = "show", ir_d_legend_pos = "bottom")
+  out <- ir_apply_display(p, params = params, skip_legend = FALSE)
+  expect_equal(out$theme$legend.position, "bottom")
+})
+
+test_that("auto-hidden motif legend survives ir_apply_display(skip_legend=TRUE)", {
+  skip_if_not_installed("ggraph")
+  skip_if(is.null(ir_apply_display), "ir_apply_display not extractable")
+  # End-to-end: many clusters -> ir_build_motif_plot hides the legend; the
+  # display hook (skip_legend = TRUE, as Motif Network calls it) must keep it
+  # hidden in a single render, not flip it back to "right".
+  aa <- vapply(
+    1:25,
+    function(i) {
+      paste0("CASS", LETTERS[((i - 1) %% 26) + 1], sprintf("%02d", i))
+    },
+    character(1)
+  )
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", seq_along(aa)),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", length(aa)),
+      CTaa = aa,
+      sample = rep("s1", length(aa)),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1,
+    show_isolated = TRUE
+  )
+  p <- ir_build_motif_plot(
+    g,
+    color_by = NULL,
+    show_legend = "show",
+    legend_pos = "right"
+  )
+  expect_equal(p$theme$legend.position, "none")
+  params <- list(ir_d_legend_show = "show", ir_d_legend_pos = "right")
+  out <- ir_apply_display(p, params = params, skip_legend = TRUE)
+  expect_equal(out$theme$legend.position, "none")
 })

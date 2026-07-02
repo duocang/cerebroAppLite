@@ -1156,14 +1156,6 @@ ir_build_motif_plot <- function(
   cluster_sizes <- table(lay$cluster)
   multi_clusters <- names(cluster_sizes)[cluster_sizes >= 2]
   n_clusters <- length(multi_clusters)
-  subtitle <- sprintf(
-    "%d CDR3 in %d motif cluster(s). Edge = Hamming distance 1.",
-    igraph::vcount(graph),
-    n_clusters
-  )
-  if (ir_is_bcr_chain(chain)) {
-    subtitle <- paste(subtitle, IR_BCR_SHM_CAVEAT, sep = "\n")
-  }
 
   # Colour aesthetic: cluster (default) or a metadata column present on nodes.
   color_col <- if (
@@ -1172,6 +1164,32 @@ ir_build_motif_plot <- function(
     color_by
   } else {
     "cluster"
+  }
+
+  # A per-cluster colour legend with more levels than the threshold is hundreds
+  # of unreadable entries, so it is dropped even when the user asks to show it.
+  # Gates on the number of colour LEVELS (every distinct cluster, singletons
+  # included), so isolated CDR3s still trigger it. Metadata legends are exempt.
+  auto_hidden <- color_col == "cluster" &&
+    length(cluster_sizes) > IR_MOTIF_MAX_LEGEND_CLUSTERS
+
+  subtitle <- sprintf(
+    "%d CDR3 in %d motif cluster(s). Edge = Hamming distance 1.",
+    igraph::vcount(graph),
+    n_clusters
+  )
+  if (auto_hidden) {
+    subtitle <- paste(
+      subtitle,
+      sprintf(
+        "Per-cluster legend hidden (%d clusters). Colour by a metadata column to show a legend.",
+        length(cluster_sizes)
+      ),
+      sep = "\n"
+    )
+  }
+  if (ir_is_bcr_chain(chain)) {
+    subtitle <- paste(subtitle, IR_BCR_SHM_CAVEAT, sep = "\n")
   }
 
   # Per-cluster consensus labels, placed above each component. Only multi-node
@@ -1233,18 +1251,9 @@ ir_build_motif_plot <- function(
       plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 9),
       # Legend visibility precedence:
       #  1. user's Show/Hide control: "hide" always wins.
-      #  2. auto-hide a per-cluster colour legend that would be hundreds of
-      #     unreadable entries. Gates on the number of colour LEVELS (every
-      #     distinct cluster, singletons included), not n_clusters (multi-node
-      #     only), so isolated CDR3s still trigger the hide. A metadata colour
-      #     legend has few categories and is never auto-hidden.
+      #  2. auto-hide an unreadable per-cluster legend (see auto_hidden above).
       #  3. otherwise place it where the user asked (legend_pos).
-      legend.position = if (identical(show_legend, "hide")) {
-        "none"
-      } else if (
-        color_col == "cluster" &&
-          length(cluster_sizes) > IR_MOTIF_MAX_LEGEND_CLUSTERS
-      ) {
+      legend.position = if (identical(show_legend, "hide") || auto_hidden) {
         "none"
       } else {
         legend_pos

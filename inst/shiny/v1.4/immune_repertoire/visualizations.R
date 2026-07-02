@@ -1982,11 +1982,14 @@ ir_motif_graph <- reactive({
   )
 
 ## When colouring by motif cluster and the number of colour levels exceeds the
-## auto-hide threshold, the per-cluster legend is unreadable and gets dropped.
-## Flip the Legend Show/Hide control to "Hide" so its state matches what is
-## drawn — no "Show" sitting over a hidden legend. This is one-directional: it
-## never forces "Show" back on, so a user's manual "Hide" is always respected;
-## when they later colour by a low-cardinality column they simply set it back.
+## auto-hide threshold, the per-cluster legend is unreadable and gets dropped
+## (see auto_hidden in data.R). Reflect that in the shared Legend Show/Hide
+## control: flip it to "Hide" and DISABLE it, so it is greyed out and matches
+## what is drawn — no live "Show" sitting over a legend the backend refuses to
+## draw. The control is a single spec-driven input shared across tabs, so the
+## disable must be reversed (enable) whenever the gate no longer applies —
+## metadata colouring, a low-cardinality cluster count, or another tab — or it
+## would stay stuck grey. ignoreInit = FALSE so the initial render is correct.
 observeEvent(
   list(
     ir_motif_graph(),
@@ -1996,18 +1999,20 @@ observeEvent(
     g <- ir_motif_graph()
     color_by <- ir_param("ir_motif_color_by", "")
     by_cluster <- is.null(color_by) || !nzchar(color_by)
-    if (is.null(g) || !by_cluster) {
-      return(invisible(NULL))
-    }
-    n_levels <- length(unique(igraph::V(g)$cluster))
-    if (
-      n_levels > IR_MOTIF_MAX_LEGEND_CLUSTERS &&
-        !identical(input$ir_d_legend_show, "hide")
-    ) {
-      updateSelectInput(session, "ir_d_legend_show", selected = "hide")
+    n_levels <- if (is.null(g)) 0L else length(unique(igraph::V(g)$cluster))
+    gate_hit <- !is.null(g) &&
+      by_cluster &&
+      n_levels > IR_MOTIF_MAX_LEGEND_CLUSTERS
+    if (gate_hit) {
+      if (!identical(input$ir_d_legend_show, "hide")) {
+        updateSelectInput(session, "ir_d_legend_show", selected = "hide")
+      }
+      shinyjs::disable("ir_d_legend_show")
+    } else {
+      shinyjs::enable("ir_d_legend_show")
     }
   },
-  ignoreInit = TRUE
+  ignoreInit = FALSE
 )
 
 output$ir_plot_motifNetwork <- renderPlot({
@@ -2047,7 +2052,8 @@ output$ir_plot_motifNetwork <- renderPlot({
         )
       }
     },
-    "motifNetwork"
+    "motifNetwork",
+    skip_legend = TRUE
   )
 }) %>%
   ir_bindCache(
