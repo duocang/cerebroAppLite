@@ -396,6 +396,98 @@ test_that("ir_build_motif_plot keeps the legend for a few clusters", {
   expect_equal(p$theme$legend.position, "right")
 })
 
+test_that("ir_build_motif_plot hides the legend when show_legend = 'hide'", {
+  skip_if_not_installed("ggraph")
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:3),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 3),
+      CTaa = c("CASSL", "CASSF", "CASTL"),
+      sample = rep("s1", 3),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  # Only a few clusters (auto-hide wouldn't fire), but hide is explicit.
+  p <- ir_build_motif_plot(g, color_by = NULL, show_legend = "hide")
+  expect_equal(p$theme$legend.position, "none")
+})
+
+test_that("ir_build_motif_plot honours legend_pos when shown", {
+  skip_if_not_installed("ggraph")
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:3),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 3),
+      CTaa = c("CASSL", "CASSF", "CASTL"),
+      sample = rep("s1", 3),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  p <- ir_build_motif_plot(
+    g,
+    color_by = NULL,
+    show_legend = "show",
+    legend_pos = "bottom"
+  )
+  expect_equal(p$theme$legend.position, "bottom")
+})
+
+test_that("ir_build_motif_plot auto-hides many cluster legend even when shown", {
+  skip_if_not_installed("ggraph")
+  aa <- vapply(
+    1:25,
+    function(i) {
+      paste0("CASS", LETTERS[((i - 1) %% 26) + 1], sprintf("%02d", i))
+    },
+    character(1)
+  )
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", seq_along(aa)),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", length(aa)),
+      CTaa = aa,
+      sample = rep("s1", length(aa)),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1,
+    show_isolated = TRUE
+  )
+  # show_legend = "show" but colouring by cluster with >10 levels -> still hidden.
+  p <- ir_build_motif_plot(
+    g,
+    color_by = NULL,
+    show_legend = "show",
+    legend_pos = "right"
+  )
+  expect_equal(p$theme$legend.position, "none")
+})
+
 test_that("ir_build_motif_plot keeps a metadata legend even with many clusters", {
   skip_if_not_installed("ggraph")
   aa <- vapply(
@@ -427,4 +519,84 @@ test_that("ir_build_motif_plot keeps a metadata legend even with many clusters",
   # colouring by a metadata column (few categories) -> legend kept
   p <- ir_build_motif_plot(g, color_by = "sample")
   expect_equal(p$theme$legend.position, "right")
+})
+
+# --- ir_build_motif_plot consensus labels & cluster count ------------------
+
+test_that("ir_build_motif_plot labels only multi-node clusters", {
+  skip_if_not_installed("ggraph")
+  # One real 3-node cluster + 24 isolated singletons via show_isolated.
+  singles <- vapply(
+    1:24,
+    function(i) {
+      paste0("CWXY", LETTERS[((i - 1) %% 26) + 1], sprintf("%02d", i))
+    },
+    character(1)
+  )
+  aa <- c("CASSL", "CASSF", "CASTL", singles)
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", seq_along(aa)),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", length(aa)),
+      CTaa = aa,
+      sample = rep("s1", length(aa)),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1,
+    show_isolated = TRUE
+  )
+  p <- ir_build_motif_plot(g, color_by = NULL)
+  # The consensus-label layer is the GeomLabel layer; only the single
+  # multi-node cluster gets a label, not the 24 isolated singletons.
+  lab_layer <- p$layers[[
+    which(vapply(
+      p$layers,
+      function(l) inherits(l$geom, "GeomLabel"),
+      logical(1)
+    ))
+  ]]
+  expect_equal(nrow(lab_layer$data), 1)
+})
+
+test_that("ir_build_motif_plot subtitle counts only multi-node clusters", {
+  skip_if_not_installed("ggraph")
+  singles <- vapply(
+    1:24,
+    function(i) {
+      paste0("CWXY", LETTERS[((i - 1) %% 26) + 1], sprintf("%02d", i))
+    },
+    character(1)
+  )
+  aa <- c("CASSL", "CASSF", "CASTL", singles)
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", seq_along(aa)),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", length(aa)),
+      CTaa = aa,
+      sample = rep("s1", length(aa)),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_plot <- ir_env$ir_build_motif_plot
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1,
+    show_isolated = TRUE
+  )
+  p <- ir_build_motif_plot(g, color_by = NULL)
+  # Only the single multi-node cluster is a real motif cluster; the 24
+  # singletons must not inflate the count.
+  expect_match(p$labels$subtitle %||% "", "1 motif cluster")
 })

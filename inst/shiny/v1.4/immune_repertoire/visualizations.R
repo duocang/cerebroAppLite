@@ -1945,6 +1945,71 @@ output$ir_plot_cloneSharing <- plotly::renderPlotly({
 ## Builds the motif igraph from the active chain's CDR3s and draws it with
 ## ggraph. Needs stringdist + ggraph (Suggests); shows an install hint if
 ## missing. Node colour follows the "Colour nodes by" control.
+
+## Shared motif graph: built once from the active chain + clustering controls,
+## consumed by both the plot renderer and the legend auto-hide observer so the
+## graph is not constructed twice. Returns NULL when no cluster survives.
+ir_motif_graph <- reactive({
+  req(has_scRepertoire())
+  if (!has_motif_deps()) {
+    return(NULL)
+  }
+  threshold <- as.numeric(ir_param("ir_motif_threshold", 1))
+  if (is.na(threshold) || threshold < 1) {
+    threshold <- 1
+  }
+  min_size <- as.numeric(ir_param("ir_motif_min_size", 1))
+  if (is.na(min_size) || min_size < 1) {
+    min_size <- 1
+  }
+  by_v <- isTRUE(ir_param("ir_motif_by_v", FALSE))
+  show_isolated <- isTRUE(ir_param("ir_motif_show_isolated", FALSE))
+  ir_build_motif_graph(
+    ir_data_annotated(),
+    specific_chain(),
+    threshold = threshold,
+    by_v = by_v,
+    min_size = min_size,
+    show_isolated = show_isolated
+  )
+}) %>%
+  ir_bindCache(
+    input$ir_chain,
+    input$ir_motif_threshold,
+    input$ir_motif_min_size,
+    input$ir_motif_by_v,
+    input$ir_motif_show_isolated
+  )
+
+## When colouring by motif cluster and the number of colour levels exceeds the
+## auto-hide threshold, the per-cluster legend is unreadable and gets dropped.
+## Flip the Legend Show/Hide control to "Hide" so its state matches what is
+## drawn — no "Show" sitting over a hidden legend. This is one-directional: it
+## never forces "Show" back on, so a user's manual "Hide" is always respected;
+## when they later colour by a low-cardinality column they simply set it back.
+observeEvent(
+  list(
+    ir_motif_graph(),
+    input$ir_motif_color_by
+  ),
+  {
+    g <- ir_motif_graph()
+    color_by <- ir_param("ir_motif_color_by", "")
+    by_cluster <- is.null(color_by) || !nzchar(color_by)
+    if (is.null(g) || !by_cluster) {
+      return(invisible(NULL))
+    }
+    n_levels <- length(unique(igraph::V(g)$cluster))
+    if (
+      n_levels > IR_MOTIF_MAX_LEGEND_CLUSTERS &&
+        !identical(input$ir_d_legend_show, "hide")
+    ) {
+      updateSelectInput(session, "ir_d_legend_show", selected = "hide")
+    }
+  },
+  ignoreInit = TRUE
+)
+
 output$ir_plot_motifNetwork <- renderPlot({
   req(has_scRepertoire())
   req_plot_space("ir_plot_motifNetwork")
@@ -1962,31 +2027,24 @@ output$ir_plot_motifNetwork <- renderPlot({
     )
     return()
   }
-  threshold <- as.numeric(ir_param("ir_motif_threshold", 1))
-  if (is.na(threshold) || threshold < 1) {
-    threshold <- 1
-  }
-  min_size <- as.numeric(ir_param("ir_motif_min_size", 1))
-  if (is.na(min_size) || min_size < 1) {
-    min_size <- 1
-  }
-  by_v <- isTRUE(ir_param("ir_motif_by_v", FALSE))
-  show_isolated <- isTRUE(ir_param("ir_motif_show_isolated", FALSE))
   color_by <- ir_param("ir_motif_color_by", "")
+  # Generic display-panel legend controls (shared with the other tabs).
+  dp <- tryCatch(ir_display_params(), error = function(e) list())
+  show_legend <- dp[["ir_d_legend_show"]] %||% "show"
+  legend_pos <- dp[["ir_d_legend_pos"]] %||% "right"
   safeRenderPlot(
     {
-      g <- ir_build_motif_graph(
-        ir_data_annotated(),
-        specific_chain(),
-        threshold = threshold,
-        by_v = by_v,
-        min_size = min_size,
-        show_isolated = show_isolated
-      )
+      g <- ir_motif_graph()
       if (is.null(g)) {
         NULL
       } else {
-        ir_build_motif_plot(g, color_by = color_by, chain = specific_chain())
+        ir_build_motif_plot(
+          g,
+          color_by = color_by,
+          chain = specific_chain(),
+          show_legend = show_legend,
+          legend_pos = legend_pos
+        )
       }
     },
     "motifNetwork"
@@ -1998,5 +2056,7 @@ output$ir_plot_motifNetwork <- renderPlot({
     input$ir_motif_min_size,
     input$ir_motif_by_v,
     input$ir_motif_show_isolated,
-    input$ir_motif_color_by
+    input$ir_motif_color_by,
+    input$ir_d_legend_show,
+    input$ir_d_legend_pos
   )

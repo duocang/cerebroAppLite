@@ -1137,14 +1137,25 @@ IR_MOTIF_MAX_LEGEND_CLUSTERS <- 10
 ## by motif cluster (color_by = NULL) or by a metadata column. Cluster consensus
 ## labels are placed at each component. Returns NULL when the graph is NULL/empty.
 ## `chain` (optional) drives the BCR SHM caveat in the subtitle.
-ir_build_motif_plot <- function(graph, color_by = NULL, chain = NULL) {
+ir_build_motif_plot <- function(
+  graph,
+  color_by = NULL,
+  chain = NULL,
+  show_legend = "show",
+  legend_pos = "right"
+) {
   if (is.null(graph) || igraph::vcount(graph) == 0) {
     return(NULL)
   }
   set.seed(42)
   lay <- ggraph::create_layout(graph, layout = "fr")
 
-  n_clusters <- length(unique(igraph::V(graph)$cluster))
+  # A "motif cluster" means CDR3s that actually cluster together (>= 2 nodes).
+  # With show_isolated the graph also carries isolated singletons, which are not
+  # motifs — they must not inflate the cluster count or get consensus labels.
+  cluster_sizes <- table(lay$cluster)
+  multi_clusters <- names(cluster_sizes)[cluster_sizes >= 2]
+  n_clusters <- length(multi_clusters)
   subtitle <- sprintf(
     "%d CDR3 in %d motif cluster(s). Edge = Hamming distance 1.",
     igraph::vcount(graph),
@@ -1163,19 +1174,35 @@ ir_build_motif_plot <- function(graph, color_by = NULL, chain = NULL) {
     "cluster"
   }
 
-  # Per-cluster consensus labels, placed above each component.
+  # Per-cluster consensus labels, placed above each component. Only multi-node
+  # clusters get a label; an isolated singleton's "consensus" is just itself,
+  # so labelling hundreds of them buries the plot.
   y_pad <- if (diff(range(lay$y)) > 0) diff(range(lay$y)) * 0.05 else 0.5
-  cl_lab <- do.call(
-    rbind,
-    lapply(split(lay, lay$cluster), function(d) {
-      data.frame(
-        x = mean(d$x),
-        y = max(d$y) + y_pad,
-        label = d$motif_consensus[1],
-        stringsAsFactors = FALSE
-      )
-    })
-  )
+  lay_multi <- lay[
+    as.character(lay$cluster) %in% multi_clusters,
+    ,
+    drop = FALSE
+  ]
+  cl_lab <- if (nrow(lay_multi) == 0) {
+    data.frame(
+      x = numeric(0),
+      y = numeric(0),
+      label = character(0),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    do.call(
+      rbind,
+      lapply(split(lay_multi, lay_multi$cluster), function(d) {
+        data.frame(
+          x = mean(d$x),
+          y = max(d$y) + y_pad,
+          label = d$motif_consensus[1],
+          stringsAsFactors = FALSE
+        )
+      })
+    )
+  }
 
   p <- ggraph::ggraph(lay) +
     ggraph::geom_edge_link(colour = "grey60", alpha = 0.6) +
@@ -1204,16 +1231,23 @@ ir_build_motif_plot <- function(graph, color_by = NULL, chain = NULL) {
     ggplot2::theme(
       plot.title = ggplot2::element_text(face = "bold", hjust = 0.5),
       plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 9),
-      # A per-cluster colour legend is only useful for a handful of clusters;
-      # with many (e.g. when unclustered CDR3s are shown, each an own cluster)
-      # it becomes hundreds of unreadable entries, so drop it. A metadata
-      # colour legend has few categories and is always kept.
-      legend.position = if (
-        color_col == "cluster" && n_clusters > IR_MOTIF_MAX_LEGEND_CLUSTERS
+      # Legend visibility precedence:
+      #  1. user's Show/Hide control: "hide" always wins.
+      #  2. auto-hide a per-cluster colour legend that would be hundreds of
+      #     unreadable entries. Gates on the number of colour LEVELS (every
+      #     distinct cluster, singletons included), not n_clusters (multi-node
+      #     only), so isolated CDR3s still trigger the hide. A metadata colour
+      #     legend has few categories and is never auto-hidden.
+      #  3. otherwise place it where the user asked (legend_pos).
+      legend.position = if (identical(show_legend, "hide")) {
+        "none"
+      } else if (
+        color_col == "cluster" &&
+          length(cluster_sizes) > IR_MOTIF_MAX_LEGEND_CLUSTERS
       ) {
         "none"
       } else {
-        "right"
+        legend_pos
       }
     )
   p
