@@ -900,7 +900,8 @@ ir_build_sharing_plot <- function(data, chain, unit_col, group_by = NULL) {
 has_motif_deps <- function() {
   requireNamespace("stringdist", quietly = TRUE) &&
     requireNamespace("igraph", quietly = TRUE) &&
-    requireNamespace("ggraph", quietly = TRUE)
+    requireNamespace("ggraph", quietly = TRUE) &&
+    requireNamespace("visNetwork", quietly = TRUE)
 }
 
 ## ---- Consensus of equal-length seqs; differing positions -> "x" -------- ##
