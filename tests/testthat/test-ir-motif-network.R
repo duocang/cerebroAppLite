@@ -229,6 +229,41 @@ test_that("ir_build_motif_graph min_size drops small clusters", {
   expect_null(g)
 })
 
+test_that("ir_build_motif_graph keeps j_gene and a cell_type distribution", {
+  # Two cells share CDR3 CASSL but differ in cell_type; CASSF is a Hamming-1
+  # neighbour so the pair forms a cluster.
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:3),
+      CTgene = c(
+        "TRBV1..TRBJ1.TRBC1",
+        "TRBV1..TRBJ1.TRBC1",
+        "TRBV1..TRBJ1.TRBC1"
+      ),
+      CTaa = c("CASSL", "CASSL", "CASSF"),
+      sample = c("s1", "s1", "s1"),
+      cell_type = c("CD8 T", "CD4 T", "CD8 T"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  expect_true(inherits(g, "igraph"))
+  expect_true("j_gene" %in% igraph::vertex_attr_names(g))
+  expect_true("cell_type_dist" %in% igraph::vertex_attr_names(g))
+  va <- igraph::vertex_attr(g)
+  cassl_dist <- va$cell_type_dist[va$name == "CASSL"]
+  expect_match(cassl_dist, "2 types")
+  expect_match(cassl_dist, "CD8 T")
+  expect_match(cassl_dist, "CD4 T")
+})
+
 # --- ir_build_motif_plot ---------------------------------------------------
 
 test_that("ir_build_motif_plot returns a ggplot for a valid graph", {

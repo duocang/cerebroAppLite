@@ -1072,6 +1072,22 @@ ir_build_motif_graph <- function(
     }
     names(sort(table(x), decreasing = TRUE))[1]
   }
+  # Compact "N types: A (5), B (2)" summary of a categorical vector, count-desc.
+  dist_str <- function(x) {
+    x <- x[!is.na(x) & nzchar(as.character(x))]
+    if (length(x) == 0) {
+      return(NA_character_)
+    }
+    tab <- sort(table(as.character(x)), decreasing = TRUE)
+    parts <- paste0(names(tab), " (", as.integer(tab), ")")
+    sprintf(
+      "%d type%s: %s",
+      length(tab),
+      if (length(tab) == 1) "" else "s",
+      paste(parts, collapse = ", ")
+    )
+  }
+  has_cell_type <- "cell_type" %in% colnames(seg)
   agg <- do.call(
     rbind,
     lapply(split(seg, seg$cdr3), function(d) {
@@ -1079,9 +1095,15 @@ ir_build_motif_graph <- function(
         cdr3 = d$cdr3[1],
         cdr3_length = d$cdr3_length[1],
         v_gene = mode_val(as.character(d$v_gene)),
+        j_gene = mode_val(as.character(d$j_gene)),
         clone_count = nrow(d),
         stringsAsFactors = FALSE
       )
+      row$cell_type_dist <- if (has_cell_type) {
+        dist_str(d$cell_type)
+      } else {
+        NA_character_
+      }
       for (mc in meta_cols) {
         row[[mc]] <- mode_val(as.character(d[[mc]]))
       }
