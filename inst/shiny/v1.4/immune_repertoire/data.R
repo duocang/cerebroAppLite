@@ -1415,6 +1415,9 @@ ir_build_motif_visnet <- function(
     # Real points show their variable-residue letter just ABOVE the dot (a small
     # dot can't hold text inside), dark and bold so it reads against the canvas.
     shape = "dot",
+    # Point AREA scales with clone_count via `value` + visNodes(scaling); `size`
+    # is left NA on real points so it does not override the value-based scaling.
+    size = NA_real_,
     font.size = 18,
     font.color = "#2a3f5f",
     font.vadjust = -22,
@@ -1461,11 +1464,14 @@ ir_build_motif_visnet <- function(
       data.frame(
         id = title_id,
         label = as.character(lab),
+        # Title nodes are text only: no value (kept out of size scaling) and a
+        # fixed nominal size so they never participate in the clone-size scale.
         value = NA_real_,
         group = NA_character_,
         color = "#2a3f5f",
         title = NA_character_,
         shape = "text",
+        size = 1,
         font.size = 22,
         font.color = "#2a3f5f",
         font.vadjust = 0,
