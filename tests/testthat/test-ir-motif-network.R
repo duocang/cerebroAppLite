@@ -339,8 +339,11 @@ test_that("ir_build_motif_visnet builds nodes/edges with tooltips", {
   expect_true(all(grepl("CASS", real$title)))
   expect_true(any(grepl("Clone size", real$title)))
   expect_true(any(grepl("type", real$title)))
-  # A hidden tether edge anchors the title to its cluster.
-  expect_true(any(vn$edges$hidden))
+  # The title node is physics-free and tagged with the cluster it labels, so
+  # the client can pin it over that cluster's points. No tether edge is added.
+  expect_false(titles_n$physics)
+  expect_true(titles_n$cl %in% real$cl)
+  expect_equal(ncol(vn$edges), 2L)
 })
 
 test_that("ir_build_motif_visnet titles only multi-node clusters", {

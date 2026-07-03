@@ -1412,6 +1412,10 @@ ir_build_motif_visnet <- function(
     group = group_raw,
     color = node_color,
     title = titles,
+    # `cl` (topological cluster id) lets the client place each consensus title
+    # over its cluster's centroid after layout settles. A node's role is read
+    # from `shape` ("dot" = real point, "text" = title), not from `cl`.
+    cl = as.integer(topo_cluster),
     # Real points show their variable-residue letter just ABOVE the dot (a small
     # dot can't hold text inside), dark and bold so it reads against the canvas.
     shape = "dot",
@@ -1421,35 +1425,25 @@ ir_build_motif_visnet <- function(
     font.size = 18,
     font.color = "#2a3f5f",
     font.vadjust = -22,
+    # Real points are laid out by physics.
+    physics = TRUE,
     stringsAsFactors = FALSE
   )
 
   el <- igraph::as_edgelist(graph, names = FALSE)
   edges <- if (nrow(el) == 0) {
-    data.frame(
-      from = integer(0),
-      to = integer(0),
-      hidden = logical(0),
-      length = numeric(0),
-      stringsAsFactors = FALSE
-    )
+    data.frame(from = integer(0), to = integer(0), stringsAsFactors = FALSE)
   } else {
-    data.frame(
-      from = el[, 1],
-      to = el[, 2],
-      hidden = FALSE,
-      length = NA_real_,
-      stringsAsFactors = FALSE
-    )
+    data.frame(from = el[, 1], to = el[, 2], stringsAsFactors = FALSE)
   }
 
   # Per-cluster CONSENSUS title: one extra text-only node per multi-node
-  # cluster, tethered to the cluster's largest node by a hidden edge so the
-  # physics engine floats it next to (not on top of) the cluster. shape="text"
-  # means it has no filled circle to overlap points or links.
+  # cluster. It is physics-free (physics = FALSE) and carries no edge; the
+  # client pins it above its cluster's centroid once the layout stabilises
+  # (see the visEvents "stabilized" handler), so it never drifts or overlaps.
   title_id <- n
-  for (cl in unique(topo_cluster)) {
-    idx <- which(topo_cluster == cl)
+  for (cl in sort(unique(as.integer(topo_cluster)))) {
+    idx <- which(as.integer(topo_cluster) == cl)
     if (length(idx) < 2) {
       next # singleton: no cluster title
     }
@@ -1470,22 +1464,15 @@ ir_build_motif_visnet <- function(
         group = NA_character_,
         color = "#2a3f5f",
         title = NA_character_,
+        # A title's `cl` names the cluster it labels, so the client can find
+        # that cluster's points and centre the title above them.
+        cl = cl,
         shape = "text",
         size = 1,
         font.size = 22,
         font.color = "#2a3f5f",
         font.vadjust = 0,
-        stringsAsFactors = FALSE
-      )
-    )
-    edges <- rbind(
-      edges,
-      data.frame(
-        from = rep_i,
-        to = title_id,
-        hidden = TRUE,
-        # Short spring so the title floats right next to its cluster, not adrift.
-        length = 60,
+        physics = FALSE,
         stringsAsFactors = FALSE
       )
     )

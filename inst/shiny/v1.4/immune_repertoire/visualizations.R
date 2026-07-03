@@ -2070,8 +2070,6 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
       scaling = list(min = 8, max = 40),
       font = list(face = "sans-serif")
     ) %>%
-    # Real similarity links are grey; the hidden tether edges (edges$hidden =
-    # TRUE) that anchor consensus titles are not drawn.
     visNetwork::visEdges(color = list(color = "grey60")) %>%
     visNetwork::visPhysics(
       solver = "forceAtlas2Based",
@@ -2079,6 +2077,39 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
     ) %>%
     visNetwork::visOptions(
       highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE)
+    ) %>%
+    # Once the force layout settles, pin each consensus title (shape "text",
+    # physics off) just above the centroid of its cluster's points, so it reads
+    # as that cluster's heading and never drifts. Matching is by `cl`.
+    visNetwork::visEvents(
+      stabilized = "function() {
+      var self = this;
+      var all = self.body.data.nodes.get();
+      var pts = {};
+      all.forEach(function(nd) {
+        if (nd.shape === 'dot' && nd.cl != null) {
+          (pts[nd.cl] = pts[nd.cl] || []).push(nd.id);
+        }
+      });
+      var pos = self.getPositions();
+      var moves = [];
+      all.forEach(function(nd) {
+        if (nd.shape !== 'text' || nd.cl == null) { return; }
+        var ids = pts[nd.cl];
+        if (!ids || !ids.length) { return; }
+        var sx = 0, minY = Infinity;
+        ids.forEach(function(id) {
+          var p = pos[id];
+          if (!p) { return; }
+          sx += p.x;
+          if (p.y < minY) { minY = p.y; }
+        });
+        moves.push({ id: nd.id, x: sx / ids.length, y: minY - 42 });
+      });
+      if (moves.length) {
+        moves.forEach(function(m) { self.moveNode(m.id, m.x, m.y); });
+      }
+    }"
     )
   if (!vn$hide_legend && !is.null(vn$legend) && nrow(vn$legend) > 0) {
     # plotly-style legend as an HTML overlay pinned to the right of the graph.
