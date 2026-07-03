@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cerebroAppLite</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,6 +65,16 @@
       <small>Source: <a href="https://github.com/mihem/cerebroAppLite/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.7.5" id="cerebroapplite-175">cerebroAppLite 1.7.5<a class="anchor" aria-label="anchor" href="#cerebroapplite-175"></a></h2>
+<div class="section level3">
+<h3 id="immune-repertoire-1-7-5">Immune repertoire<a class="anchor" aria-label="anchor" href="#immune-repertoire-1-7-5"></a></h3>
+<ul><li>
+<strong>Definition tab</strong>: a clone-definition resolution waterfall counting how many unique entities remain at each level — cells, V, J, V+J, CDR3, V+CDR3, V+J+CDR3 — so you can see how aggressively a clone definition collapses the data. Parsed from the CT* columns for the active chain, and optionally faceted by the active “Group results by” column. BCR chains carry a subtitle caveat that CDR3 is not collapsed by somatic hypermutation, so clones may be split.</li>
+<li>
+<strong>Clone Sharing tab</strong>: classifies every clonotype (V+J+CDR3 of the active chain) as Private (in a single unit), Public within-group, or Public cross-group, using a configurable “sharing unit” (any categorical metadata column, default <code>sample</code>) and the active group column. With no group selected it degrades to Private / Shared. Bars show the count and percentage of clonotypes in each class.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.7.4" id="cerebroapplite-174">cerebroAppLite 1.7.4<a class="anchor" aria-label="anchor" href="#cerebroapplite-174"></a></h2>
 <div class="section level3">
