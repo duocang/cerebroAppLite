@@ -1166,6 +1166,22 @@ ir_build_motif_graph <- function(
 ## entry per cluster), so the motif plot hides it. Metadata legends are unaffected.
 IR_MOTIF_MAX_LEGEND_CLUSTERS <- 10
 
+## Categorical palette for motif node colouring + legend. High-contrast, close
+## in spirit to plotly/D3 category colours; nodes and the custom legend share it
+## so the swatches always match the drawn points.
+IR_MOTIF_PALETTE <- c(
+  "#636EFA",
+  "#EF553B",
+  "#00CC96",
+  "#AB63FA",
+  "#FFA15A",
+  "#19D3F3",
+  "#FF6692",
+  "#B6E880",
+  "#FF97FF",
+  "#FECB52"
+)
+
 ## ---- Draw the motif network with ggraph -------------------------------- ##
 ## Nodes = CDR3, edges = Hamming-1 neighbours; node size = clone_count. Colour
 ## by motif cluster (color_by = NULL) or by a metadata column. Cluster consensus
@@ -1357,11 +1373,31 @@ ir_build_motif_visnet <- function(
     character(1)
   )
 
+  # Explicit colour per level so the nodes and the legend share one palette
+  # (vis's auto group colouring is opaque and can't be mirrored in a custom
+  # legend). Levels are ordered: cluster levels numerically, others by first
+  # appearance. Colours cycle through IR_MOTIF_PALETTE.
+  group_raw <- as.character(get_attr(color_col))
+  levels_ord <- if (color_col == "cluster") {
+    as.character(sort(unique(suppressWarnings(as.numeric(group_raw)))))
+  } else {
+    unique(group_raw[!is.na(group_raw)])
+  }
+  levels_ord <- levels_ord[!is.na(levels_ord)]
+  pal <- IR_MOTIF_PALETTE
+  level_colors <- setNames(
+    pal[((seq_along(levels_ord) - 1) %% length(pal)) + 1],
+    levels_ord
+  )
+  node_color <- unname(level_colors[group_raw])
+  node_color[is.na(node_color)] <- "grey70"
+
   nodes <- data.frame(
     id = seq_len(n),
     label = as.character(cdr3),
     value = as.numeric(clone_count),
-    group = as.character(get_attr(color_col)),
+    group = group_raw,
+    color = node_color,
     title = titles,
     stringsAsFactors = FALSE
   )
@@ -1375,14 +1411,31 @@ ir_build_motif_visnet <- function(
 
   # Suppress a legend that would be hundreds of unreadable cluster entries, or
   # when the user asked to hide it. Mirrors ir_build_motif_plot's gate.
-  n_levels <- length(unique(nodes$group))
+  n_levels <- length(levels_ord)
   hide_legend <- identical(show_legend, "hide") ||
     (color_col == "cluster" && n_levels > IR_MOTIF_MAX_LEGEND_CLUSTERS)
+
+  # plotly-style legend: a titled, right-hand column of coloured dots + labels.
+  # Cluster levels read as "Cluster N"; metadata levels keep their own value.
+  legend_title <- if (color_col == "cluster") "Motif cluster" else color_col
+  legend_labels <- if (color_col == "cluster") {
+    paste("Cluster", levels_ord)
+  } else {
+    levels_ord
+  }
+  legend <- data.frame(
+    label = legend_labels,
+    color = unname(level_colors[levels_ord]),
+    shape = "dot",
+    stringsAsFactors = FALSE
+  )
 
   list(
     nodes = nodes,
     edges = edges,
     color_col = color_col,
-    hide_legend = hide_legend
+    hide_legend = hide_legend,
+    legend = legend,
+    legend_title = legend_title
   )
 }

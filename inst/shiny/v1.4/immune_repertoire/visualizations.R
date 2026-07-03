@@ -2071,8 +2071,50 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
     visNetwork::visOptions(
       highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE)
     )
-  if (!vn$hide_legend) {
-    net <- net %>% visNetwork::visLegend(enabled = TRUE)
+  if (!vn$hide_legend && !is.null(vn$legend) && nrow(vn$legend) > 0) {
+    # plotly-style legend as an HTML overlay pinned to the right of the graph.
+    # vis's own canvas legend clips long labels at the container edge, so we
+    # inject a real HTML block instead: a bold title over a column of coloured
+    # dots + text labels, built from the same palette the nodes use. onRender
+    # runs client-side after the widget draws; `el` is the widget container.
+    esc_html <- function(x) {
+      x <- as.character(x)
+      x <- gsub("&", "&amp;", x, fixed = TRUE)
+      x <- gsub("<", "&lt;", x, fixed = TRUE)
+      x <- gsub(">", "&gt;", x, fixed = TRUE)
+      gsub('"', "&quot;", x, fixed = TRUE)
+    }
+    rows <- paste0(
+      "<div style=\"display:flex;align-items:center;margin:6px 0;\">",
+      "<span style=\"display:inline-block;width:13px;height:13px;border-radius:50%;",
+      "background:",
+      esc_html(vn$legend$color),
+      ";margin-right:8px;flex:none;\"></span>",
+      "<span style=\"white-space:nowrap;\">",
+      esc_html(vn$legend$label),
+      "</span></div>",
+      collapse = ""
+    )
+    legend_html <- paste0(
+      "<div class=\"ir-motif-legend\" style=\"position:absolute;top:16px;right:12px;",
+      "font-family:sans-serif;font-size:14px;color:#2a3f5f;z-index:5;",
+      "background:rgba(255,255,255,0.85);padding:4px 8px;pointer-events:none;\">",
+      "<div style=\"font-size:16px;font-weight:bold;margin-bottom:8px;\">",
+      esc_html(vn$legend_title),
+      "</div>",
+      rows,
+      "</div>"
+    )
+    js <- sprintf(
+      "function(el, x) {
+         el.style.position = 'relative';
+         var old = el.querySelector('.ir-motif-legend');
+         if (old) { old.remove(); }
+         el.insertAdjacentHTML('beforeend', %s);
+       }",
+      jsonlite::toJSON(legend_html, auto_unbox = TRUE)
+    )
+    net <- htmlwidgets::onRender(net, js)
   }
   net
 })

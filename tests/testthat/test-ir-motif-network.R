@@ -340,6 +340,63 @@ test_that("ir_build_motif_visnet returns NULL for a NULL graph", {
   expect_null(ir_build_motif_visnet(NULL, color_by = NULL, chain = "TRB"))
 })
 
+test_that("ir_build_motif_visnet builds a palette-matched legend", {
+  skip_if_not_installed("igraph")
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:4),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 4),
+      CTaa = c("CASSL", "CASSL", "CASSF", "CASSF"),
+      sample = c("s1", "s1", "s1", "s1"),
+      cell_type = c("CD8 T", "CD4 T", "CD8 T", "CD8 T"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
+  # Legend present with a title and one row per colour level.
+  expect_true(all(c("legend", "legend_title") %in% names(vn)))
+  expect_equal(vn$legend_title, "Motif cluster")
+  expect_true(all(c("label", "color", "shape") %in% names(vn$legend)))
+  expect_match(vn$legend$label[1], "Cluster")
+  # Every node colour comes from the legend palette (nodes/legend share it).
+  expect_true(all(vn$nodes$color %in% vn$legend$color))
+})
+
+test_that("ir_build_motif_visnet titles the legend by the metadata column", {
+  skip_if_not_installed("igraph")
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:3),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 3),
+      CTaa = c("CASSL", "CASSF", "CASTL"),
+      sample = c("a", "b", "a"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  vn <- ir_build_motif_visnet(g, color_by = "sample", chain = "TRB")
+  expect_equal(vn$legend_title, "sample")
+  # Metadata legend labels are the raw values, not "Cluster N".
+  expect_true(all(vn$legend$label %in% c("a", "b")))
+})
+
 test_that("ir_build_motif_visnet hides legend past the cluster threshold", {
   skip_if_not_installed("igraph")
   # Build many singleton clusters so the level count exceeds the threshold.
