@@ -50,6 +50,19 @@
 - **Unified plot heights**: the immune repertoire tabs now share a single plot
   height (`ir_fill_plot` / `ir_fill_wrap` helpers) instead of repeating a
   per-tab pixel value.
+- **Definition tab**: a clone-definition resolution waterfall counting how many
+  unique entities remain at each level — cells, V, J, V+J, CDR3, V+CDR3,
+  V+J+CDR3 — so you can see how aggressively a clone definition collapses the
+  data. Parsed from the CT* columns for the active chain, and optionally
+  faceted by the active "Group results by" column. BCR chains carry a subtitle
+  caveat that CDR3 is not collapsed by somatic hypermutation, so clones may be
+  split.
+- **Clone Sharing tab**: classifies every clonotype (V+J+CDR3 of the active
+  chain) as Private (in a single unit), Public within-group, or Public
+  cross-group, using a configurable "sharing unit" (any categorical metadata
+  column, default `sample`) and the active group column. With no group selected
+  it degrades to Private / Shared. Bars show the count and percentage of
+  clonotypes in each class.
 
 # cerebroAppLite 1.7.3
 
