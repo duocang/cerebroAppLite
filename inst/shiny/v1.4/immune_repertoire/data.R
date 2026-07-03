@@ -1106,6 +1106,9 @@ ir_build_motif_graph <- function(
       }
       for (mc in meta_cols) {
         row[[mc]] <- mode_val(as.character(d[[mc]]))
+        # Per-column value distribution, so the tooltip can show how a node's
+        # cells split across the active colour column (e.g. "sample_1 (3)").
+        row[[paste0(mc, "__dist")]] <- dist_str(d[[mc]])
       }
       row
     })
@@ -1159,6 +1162,9 @@ ir_build_motif_graph <- function(
     return(NULL)
   }
   igraph::V(g)$cluster <- igraph::components(g)$membership
+  # Total cells parsed for this chain (before any motif filtering) — the
+  # denominator for a node's clone-size fraction shown in the tooltip.
+  g <- igraph::set_graph_attr(g, "total_cells", nrow(seg))
   g
 }
 
@@ -1346,32 +1352,7 @@ ir_build_motif_visnet <- function(
   v_gene <- get_attr("v_gene")
   j_gene <- get_attr("j_gene")
   cell_dist <- get_attr("cell_type_dist")
-
-  # HTML tooltip lines; a line is dropped when its value is missing.
-  esc <- function(x) {
-    x <- as.character(x)
-    x <- gsub("&", "&amp;", x, fixed = TRUE)
-    x <- gsub("<", "&lt;", x, fixed = TRUE)
-    gsub(">", "&gt;", x, fixed = TRUE)
-  }
-  has_chain <- !is.null(chain) &&
-    length(chain) == 1 &&
-    !is.na(chain) &&
-    nzchar(chain)
-  titles <- vapply(
-    seq_len(n),
-    function(i) {
-      lines <- c(
-        sprintf("<b>%s</b>", esc(cdr3[i])),
-        sprintf("Clone size: %s", esc(clone_count[i])),
-        if (!is.na(cell_dist[i])) esc(cell_dist[i]) else NULL,
-        if (has_chain) sprintf("Chain: %s", esc(chain)) else NULL,
-        sprintf("V/J: %s / %s", esc(v_gene[i]), esc(j_gene[i]))
-      )
-      paste(lines, collapse = "<br>")
-    },
-    character(1)
-  )
+  cdr3_len <- get_attr("cdr3_length")
 
   # Explicit colour per level so the nodes and the legend share one palette
   # (vis's auto group colouring is opaque and can't be mirrored in a custom
@@ -1402,6 +1383,87 @@ ir_build_motif_visnet <- function(
   node_label <- vapply(
     seq_len(n),
     function(i) ir_motif_variable_aa(cdr3[i], consensus[i]),
+    character(1)
+  )
+
+  # HTML tooltip. Lines with a missing value are dropped. Built after color_col
+  # so the active colour column's per-node distribution can be shown.
+  esc <- function(x) {
+    x <- as.character(x)
+    x <- gsub("&", "&amp;", x, fixed = TRUE)
+    x <- gsub("<", "&lt;", x, fixed = TRUE)
+    gsub(">", "&gt;", x, fixed = TRUE)
+  }
+  has_chain <- !is.null(chain) &&
+    length(chain) == 1 &&
+    !is.na(chain) &&
+    nzchar(chain)
+  deg <- igraph::degree(graph)
+  csize_tab <- table(topo_cluster)
+  cluster_size <- as.integer(csize_tab[as.character(topo_cluster)])
+  total_cells <- tryCatch(
+    igraph::graph_attr(graph, "total_cells"),
+    error = function(e) NULL
+  )
+  if (length(total_cells) != 1 || is.na(total_cells)) {
+    total_cells <- NA_real_
+  }
+  # Distribution of the active colour column across a node's cells (metadata
+  # colouring only). Skipped for cluster colouring (its identity is the "Motif
+  # cluster" line) and for cell_type (already shown by the cell-type line).
+  color_dist <- if (!color_col %in% c("cluster", "cell_type")) {
+    get_attr(paste0(color_col, "__dist"))
+  } else {
+    rep(NA_character_, n)
+  }
+  titles <- vapply(
+    seq_len(n),
+    function(i) {
+      frac <- if (
+        !is.na(total_cells) && total_cells > 0 && !is.na(clone_count[i])
+      ) {
+        sprintf(" (%.1f%%)", 100 * clone_count[i] / total_cells)
+      } else {
+        ""
+      }
+      lines <- c(
+        sprintf("<b>%s</b>", esc(cdr3[i])),
+        if (!is.na(cdr3_len[i])) {
+          sprintf("Length: %s aa", esc(cdr3_len[i]))
+        } else {
+          NULL
+        },
+        if (!is.na(topo_cluster[i]) && !is.na(consensus[i])) {
+          sprintf(
+            "Motif cluster %s &middot; %s",
+            esc(topo_cluster[i]),
+            esc(consensus[i])
+          )
+        } else {
+          NULL
+        },
+        if (nzchar(node_label[i])) {
+          sprintf("Variable residue: %s", esc(node_label[i]))
+        } else {
+          NULL
+        },
+        sprintf("Clone size: %s%s", esc(clone_count[i]), frac),
+        sprintf(
+          "Neighbours: %s &middot; cluster size %s",
+          esc(deg[i]),
+          esc(cluster_size[i])
+        ),
+        if (!is.na(cell_dist[i])) esc(cell_dist[i]) else NULL,
+        if (!is.na(color_dist[i])) {
+          sprintf("%s: %s", esc(color_col), esc(color_dist[i]))
+        } else {
+          NULL
+        },
+        if (has_chain) sprintf("Chain: %s", esc(chain)) else NULL,
+        sprintf("V/J: %s / %s", esc(v_gene[i]), esc(j_gene[i]))
+      )
+      paste(lines, collapse = "<br>")
+    },
     character(1)
   )
 
@@ -1500,30 +1562,23 @@ ir_build_motif_visnet <- function(
   )
 
   # Size legend: node area encodes clone_count, so surface a few representative
-  # clone sizes (min / median / max of the real points) with the radius each
-  # maps to. vis's default scaling is LINEAR in value between size 8 and 40, so
-  # the swatch radius is computed the same way. Always shown (so the point-size
-  # -> clone-size mapping is explained even when the data has no variation); a
-  # single-value repertoire collapses to one representative swatch.
+  # clone sizes (min / median / max of the real points). Only the VALUES are
+  # returned here — the swatch radius is read back from vis on the client after
+  # layout, so the legend circles exactly match how vis actually draws the
+  # points (a small clone-size range no longer blows up into a tiny-vs-huge
+  # pair). Always shown; a single-value repertoire collapses to one swatch.
   cc <- as.numeric(clone_count)
   cc <- cc[is.finite(cc)]
   size_legend <- NULL
   if (length(cc) > 0) {
     lo <- min(cc)
     hi <- max(cc)
-    if (hi > lo) {
-      reps <- sort(unique(c(lo, round(stats::median(cc)), hi)))
-      radius <- 8 + (40 - 8) * (reps - lo) / (hi - lo)
+    reps <- if (hi > lo) {
+      sort(unique(c(lo, round(stats::median(cc)), hi)))
     } else {
-      # Every point is the same clone size: one swatch at a mid radius.
-      reps <- lo
-      radius <- 24
+      lo
     }
-    size_legend <- data.frame(
-      value = reps,
-      radius = radius,
-      stringsAsFactors = FALSE
-    )
+    size_legend <- data.frame(value = reps, stringsAsFactors = FALSE)
   }
 
   list(

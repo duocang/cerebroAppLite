@@ -2066,8 +2066,23 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
     # titles on text nodes) comes per-node from the data: font.size, font.color,
     # and shape are set per row so point labels are white-on-colour and the
     # consensus titles are dark text.
+    # Node size encodes clone_count. vis's default scaling stretches [min,max]
+    # to fill [8,40] regardless of how narrow the range is, so a 1-vs-2 clone
+    # difference blows up to a 5x radius gap. A custom, ABSOLUTE mapping keeps
+    # small clone sizes close together and only lets big clonal expansions grow
+    # large: norm = (value-1)/(value-1+20), so 1->8px, 2->~9.5px, 10->~18px,
+    # 100->~34px. The legend reads these same radii back, so it stays in sync.
     visNetwork::visNodes(
-      scaling = list(min = 8, max = 40),
+      scaling = list(
+        min = 8,
+        max = 40,
+        customScalingFunction = htmlwidgets::JS(
+          "function(min, max, total, value) {
+             var v = Math.max(0, value - 1);
+             return v / (v + 20);
+           }"
+        )
+      ),
       font = list(face = "sans-serif")
     ) %>%
     visNetwork::visEdges(color = list(color = "grey60")) %>%
@@ -2082,7 +2097,8 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
     # physics off) just above the centroid of its cluster's points, so it reads
     # as that cluster's heading and never drifts. Matching is by `cl`.
     visNetwork::visEvents(
-      stabilized = "function() {
+      stabilized = sprintf(
+        "function() {
       var self = this;
       var all = self.body.data.nodes.get();
       var pts = {};
@@ -2109,7 +2125,56 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
       if (moves.length) {
         moves.forEach(function(m) { self.moveNode(m.id, m.x, m.y); });
       }
-    }"
+
+      // Clone-size legend: read the ACTUAL rendered radius vis gives each
+      // clone_count value, so the legend circles match the points exactly.
+      var reps = %s;
+      // Walk up from the vis canvas to the widget root, then find the swatch
+      // container the legend HTML left for us.
+      var root = self.body.container, cont = null;
+      while (root && !cont) {
+        cont = root.querySelector ? root.querySelector('.ir-size-swatches') : null;
+        root = root.parentElement;
+      }
+      if (reps && reps.length && cont) {
+        // Map every real clone_count value to the radius vis drew for it.
+        var r2 = {};
+        all.forEach(function(nd) {
+          if (nd.shape !== 'dot' || nd.value == null) { return; }
+          var no = self.body.nodes[nd.id];
+          if (no && no.shape && no.shape.radius) { r2[nd.value] = no.shape.radius; }
+        });
+        var vals = Object.keys(r2).map(Number);
+        var radiusFor = function(v) {
+          if (r2[v] != null) { return r2[v]; }
+          // nearest known value's radius (reps come from real values, so this
+          // is a safety net only).
+          var best = null, bd = Infinity;
+          vals.forEach(function(k) {
+            var d = Math.abs(k - v);
+            if (d < bd) { bd = d; best = k; }
+          });
+          return best == null ? 8 : r2[best];
+        };
+        var rads = reps.map(radiusFor);
+        var maxD = Math.max.apply(null, rads.map(function(r){ return 2*r; })) + 4;
+        var html = reps.map(function(v, i) {
+          var d = Math.round(2 * rads[i]);
+          return '<div style=\"display:flex;align-items:center;margin:6px 0;\">' +
+            '<span style=\"display:flex;width:' + maxD + 'px;justify-content:center;' +
+            'align-items:center;flex:none;margin-right:8px;\">' +
+            '<span style=\"display:block;border-radius:50%%;background:#b8c2d6;' +
+            'flex:none;width:' + d + 'px;height:' + d + 'px;\"></span></span>' +
+            '<span style=\"white-space:nowrap;\">' + v + '</span></div>';
+        }).join('');
+        cont.innerHTML = html;
+      }
+    }",
+        jsonlite::toJSON(
+          if (is.null(vn$size_legend)) numeric(0) else vn$size_legend$value,
+          auto_unbox = FALSE
+        )
+      )
     )
   if (!vn$hide_legend && !is.null(vn$legend) && nrow(vn$legend) > 0) {
     # plotly-style legend as an HTML overlay pinned to the right of the graph.
@@ -2135,36 +2200,16 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
       "</span></div>",
       collapse = ""
     )
-    # Size legend: a "Clone size" sub-section of grey circles sized to the same
-    # scale as the nodes, next to their clone_count. Omitted when all points are
-    # the same size (vn$size_legend is NULL).
+    # Size legend: a "Clone size" sub-section whose grey circles are sized on
+    # the client to exactly match how vis draws the points (see the stabilized
+    # handler). Here we only emit the title + an empty container the handler
+    # fills once real radii are known. Omitted when vn$size_legend is NULL.
     size_html <- ""
     if (!is.null(vn$size_legend) && nrow(vn$size_legend) > 0) {
-      diam <- round(2 * vn$size_legend$radius)
-      # The swatch column is as wide as the largest circle so no circle is
-      # squeezed into an ellipse; each circle keeps equal width/height.
-      col_w <- max(diam) + 4
-      size_rows <- paste0(
-        "<div style=\"display:flex;align-items:center;margin:6px 0;\">",
-        "<span style=\"display:flex;width:",
-        col_w,
-        "px;justify-content:center;",
-        "align-items:center;flex:none;margin-right:8px;\">",
-        "<span style=\"display:block;border-radius:50%;",
-        "background:#b8c2d6;flex:none;width:",
-        diam,
-        "px;height:",
-        diam,
-        "px;\"></span></span>",
-        "<span style=\"white-space:nowrap;\">",
-        esc_html(vn$size_legend$value),
-        "</span></div>",
-        collapse = ""
-      )
       size_html <- paste0(
         "<div style=\"font-size:16px;font-weight:bold;margin:14px 0 8px;\">",
         "Clone size</div>",
-        size_rows
+        "<div class=\"ir-size-swatches\"></div>"
       )
     }
     legend_html <- paste0(

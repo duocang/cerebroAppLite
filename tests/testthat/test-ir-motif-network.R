@@ -339,11 +339,50 @@ test_that("ir_build_motif_visnet builds nodes/edges with tooltips", {
   expect_true(all(grepl("CASS", real$title)))
   expect_true(any(grepl("Clone size", real$title)))
   expect_true(any(grepl("type", real$title)))
+  # Extended tooltip fields (A + B).
+  expect_true(all(grepl("Length: 5 aa", real$title)))
+  expect_true(all(grepl("Motif cluster", real$title)))
+  expect_true(all(grepl("Variable residue: [LF]", real$title)))
+  expect_true(all(grepl("Neighbours: 1 &middot; cluster size 2", real$title)))
+  # clone_count 2 of total 4 cells -> 50.0%.
+  expect_true(all(grepl("Clone size: 2 \\(50.0%\\)", real$title)))
   # The title node is physics-free and tagged with the cluster it labels, so
   # the client can pin it over that cluster's points. No tether edge is added.
   expect_false(titles_n$physics)
   expect_true(titles_n$cl %in% real$cl)
   expect_equal(ncol(vn$edges), 2L)
+})
+
+test_that("ir_build_motif_visnet tooltip shows the active colour column's distribution", {
+  skip_if_not_installed("igraph")
+  # Two CDR3s in a cluster, each from a different sample -> colouring by sample
+  # should surface a "sample: ..." distribution line in the tooltip.
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:2),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 2),
+      CTaa = c("CASSL", "CASSF"),
+      sample = c("sample_1", "sample_2"),
+      cell_type = c("CD8 T", "CD4 T"),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  vn <- ir_build_motif_visnet(g, color_by = "sample", chain = "TRB")
+  real <- vn$nodes[vn$nodes$shape == "dot", ]
+  expect_true(any(grepl("sample: ", real$title)))
+  # cluster colouring does NOT add a colour-distribution line.
+  vn2 <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
+  real2 <- vn2$nodes[vn2$nodes$shape == "dot", ]
+  expect_false(any(grepl("cluster: ", real2$title)))
 })
 
 test_that("ir_build_motif_visnet titles only multi-node clusters", {
@@ -403,13 +442,13 @@ test_that("ir_build_motif_visnet emits a size legend when clone sizes differ", {
   )
   vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
   expect_false(is.null(vn$size_legend))
-  expect_true(all(c("value", "radius") %in% names(vn$size_legend)))
+  # Only representative values are returned; the swatch radius is read back from
+  # vis on the client so the circles match the drawn points exactly.
+  expect_true("value" %in% names(vn$size_legend))
+  expect_false("radius" %in% names(vn$size_legend))
   # Spans the observed clone-size range (min 1, max 5).
   expect_equal(min(vn$size_legend$value), 1)
   expect_equal(max(vn$size_legend$value), 5)
-  # Radii run from the scale floor (8) to its ceiling (40).
-  expect_equal(min(vn$size_legend$radius), 8)
-  expect_equal(max(vn$size_legend$radius), 40)
 })
 
 test_that("ir_build_motif_visnet collapses the size legend to one row when all points match", {
