@@ -1392,26 +1392,18 @@ ir_build_motif_visnet <- function(
   node_color <- unname(level_colors[group_raw])
   node_color[is.na(node_color)] <- "grey70"
 
-  # Node labels show the per-cluster CONSENSUS motif once, as a shared title for
-  # the cluster, instead of every node's full CDR3 (that lives in the tooltip).
-  # For each multi-node topological cluster the label is placed on its largest
-  # node (biggest clone_count); all other nodes and singleton clusters are left
-  # unlabelled. Falls back to the CDR3 when consensus is unavailable.
+  # Each real node is labelled with only its VARIABLE residues — the letters it
+  # carries at the consensus 'x' positions (e.g. consensus CASSxTGNEQFF, CDR3
+  # CASSLTGNEQFF -> "L"). This keeps the differing residue next to every point
+  # without repeating the shared backbone. Singletons (no consensus 'x') get no
+  # label; the full CDR3 stays in the tooltip.
   topo_cluster <- as.character(get_attr("cluster"))
   consensus <- get_attr("motif_consensus")
-  node_label <- rep("", n)
-  for (cl in unique(topo_cluster)) {
-    idx <- which(topo_cluster == cl)
-    if (length(idx) < 2) {
-      next # singleton: no cluster title
-    }
-    rep_i <- idx[which.max(as.numeric(clone_count[idx]))]
-    lab <- consensus[rep_i]
-    if (is.na(lab) || !nzchar(as.character(lab))) {
-      lab <- cdr3[rep_i]
-    }
-    node_label[rep_i] <- as.character(lab)
-  }
+  node_label <- vapply(
+    seq_len(n),
+    function(i) ir_motif_variable_aa(cdr3[i], consensus[i]),
+    character(1)
+  )
 
   nodes <- data.frame(
     id = seq_len(n),
@@ -1420,14 +1412,77 @@ ir_build_motif_visnet <- function(
     group = group_raw,
     color = node_color,
     title = titles,
+    # Real points show their variable-residue letter just ABOVE the dot (a small
+    # dot can't hold text inside), dark and bold so it reads against the canvas.
+    shape = "dot",
+    font.size = 18,
+    font.color = "#2a3f5f",
+    font.vadjust = -22,
     stringsAsFactors = FALSE
   )
 
   el <- igraph::as_edgelist(graph, names = FALSE)
   edges <- if (nrow(el) == 0) {
-    data.frame(from = integer(0), to = integer(0))
+    data.frame(
+      from = integer(0),
+      to = integer(0),
+      hidden = logical(0),
+      length = numeric(0),
+      stringsAsFactors = FALSE
+    )
   } else {
-    data.frame(from = el[, 1], to = el[, 2])
+    data.frame(
+      from = el[, 1],
+      to = el[, 2],
+      hidden = FALSE,
+      length = NA_real_,
+      stringsAsFactors = FALSE
+    )
+  }
+
+  # Per-cluster CONSENSUS title: one extra text-only node per multi-node
+  # cluster, tethered to the cluster's largest node by a hidden edge so the
+  # physics engine floats it next to (not on top of) the cluster. shape="text"
+  # means it has no filled circle to overlap points or links.
+  title_id <- n
+  for (cl in unique(topo_cluster)) {
+    idx <- which(topo_cluster == cl)
+    if (length(idx) < 2) {
+      next # singleton: no cluster title
+    }
+    rep_i <- idx[which.max(as.numeric(clone_count[idx]))]
+    lab <- consensus[rep_i]
+    if (is.na(lab) || !nzchar(as.character(lab))) {
+      next
+    }
+    title_id <- title_id + 1L
+    nodes <- rbind(
+      nodes,
+      data.frame(
+        id = title_id,
+        label = as.character(lab),
+        value = NA_real_,
+        group = NA_character_,
+        color = "#2a3f5f",
+        title = NA_character_,
+        shape = "text",
+        font.size = 22,
+        font.color = "#2a3f5f",
+        font.vadjust = 0,
+        stringsAsFactors = FALSE
+      )
+    )
+    edges <- rbind(
+      edges,
+      data.frame(
+        from = rep_i,
+        to = title_id,
+        hidden = TRUE,
+        # Short spring so the title floats right next to its cluster, not adrift.
+        length = 60,
+        stringsAsFactors = FALSE
+      )
+    )
   }
 
   # Suppress a legend that would be hundreds of unreadable cluster entries, or

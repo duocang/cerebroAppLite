@@ -2062,17 +2062,20 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
     )
   }
   net <- visNetwork::visNetwork(vn$nodes, vn$edges) %>%
+    # Node label styling (variable-residue letters inside points, consensus
+    # titles on text nodes) comes per-node from the data: font.size, font.color,
+    # and shape are set per row so point labels are white-on-colour and the
+    # consensus titles are dark text.
     visNetwork::visNodes(
       scaling = list(min = 8, max = 40),
-      # Only the per-cluster consensus nodes carry a label, so styling the label
-      # font large + bold makes those read as cluster titles rather than a stray
-      # point label. Placed above the node to sit over the cluster.
-      font = list(size = 20, face = "sans-serif", vadjust = -34, bold = TRUE)
+      font = list(face = "sans-serif")
     ) %>%
+    # Real similarity links are grey; the hidden tether edges (edges$hidden =
+    # TRUE) that anchor consensus titles are not drawn.
     visNetwork::visEdges(color = list(color = "grey60")) %>%
     visNetwork::visPhysics(
       solver = "forceAtlas2Based",
-      stabilization = list(iterations = 100)
+      stabilization = list(iterations = 150)
     ) %>%
     visNetwork::visOptions(
       highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE)

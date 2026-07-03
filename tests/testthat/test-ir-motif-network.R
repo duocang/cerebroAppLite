@@ -325,24 +325,28 @@ test_that("ir_build_motif_visnet builds nodes/edges with tooltips", {
   )
   vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
   expect_true(all(c("nodes", "edges") %in% names(vn)))
-  expect_equal(nrow(vn$nodes), igraph::vcount(g))
-  # Labels show the cluster CONSENSUS once (CASSL + CASSF -> "CASSx"), not every
-  # node's CDR3. Exactly one node in this single 2-node cluster is labelled.
-  labelled <- vn$nodes$label[nzchar(vn$nodes$label)]
-  expect_length(labelled, 1)
-  expect_equal(labelled, "CASSx")
-  # The full CDR3s live in the tooltip (title), not the node labels.
-  expect_true(all(grepl("CASS", vn$nodes$title)))
-  expect_true(any(grepl("Clone size", vn$nodes$title)))
-  expect_true(any(grepl("type", vn$nodes$title)))
-  # Node size (value) follows clone_count.
-  expect_true("value" %in% names(vn$nodes))
+  real <- vn$nodes[vn$nodes$shape == "dot", ]
+  titles_n <- vn$nodes[vn$nodes$shape == "text", ]
+  # One real point per CDR3 node in the graph.
+  expect_equal(nrow(real), igraph::vcount(g))
+  # Each real point is labelled with only its VARIABLE residue at the consensus
+  # 'x' position: CASSL -> "L", CASSF -> "F".
+  expect_setequal(real$label, c("L", "F"))
+  # The consensus (CASSL + CASSF -> "CASSx") appears once, as a text title node.
+  expect_equal(nrow(titles_n), 1)
+  expect_equal(titles_n$label, "CASSx")
+  # The full CDR3s live in the tooltip (title) of the real points.
+  expect_true(all(grepl("CASS", real$title)))
+  expect_true(any(grepl("Clone size", real$title)))
+  expect_true(any(grepl("type", real$title)))
+  # A hidden tether edge anchors the title to its cluster.
+  expect_true(any(vn$edges$hidden))
 })
 
-test_that("ir_build_motif_visnet leaves singleton clusters unlabelled", {
+test_that("ir_build_motif_visnet titles only multi-node clusters", {
   skip_if_not_installed("igraph")
-  # Two separate 2-node clusters + isolated CDR3s (show_isolated) → only the
-  # multi-node clusters get a consensus label.
+  # Two separate 2-node clusters + one isolated CDR3 (show_isolated) → two
+  # consensus title nodes; the isolated CDDDD gets no title and no label.
   data <- list(
     s1 = data.frame(
       barcode = paste0("b", 1:5),
@@ -363,10 +367,13 @@ test_that("ir_build_motif_visnet leaves singleton clusters unlabelled", {
     show_isolated = TRUE
   )
   vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
-  labelled <- vn$nodes$label[nzchar(vn$nodes$label)]
-  # Two multi-node clusters → two consensus labels; the isolated CDDDD is blank.
-  expect_length(labelled, 2)
-  expect_false(any(grepl("CDDDD", vn$nodes$label)))
+  titles_n <- vn$nodes[vn$nodes$shape == "text", ]
+  # Two multi-node clusters → two consensus title nodes.
+  expect_equal(nrow(titles_n), 2)
+  # The isolated singleton is neither titled nor variable-labelled.
+  real <- vn$nodes[vn$nodes$shape == "dot", ]
+  cdddd_label <- real$label[grepl("CDDDD", real$title)]
+  expect_true(all(cdddd_label == ""))
 })
 
 test_that("ir_build_motif_visnet returns NULL for a NULL graph", {
@@ -401,8 +408,10 @@ test_that("ir_build_motif_visnet builds a palette-matched legend", {
   expect_equal(vn$legend_title, "Motif cluster")
   expect_true(all(c("label", "color", "shape") %in% names(vn$legend)))
   expect_match(vn$legend$label[1], "Cluster")
-  # Every node colour comes from the legend palette (nodes/legend share it).
-  expect_true(all(vn$nodes$color %in% vn$legend$color))
+  # Every real point's colour comes from the legend palette (they share it);
+  # consensus title nodes are text-only and not palette-coloured.
+  real <- vn$nodes[vn$nodes$shape == "dot", ]
+  expect_true(all(real$color %in% vn$legend$color))
 })
 
 test_that("ir_build_motif_visnet titles the legend by the metadata column", {
