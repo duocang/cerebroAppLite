@@ -412,9 +412,10 @@ test_that("ir_build_motif_visnet emits a size legend when clone sizes differ", {
   expect_equal(max(vn$size_legend$radius), 40)
 })
 
-test_that("ir_build_motif_visnet omits the size legend when all points match", {
+test_that("ir_build_motif_visnet collapses the size legend to one row when all points match", {
   skip_if_not_installed("igraph")
-  # Every CDR3 is one cell -> no clone-size variation -> no size legend.
+  # Every CDR3 is one cell -> no clone-size variation -> a single-row legend
+  # (still shown, so the point-size -> clone-size mapping is always explained).
   data <- list(
     s1 = data.frame(
       barcode = paste0("b", 1:2),
@@ -434,7 +435,9 @@ test_that("ir_build_motif_visnet omits the size legend when all points match", {
     min_size = 1
   )
   vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
-  expect_null(vn$size_legend)
+  expect_false(is.null(vn$size_legend))
+  expect_equal(nrow(vn$size_legend), 1)
+  expect_equal(vn$size_legend$value, 1)
 })
 
 test_that("ir_build_motif_visnet returns NULL for a NULL graph", {
