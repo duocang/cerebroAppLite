@@ -1512,12 +1512,33 @@ ir_build_motif_visnet <- function(
     stringsAsFactors = FALSE
   )
 
+  # Size legend: node area encodes clone_count, so surface a few representative
+  # clone sizes (min / median / max of the real points) with the radius each
+  # maps to. vis's default scaling is LINEAR in value between size 8 and 40, so
+  # the swatch radius is computed the same way. NULL when every point is the
+  # same size (nothing to explain).
+  cc <- as.numeric(clone_count)
+  cc <- cc[is.finite(cc)]
+  size_legend <- NULL
+  if (length(cc) > 0 && diff(range(cc)) > 0) {
+    lo <- min(cc)
+    hi <- max(cc)
+    reps <- sort(unique(c(lo, round(stats::median(cc)), hi)))
+    radius <- 8 + (40 - 8) * (reps - lo) / (hi - lo)
+    size_legend <- data.frame(
+      value = reps,
+      radius = radius,
+      stringsAsFactors = FALSE
+    )
+  }
+
   list(
     nodes = nodes,
     edges = edges,
     color_col = color_col,
     hide_legend = hide_legend,
     legend = legend,
-    legend_title = legend_title
+    legend_title = legend_title,
+    size_legend = size_legend
   )
 }

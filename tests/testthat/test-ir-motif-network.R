@@ -376,6 +376,64 @@ test_that("ir_build_motif_visnet titles only multi-node clusters", {
   expect_true(all(cdddd_label == ""))
 })
 
+test_that("ir_build_motif_visnet emits a size legend when clone sizes differ", {
+  skip_if_not_installed("igraph")
+  # CASSL appears in 5 cells (clone_count 5), CASSF in 1 (clone_count 1) -> the
+  # two nodes differ in size, so a size legend spanning 1..5 is produced.
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:6),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 6),
+      CTaa = c("CASSL", "CASSL", "CASSL", "CASSL", "CASSL", "CASSF"),
+      sample = rep("s1", 6),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
+  expect_false(is.null(vn$size_legend))
+  expect_true(all(c("value", "radius") %in% names(vn$size_legend)))
+  # Spans the observed clone-size range (min 1, max 5).
+  expect_equal(min(vn$size_legend$value), 1)
+  expect_equal(max(vn$size_legend$value), 5)
+  # Radii run from the scale floor (8) to its ceiling (40).
+  expect_equal(min(vn$size_legend$radius), 8)
+  expect_equal(max(vn$size_legend$radius), 40)
+})
+
+test_that("ir_build_motif_visnet omits the size legend when all points match", {
+  skip_if_not_installed("igraph")
+  # Every CDR3 is one cell -> no clone-size variation -> no size legend.
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:2),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 2),
+      CTaa = c("CASSL", "CASSF"),
+      sample = rep("s1", 2),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1
+  )
+  vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
+  expect_null(vn$size_legend)
+})
+
 test_that("ir_build_motif_visnet returns NULL for a NULL graph", {
   ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
   expect_null(ir_build_motif_visnet(NULL, color_by = NULL, chain = "TRB"))

@@ -2104,6 +2104,38 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
       "</span></div>",
       collapse = ""
     )
+    # Size legend: a "Clone size" sub-section of grey circles sized to the same
+    # scale as the nodes, next to their clone_count. Omitted when all points are
+    # the same size (vn$size_legend is NULL).
+    size_html <- ""
+    if (!is.null(vn$size_legend) && nrow(vn$size_legend) > 0) {
+      diam <- round(2 * vn$size_legend$radius)
+      # The swatch column is as wide as the largest circle so no circle is
+      # squeezed into an ellipse; each circle keeps equal width/height.
+      col_w <- max(diam) + 4
+      size_rows <- paste0(
+        "<div style=\"display:flex;align-items:center;margin:6px 0;\">",
+        "<span style=\"display:flex;width:",
+        col_w,
+        "px;justify-content:center;",
+        "align-items:center;flex:none;margin-right:8px;\">",
+        "<span style=\"display:block;border-radius:50%;",
+        "background:#b8c2d6;flex:none;width:",
+        diam,
+        "px;height:",
+        diam,
+        "px;\"></span></span>",
+        "<span style=\"white-space:nowrap;\">",
+        esc_html(vn$size_legend$value),
+        "</span></div>",
+        collapse = ""
+      )
+      size_html <- paste0(
+        "<div style=\"font-size:16px;font-weight:bold;margin:14px 0 8px;\">",
+        "Clone size</div>",
+        size_rows
+      )
+    }
     legend_html <- paste0(
       "<div class=\"ir-motif-legend\" style=\"position:absolute;top:16px;right:12px;",
       "font-family:sans-serif;font-size:14px;color:#2a3f5f;z-index:5;",
@@ -2112,6 +2144,7 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
       esc_html(vn$legend_title),
       "</div>",
       rows,
+      size_html,
       "</div>"
     )
     js <- sprintf(
