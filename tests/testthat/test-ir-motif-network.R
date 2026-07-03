@@ -326,13 +326,47 @@ test_that("ir_build_motif_visnet builds nodes/edges with tooltips", {
   vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
   expect_true(all(c("nodes", "edges") %in% names(vn)))
   expect_equal(nrow(vn$nodes), igraph::vcount(g))
-  expect_true(all(c("CASSL", "CASSF") %in% vn$nodes$label))
-  # Tooltip (title) carries the CDR3 + clone size + cell-type distribution.
+  # Labels show the cluster CONSENSUS once (CASSL + CASSF -> "CASSx"), not every
+  # node's CDR3. Exactly one node in this single 2-node cluster is labelled.
+  labelled <- vn$nodes$label[nzchar(vn$nodes$label)]
+  expect_length(labelled, 1)
+  expect_equal(labelled, "CASSx")
+  # The full CDR3s live in the tooltip (title), not the node labels.
   expect_true(all(grepl("CASS", vn$nodes$title)))
   expect_true(any(grepl("Clone size", vn$nodes$title)))
   expect_true(any(grepl("type", vn$nodes$title)))
   # Node size (value) follows clone_count.
   expect_true("value" %in% names(vn$nodes))
+})
+
+test_that("ir_build_motif_visnet leaves singleton clusters unlabelled", {
+  skip_if_not_installed("igraph")
+  # Two separate 2-node clusters + isolated CDR3s (show_isolated) → only the
+  # multi-node clusters get a consensus label.
+  data <- list(
+    s1 = data.frame(
+      barcode = paste0("b", 1:5),
+      CTgene = rep("TRBV1..TRBJ1.TRBC1", 5),
+      CTaa = c("CASSL", "CASSF", "CWWWY", "CWWWH", "CDDDD"),
+      sample = rep("s1", 5),
+      stringsAsFactors = FALSE
+    )
+  )
+  ir_build_motif_graph <- ir_env$ir_build_motif_graph
+  ir_build_motif_visnet <- ir_env$ir_build_motif_visnet
+  g <- ir_build_motif_graph(
+    data,
+    chain = "TRB",
+    threshold = 1,
+    by_v = FALSE,
+    min_size = 1,
+    show_isolated = TRUE
+  )
+  vn <- ir_build_motif_visnet(g, color_by = NULL, chain = "TRB")
+  labelled <- vn$nodes$label[nzchar(vn$nodes$label)]
+  # Two multi-node clusters → two consensus labels; the isolated CDDDD is blank.
+  expect_length(labelled, 2)
+  expect_false(any(grepl("CDDDD", vn$nodes$label)))
 })
 
 test_that("ir_build_motif_visnet returns NULL for a NULL graph", {

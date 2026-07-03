@@ -1392,9 +1392,30 @@ ir_build_motif_visnet <- function(
   node_color <- unname(level_colors[group_raw])
   node_color[is.na(node_color)] <- "grey70"
 
+  # Node labels show the per-cluster CONSENSUS motif once, as a shared title for
+  # the cluster, instead of every node's full CDR3 (that lives in the tooltip).
+  # For each multi-node topological cluster the label is placed on its largest
+  # node (biggest clone_count); all other nodes and singleton clusters are left
+  # unlabelled. Falls back to the CDR3 when consensus is unavailable.
+  topo_cluster <- as.character(get_attr("cluster"))
+  consensus <- get_attr("motif_consensus")
+  node_label <- rep("", n)
+  for (cl in unique(topo_cluster)) {
+    idx <- which(topo_cluster == cl)
+    if (length(idx) < 2) {
+      next # singleton: no cluster title
+    }
+    rep_i <- idx[which.max(as.numeric(clone_count[idx]))]
+    lab <- consensus[rep_i]
+    if (is.na(lab) || !nzchar(as.character(lab))) {
+      lab <- cdr3[rep_i]
+    }
+    node_label[rep_i] <- as.character(lab)
+  }
+
   nodes <- data.frame(
     id = seq_len(n),
-    label = as.character(cdr3),
+    label = node_label,
     value = as.numeric(clone_count),
     group = group_raw,
     color = node_color,

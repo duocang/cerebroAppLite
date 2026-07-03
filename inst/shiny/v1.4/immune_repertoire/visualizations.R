@@ -2062,7 +2062,13 @@ output$ir_plot_motifNetwork <- visNetwork::renderVisNetwork({
     )
   }
   net <- visNetwork::visNetwork(vn$nodes, vn$edges) %>%
-    visNetwork::visNodes(scaling = list(min = 8, max = 40)) %>%
+    visNetwork::visNodes(
+      scaling = list(min = 8, max = 40),
+      # Only the per-cluster consensus nodes carry a label, so styling the label
+      # font large + bold makes those read as cluster titles rather than a stray
+      # point label. Placed above the node to sit over the cluster.
+      font = list(size = 20, face = "sans-serif", vadjust = -34, bold = TRUE)
+    ) %>%
     visNetwork::visEdges(color = list(color = "grey60")) %>%
     visNetwork::visPhysics(
       solver = "forceAtlas2Based",
