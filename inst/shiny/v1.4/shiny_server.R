@@ -266,14 +266,14 @@ server <- function(input, output, session) {
       if (is.null(selected)) {
         selected <- choices[1]
       }
-      column(
-        12,
+      tagList(
+        titlePanel("Select sample dataset"),
         selectInput(
           inputId = "crb_file_selector",
-          label = "Select dataset:",
+          label = "Select from available datasets:",
           choices = choices,
           selected = selected,
-          width = '100%'
+          width = '350px'
         )
       )
     }

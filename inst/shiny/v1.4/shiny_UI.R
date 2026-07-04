@@ -154,8 +154,6 @@ ui <- dashboardPage(
         icon = icon("info"),
         selected = TRUE
       ),
-      ## dataset switcher; renders only when >1 .crb files are loaded
-      uiOutput("crb_file_selector_UI"),
       menuItem("Main", tabName = "overview", icon = icon("home")),
       menuItem("Groups", tabName = "groups", icon = icon("layer-group")),
       menuItem(
