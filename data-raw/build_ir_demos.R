@@ -150,6 +150,19 @@ assign_ir <- function(meta, pool, lineage_regex, seed = 42) {
   )
 }
 
+## Split a clonotype data.frame into a per-sample list keyed by the data set's
+## `sample` column, matched by barcode. The immune_repertoire slot is a
+## list(sample -> data.frame); giving it >1 sample is what enables the
+## cross-sample / Paired Scatter analyses in the app.
+split_ir_by_sample <- function(ir_df, meta) {
+  if (is.null(ir_df) || nrow(ir_df) == 0) {
+    return(list())
+  }
+  samp <- meta$sample[match(ir_df$barcode, meta$cell_barcode)]
+  samp[is.na(samp)] <- "unknown"
+  split(ir_df, factor(samp))
+}
+
 ## ---- 3. demo_healthy_t: T + Monocytes, TCR on T cells ---------------------
 message("[2/5] Building demo_healthy_t (T/NK, TCR) ...")
 keep_healthy <- full_meta$cell_barcode[
@@ -157,7 +170,10 @@ keep_healthy <- full_meta$cell_barcode[
 ]
 healthy <- subset_cerebro(keep_healthy, "PBMC - Healthy (T/NK)")
 healthy_ir <- assign_ir(healthy$getMetaData(), pool_tcr, "T cell")
-healthy$immune_repertoire <- setNames(list(healthy_ir), "healthy_t")
+healthy$immune_repertoire <- split_ir_by_sample(
+  healthy_ir,
+  healthy$getMetaData()
+)
 
 ## ---- 4. demo_bcell_rich: B + subset of T, BCR on B cells ------------------
 message("[3/5] Building demo_bcell_rich (B-cell rich, BCR) ...")
@@ -168,7 +184,7 @@ t_subset <- sample(t_cells_all, floor(length(t_cells_all) * 0.25))
 keep_bcell <- c(b_cells, t_subset)
 bcell <- subset_cerebro(keep_bcell, "PBMC - B-cell rich")
 bcell_ir <- assign_ir(bcell$getMetaData(), pool_bcr, "B cell")
-bcell$immune_repertoire <- setNames(list(bcell_ir), "bcell_rich")
+bcell$immune_repertoire <- split_ir_by_sample(bcell_ir, bcell$getMetaData())
 
 ## ---- 5. demo_full_tcr_bcr: all cells, TCR->T and BCR->B -------------------
 message("[4/5] Building demo_full_tcr_bcr (Full, T+B) ...")
@@ -177,7 +193,7 @@ full_ir <- rbind(
   assign_ir(full_meta, pool_tcr, "T cell"),
   assign_ir(full_meta, pool_bcr, "B cell")
 )
-full$immune_repertoire <- setNames(list(full_ir), "full_tcr_bcr")
+full$immune_repertoire <- split_ir_by_sample(full_ir, full$getMetaData())
 
 ## ---- 6. save + verify ------------------------------------------------------
 message("[5/5] Saving and verifying ...")

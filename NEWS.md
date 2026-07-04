@@ -17,9 +17,10 @@
   change as you switch, and clonotypes are assigned by lineage (TCR to T cells,
   BCR to B cells) rather than at random. Built from the public 10x Genomics
   `vdj_v1_hs_pbmc3` dataset; see `data-raw/README.md` for the reproducible
-  build. Pass them as a named vector to `createShinyApp()` to see the switcher
-  (see `vignette("multi_crb")`). New vignette: *Loading multiple data sets
-  (multi-crb) with a dataset switcher*.
+  build. The bundled app (`shiny::runApp("inst")`) now opens on these three
+  data sets so the switcher is visible out of the box; pass a named vector to
+  `createShinyApp()` for your own data (see `vignette("multi_crb")`). New
+  vignette: *Loading multiple data sets (multi-crb) with a dataset switcher*.
 
 ## Immune repertoire
 
