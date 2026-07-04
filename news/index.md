@@ -1,5 +1,35 @@
 # Changelog
 
+## cerebroAppLite 1.7.6
+
+### Multiple data sets (multi-crb)
+
+- **Dataset switcher**:
+  [`createShinyApp()`](https://mihem.github.io/cerebroAppLite/reference/createShinyApp.md)
+  now accepts a named vector of several `.crb` files and renders a
+  “Select dataset:” dropdown in the sidebar, letting users move between
+  data sets without restarting the app. Single-file usage is unchanged
+  and shows no switcher. By default the smallest file is loaded first
+  (`crb_pick_smallest_file`, default `TRUE`).
+- **URL selection**: a data set can be opened directly via the URL,
+  matched by the name given in `cerebro_data` or by file basename —
+  either as a query string (`?dataset=TCR`) or a path segment (`/TCR`).
+- **Demo data sets**: three genuinely distinct demo `.crb` files ship in
+  `inst/extdata/v1.4/` — `demo_full_tcr_bcr.crb` (all cells, TCR + BCR),
+  `demo_healthy_t.crb` (T + monocytes, TCR) and `demo_bcell_rich.crb`
+  (B-cell rich, BCR). They differ in cell composition, so the UMAP and
+  cell-type mix change as you switch, and clonotypes are assigned by
+  lineage (TCR to T cells, BCR to B cells) rather than at random. Built
+  from the public 10x Genomics `vdj_v1_hs_pbmc3` dataset; see
+  `data-raw/README.md` for the reproducible build. The bundled app
+  (`shiny::runApp("inst")`) now opens on these three data sets so the
+  switcher is visible out of the box; pass a named vector to
+  [`createShinyApp()`](https://mihem.github.io/cerebroAppLite/reference/createShinyApp.md)
+  for your own data (see
+  [`vignette("multi_crb")`](https://mihem.github.io/cerebroAppLite/articles/multi_crb.md)).
+  New vignette: *Loading multiple data sets (multi-crb) with a dataset
+  switcher*.
+
 ## cerebroAppLite 1.7.5
 
 ### Immune repertoire

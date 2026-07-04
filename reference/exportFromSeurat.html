@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cerebroAppLite</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,7 @@
     <li><a class="dropdown-item" href="../articles/create_a_self_contained_shiny_app.html">Create a self-contained Shiny app from a Cerebro data file</a></li>
     <li><a class="dropdown-item" href="../articles/create_expression_matrix_in_h5_format.html">Create expression matrix in h5 format</a></li>
     <li><a class="dropdown-item" href="../articles/launch_cerebro_with_pre-loaded_data_set.html">Launch Cerebro with pre-loaded data set</a></li>
+    <li><a class="dropdown-item" href="../articles/multi_crb.html">Loading multiple data sets (multi-crb) with a dataset switcher</a></li>
     <li><a class="dropdown-item" href="../articles/export_and_visualize_custom_tables_and_plots.html">Export and visualize custom tables and plots</a></li>
     <li><a class="dropdown-item" href="../articles/control_access_to_cerebro_with_a_login_page.html">Control access to Cerebro with a login page</a></li>
     <li><a class="dropdown-item" href="../articles/host_cerebro_on_shinyapps.html">Host Cerebro on shinyapps.io</a></li>
@@ -62,7 +63,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Export Seurat object to Cerebro.</h1>
-      <small class="dont-index">Source: <a href="https://github.com/mihem/cerebroAppLite/blob/master/R/exportFromSeurat.R" class="external-link"><code>R/exportFromSeurat.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/mihem/cerebroAppLite/blob/feat/ir-multi-crb/R/exportFromSeurat.R" class="external-link"><code>R/exportFromSeurat.R</code></a></small>
       <div class="d-none name"><code>exportFromSeurat.Rd</code></div>
     </div>
 
@@ -229,21 +230,21 @@ object via <code>addImmuneRepertoire()</code>.  Legacy <code>bcr_data</code> /
 <span class="r-in"><span>  use_delayed_array <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Initializing Cerebro object...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Adding expression data (embedded)...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Collecting available meta data...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Extracting all meta data columns...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Extracting dimensional reductions...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Will export the following dimensional reductions: umap</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Extracting marker genes table...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] No trajectories to extract...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Overview of Cerebro object:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Initializing Cerebro object...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Adding expression data (embedded)...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Collecting available meta data...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Extracting all meta data columns...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Extracting dimensional reductions...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Will export the following dimensional reductions: umap</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Extracting marker genes table...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] No trajectories to extract...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Overview of Cerebro object:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> class: Cerebro_v1.3</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> cerebroApp version: 1.7.5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> cerebroApp version: 1.7.6</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> experiment name: PBMC</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> organism: hg</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> date of analysis: </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> date of export: 2026-07-03</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> date of export: 2026-07-04</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> number of cells: 80</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> number of genes: 230</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> grouping variables (2): sample, seurat_clusters</span>
@@ -257,8 +258,8 @@ object via <code>addImmuneRepertoire()</code>.  Legacy <code>bcr_data</code> /
 <span class="r-msg co"><span class="r-pr">#&gt;</span> trajectories:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> extra material:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Immune repertoire:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Saving Cerebro object to: /tmp/nix-shell-4578-4149238183/RtmpJLenAq/pbmc_Seurat.crb</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [20:36:45] Done!</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Saving Cerebro object to: /tmp/nix-shell-4234-4172968682/RtmpcSB1CO/pbmc_Seurat.crb</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:37:54] Done!</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
