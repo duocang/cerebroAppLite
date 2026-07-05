@@ -264,10 +264,18 @@
 </div>
 </div>
 <div class="section level2">
+<h2 id="local-development">Local development<a class="anchor" aria-label="anchor" href="#local-development"></a>
+</h2>
+<p>When iterating on the bundled Shiny app, run it <strong>once</strong> with autoreload instead of restarting <code>runApp()</code> after every edit — the process (and its port) stays put, and saving any <code>.R</code> file makes the open browser reconnect and refresh automatically:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"options(shiny.autoreload = TRUE); shiny::runApp('inst', launch.browser = TRUE)"</span></span></code></pre></div>
+<p><code>shiny.autoreload</code> watches the whole <code>inst/</code> tree recursively, including the per-tab modules under <code>inst/shiny/v1.4/</code>. Because <code>server()</code> <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>s those module files on every session, editing a module’s server/render logic takes effect on the next refresh with no restart. Changes to <code>inst/app.R</code>, <code>Cerebro.options</code>, <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code> calls, or the <code>shiny_UI.R</code> layout run only at process start, so those still need a manual restart.</p>
+<p>Installing the <a href="https://cran.r-project.org/package=watcher" class="external-link"><code>watcher</code></a> package (<code>install.packages("watcher")</code>) makes reloads near-instant and silences the legacy file-watching warning; it is a dev-only convenience and is not a package dependency.</p>
+</div>
+<div class="section level2">
 <h2 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a>
 </h2>
 <p>The package ships with a <code>testthat</code> + <code>shinytest2</code> suite under <code>tests/testthat/</code>. CI (<code>.github/workflows/R-cmd-check.yaml</code>, <code>.github/workflows/R-tests.yaml</code>) runs it on every PR; locally:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># whole suite (loads dev source via pkgload::load_all)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -276,16 +284,16 @@
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="st">"exportFromSeurat"</span><span class="op">)</span>  <span class="co"># exporter-only</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="st">"r-functions"</span><span class="op">)</span>       <span class="co"># plain unit tests</span></span></code></pre></div>
 <p><code>test-app-inst.R</code> drives a real headless Chrome via <code>chromote</code> and relies on <code>NOT_CRAN=true</code> (already set in <code>tests/testthat/setup.R</code>). Install the extras once:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"testthat"</span>, <span class="st">"shinytest2"</span>, <span class="st">"chromote"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># or pull the whole Suggests block:</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install_deps.html" class="external-link">install_dev_deps</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>From the shell (CI / scripting):</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># what R CMD check effectively runs (uses installed package, not dev source)</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'testthat::test_dir("tests/testthat")'</span></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co"># only the shinytest2 suite, with a verbose reporter</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="va">NOT_CRAN</span><span class="op">=</span>true <span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'devtools::test(filter="app-inst", reporter="summary")'</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># what R CMD check effectively runs (uses installed package, not dev source)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'testthat::test_dir("tests/testthat")'</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># only the shinytest2 suite, with a verbose reporter</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="va">NOT_CRAN</span><span class="op">=</span>true <span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'devtools::test(filter="app-inst", reporter="summary")'</span></span></code></pre></div>
 <p>Snapshot diffs from <code>expect_snapshot()</code> land under <code>tests/testthat/_snaps/</code>; review them with <code><a href="https://testthat.r-lib.org/reference/snapshot_accept.html" class="external-link">testthat::snapshot_review()</a></code> and accept with <code><a href="https://testthat.r-lib.org/reference/snapshot_accept.html" class="external-link">testthat::snapshot_accept()</a></code> only after confirming the new output is correct.</p>
 <p>See <a href="tests/README.html"><code>tests/README.md</code></a> for the full layout, the <code>inst_dir</code> resolution rule, and the gotcha about regenerating <code>inst/extdata/v1.4/example.crb</code> after R6 method changes (a stale fixture surfaces as a misleading <code>Shiny app did not become stable in 15000ms</code> from shinytest2).</p>
 </div>
