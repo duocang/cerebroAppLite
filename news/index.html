@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cerebroAppLite</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,6 +67,21 @@
       <small>Source: <a href="https://github.com/mihem/cerebroAppLite/blob/dev/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.7.8" id="cerebroapplite-178">cerebroAppLite 1.7.8<a class="anchor" aria-label="anchor" href="#cerebroapplite-178"></a></h2>
+<div class="section level3">
+<h3 id="spatial-transcriptomics-backend-1-7-8">Spatial transcriptomics (backend)<a class="anchor" aria-label="anchor" href="#spatial-transcriptomics-backend-1-7-8"></a></h3>
+<ul><li>
+<strong>Spatial data layer</strong>: the <code>Cerebro_v1.3</code> class gains a <code>spatial</code> field with <code>addSpatialData()</code>, <code>getSpatialData()</code>, and <code>availableSpatial()</code> accessors.</li>
+<li>
+<strong>Export support</strong>: <code><a href="../reference/exportFromSeurat.html">exportFromSeurat()</a></code> now extracts spatial coordinates and expression from Seurat v5 image slots (Visium / Xenium / FOV) via the internal <code>.getSpatialData()</code> helper, storing them per image in the exported <code>.crb</code>.</li>
+<li>
+<strong>Utility wrappers</strong>: added <code>availableSpatial()</code>, <code>getSpatialData()</code>, and <code>serverSideGeneSelector()</code> in the Shiny utility layer.</li>
+<li>
+<strong>Demo dataset</strong>: bundled a synthetic Xenium spatial demo (<code>demo_spatial.crb</code>, 1,000 cells) as a fifth demo dataset.</li>
+</ul><p>Note: the interactive Spatial tab (Shiny module) is not yet wired up; this release ports only the backend data layer.</p>
+</div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.7.7" id="cerebroapplite-177">cerebroAppLite 1.7.7<a class="anchor" aria-label="anchor" href="#cerebroapplite-177"></a></h2>
 <div class="section level3">
