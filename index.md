@@ -169,31 +169,6 @@ to the `.crb`’s parent directory, so the bundle stays portable.
 - **Seurat v5** support throughout (`GetAssayData()`-based slot access)
 - Loading spinners on all plot outputs
 
-## Local development
-
-When iterating on the bundled Shiny app, run it **once** with autoreload
-instead of restarting `runApp()` after every edit — the process (and its
-port) stays put, and saving any `.R` file makes the open browser
-reconnect and refresh automatically:
-
-``` bash
-Rscript -e "options(shiny.autoreload = TRUE); shiny::runApp('inst', launch.browser = TRUE)"
-```
-
-`shiny.autoreload` watches the whole `inst/` tree recursively, including
-the per-tab modules under `inst/shiny/v1.4/`. Because `server()`
-[`source()`](https://rdrr.io/r/base/source.html)s those module files on
-every session, editing a module’s server/render logic takes effect on
-the next refresh with no restart. Changes to `inst/app.R`,
-`Cerebro.options`, [`library()`](https://rdrr.io/r/base/library.html)
-calls, or the `shiny_UI.R` layout run only at process start, so those
-still need a manual restart.
-
-Installing the [`watcher`](https://cran.r-project.org/package=watcher)
-package (`install.packages("watcher")`) makes reloads near-instant and
-silences the legacy file-watching warning; it is a dev-only convenience
-and is not a package dependency.
-
 ## Testing
 
 The package ships with a `testthat` + `shinytest2` suite under

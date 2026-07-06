@@ -24,8 +24,6 @@
   format](https://mihem.github.io/cerebroAppLite/articles/create_expression_matrix_in_h5_format.md):
 - [Launch Cerebro with pre-loaded data
   set](https://mihem.github.io/cerebroAppLite/articles/launch_cerebro_with_pre-loaded_data_set.md):
-- [Loading multiple data sets (multi-crb) with a dataset
-  switcher](https://mihem.github.io/cerebroAppLite/articles/multi_crb.md):
 - [Export and visualize custom tables and
   plots](https://mihem.github.io/cerebroAppLite/articles/export_and_visualize_custom_tables_and_plots.md):
 - [Control access to Cerebro with a login
@@ -43,5 +41,3 @@
   Material](https://mihem.github.io/cerebroAppLite/articles/extra_material.md):
 - [Immune Repertoire Analysis in
   cerebroAppLite](https://mihem.github.io/cerebroAppLite/articles/immune_repertoire_analysis.md):
-- [Trajectory
-  Analysis](https://mihem.github.io/cerebroAppLite/articles/trajectory_analysis.md):

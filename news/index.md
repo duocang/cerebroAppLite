@@ -1,91 +1,29 @@
 # Changelog
 
-## cerebroAppLite 1.7.8
-
-### Spatial transcriptomics (backend)
-
-- **Spatial data layer**: the `Cerebro_v1.3` class gains a `spatial`
-  field with `addSpatialData()`, `getSpatialData()`, and
-  `availableSpatial()` accessors.
-- **Export support**:
-  [`exportFromSeurat()`](https://mihem.github.io/cerebroAppLite/reference/exportFromSeurat.md)
-  now extracts spatial coordinates and expression from Seurat v5 image
-  slots (Visium / Xenium / FOV) via the internal `.getSpatialData()`
-  helper, storing them per image in the exported `.crb`.
-- **Utility wrappers**: added `availableSpatial()`, `getSpatialData()`,
-  and `serverSideGeneSelector()` in the Shiny utility layer.
-- **Demo dataset**: bundled a synthetic Xenium spatial demo
-  (`demo_spatial.crb`, 1,000 cells) as a fifth demo dataset.
-
-Note: the interactive Spatial tab (Shiny module) is not yet wired up;
-this release ports only the backend data layer.
-
-## cerebroAppLite 1.7.7
-
-### Trajectory tab
-
-- **Trajectory module**: restores the pseudotime trajectory explorer
-  from the original cerebroApp v1.3 (projection coloured by
-  state/pseudotime, states by group, expression metrics along
-  pseudotime, per-state gene/transcript counts). The code is Roman
-  Hillje’s original implementation, restructured into the v1.4 sub-file
-  layout with no functional change.
-- **Conditional tab**: the Trajectory tab is inserted dynamically
-  (`insertConditionalTab`) only for data sets whose `.crb` carries
-  trajectory data — the same content-driven sidebar mechanism used by
-  the Immune Repertoire and Extra material tabs.
-- **Demo data**: a fourth bundled demo `demo_trajectory.crb` (“PBMC -
-  Monocle2 trajectory”, 501 cells) ships in `inst/extdata/v1.4/` so the
-  tab is exercisable out of the box; the three PBMC immune-repertoire
-  demos carry no trajectory data and therefore never show the tab.
-
 ## cerebroAppLite 1.7.6
 
-### Multiple data sets (multi-crb)
+### Immune repertoire
 
-- **Dataset switcher**:
-  [`createShinyApp()`](https://mihem.github.io/cerebroAppLite/reference/createShinyApp.md)
-  now accepts a named vector of several `.crb` files and renders a
-  “Select dataset:” dropdown in the sidebar, letting users move between
-  data sets without restarting the app. Single-file usage is unchanged
-  and shows no switcher. By default the smallest file is loaded first
-  (`crb_pick_smallest_file`, default `TRUE`).
-- **URL selection**: a data set can be opened directly via the URL,
-  matched by the name given in `cerebro_data` or by file basename —
-  either as a query string (`?dataset=TCR`) or a path segment (`/TCR`).
-- **Demo data sets**: three genuinely distinct demo `.crb` files ship in
-  `inst/extdata/v1.4/` — `demo_full_tcr_bcr.crb` (all cells, TCR + BCR),
-  `demo_healthy_t.crb` (T + monocytes, TCR) and `demo_bcell_rich.crb`
-  (B-cell rich, BCR). They differ in cell composition, so the UMAP and
-  cell-type mix change as you switch, and clonotypes are assigned by
-  lineage (TCR to T cells, BCR to B cells) rather than at random. Built
-  from the public 10x Genomics `vdj_v1_hs_pbmc3` dataset; see
-  `data-raw/README.md` for the reproducible build. The bundled app
-  (`shiny::runApp("inst")`) now opens on these three data sets so the
-  switcher is visible out of the box; pass a named vector to
-  [`createShinyApp()`](https://mihem.github.io/cerebroAppLite/reference/createShinyApp.md)
-  for your own data (see
-  [`vignette("multi_crb")`](https://mihem.github.io/cerebroAppLite/articles/multi_crb.md)).
-  New vignette: *Loading multiple data sets (multi-crb) with a dataset
-  switcher*.
+- **Clone Sharing tab**: classifies every clonotype (V+J+CDR3 of the
+  active chain) as Private (in a single unit), Public within-group, or
+  Public cross-group, using a configurable “sharing unit” (any
+  categorical metadata column, default `sample`) and the active group
+  column. With no group selected it degrades to Private / Shared.
+  Interactive plotly bars with on-bar count/percentage labels and a
+  clean hover tooltip (one class per bar, no raw aesthetic names).
+- **Definition** (clone-definition resolution waterfall) is available
+  but hidden from the default tab strip: it is an exploratory check for
+  choosing a clone-call resolution rather than a reader-facing figure.
+  Uncomment its `tabPanel` to re-enable.
 
 ## cerebroAppLite 1.7.5
 
 ### Immune repertoire
 
-- **Definition tab**: a clone-definition resolution waterfall counting
-  how many unique entities remain at each level — cells, V, J, V+J,
-  CDR3, V+CDR3, V+J+CDR3 — so you can see how aggressively a clone
-  definition collapses the data. Parsed from the CT\* columns for the
-  active chain, and optionally faceted by the active “Group results by”
-  column. BCR chains carry a subtitle caveat that CDR3 is not collapsed
-  by somatic hypermutation, so clones may be split.
-- **Clone Sharing tab**: classifies every clonotype (V+J+CDR3 of the
-  active chain) as Private (in a single unit), Public within-group, or
-  Public cross-group, using a configurable “sharing unit” (any
-  categorical metadata column, default `sample`) and the active group
-  column. With no group selected it degrades to Private / Shared. Bars
-  show the count and percentage of clonotypes in each class.
+- **Clonal UMAP**: axes now match the main projection style —
+  `UMAP_1`/`UMAP_2` titles removed, with boxed/mirrored axes (showline +
+  mirror) and autorange, so the Clonal UMAP sits visually consistent
+  with the main projection tab.
 
 ## cerebroAppLite 1.7.4
 

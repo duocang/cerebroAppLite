@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cerebroAppLite</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,7 +32,6 @@
     <li><a class="dropdown-item" href="../articles/create_a_self_contained_shiny_app.html">Create a self-contained Shiny app from a Cerebro data file</a></li>
     <li><a class="dropdown-item" href="../articles/create_expression_matrix_in_h5_format.html">Create expression matrix in h5 format</a></li>
     <li><a class="dropdown-item" href="../articles/launch_cerebro_with_pre-loaded_data_set.html">Launch Cerebro with pre-loaded data set</a></li>
-    <li><a class="dropdown-item" href="../articles/multi_crb.html">Loading multiple data sets (multi-crb) with a dataset switcher</a></li>
     <li><a class="dropdown-item" href="../articles/export_and_visualize_custom_tables_and_plots.html">Export and visualize custom tables and plots</a></li>
     <li><a class="dropdown-item" href="../articles/control_access_to_cerebro_with_a_login_page.html">Control access to Cerebro with a login page</a></li>
     <li><a class="dropdown-item" href="../articles/host_cerebro_on_shinyapps.html">Host Cerebro on shinyapps.io</a></li>
@@ -42,7 +41,6 @@
     <li><a class="dropdown-item" href="../articles/enriched_pathways.html">Enriched Pathways</a></li>
     <li><a class="dropdown-item" href="../articles/extra_material.html">Extra Material</a></li>
     <li><a class="dropdown-item" href="../articles/immune_repertoire_analysis.html">Immune Repertoire Analysis in cerebroAppLite</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory_analysis.html">Trajectory Analysis</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -64,46 +62,17 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/mihem/cerebroAppLite/blob/dev/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/mihem/cerebroAppLite/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.7.8" id="cerebroapplite-178">cerebroAppLite 1.7.8<a class="anchor" aria-label="anchor" href="#cerebroapplite-178"></a></h2>
-<div class="section level3">
-<h3 id="spatial-transcriptomics-backend-1-7-8">Spatial transcriptomics (backend)<a class="anchor" aria-label="anchor" href="#spatial-transcriptomics-backend-1-7-8"></a></h3>
-<ul><li>
-<strong>Spatial data layer</strong>: the <code>Cerebro_v1.3</code> class gains a <code>spatial</code> field with <code>addSpatialData()</code>, <code>getSpatialData()</code>, and <code>availableSpatial()</code> accessors.</li>
-<li>
-<strong>Export support</strong>: <code><a href="../reference/exportFromSeurat.html">exportFromSeurat()</a></code> now extracts spatial coordinates and expression from Seurat v5 image slots (Visium / Xenium / FOV) via the internal <code>.getSpatialData()</code> helper, storing them per image in the exported <code>.crb</code>.</li>
-<li>
-<strong>Utility wrappers</strong>: added <code>availableSpatial()</code>, <code>getSpatialData()</code>, and <code>serverSideGeneSelector()</code> in the Shiny utility layer.</li>
-<li>
-<strong>Demo dataset</strong>: bundled a synthetic Xenium spatial demo (<code>demo_spatial.crb</code>, 1,000 cells) as a fifth demo dataset.</li>
-</ul><p>Note: the interactive Spatial tab (Shiny module) is not yet wired up; this release ports only the backend data layer.</p>
-</div>
-</div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.7.7" id="cerebroapplite-177">cerebroAppLite 1.7.7<a class="anchor" aria-label="anchor" href="#cerebroapplite-177"></a></h2>
-<div class="section level3">
-<h3 id="trajectory-tab-1-7-7">Trajectory tab<a class="anchor" aria-label="anchor" href="#trajectory-tab-1-7-7"></a></h3>
-<ul><li>
-<strong>Trajectory module</strong>: restores the pseudotime trajectory explorer from the original cerebroApp v1.3 (projection coloured by state/pseudotime, states by group, expression metrics along pseudotime, per-state gene/transcript counts). The code is Roman Hillje’s original implementation, restructured into the v1.4 sub-file layout with no functional change.</li>
-<li>
-<strong>Conditional tab</strong>: the Trajectory tab is inserted dynamically (<code>insertConditionalTab</code>) only for data sets whose <code>.crb</code> carries trajectory data — the same content-driven sidebar mechanism used by the Immune Repertoire and Extra material tabs.</li>
-<li>
-<strong>Demo data</strong>: a fourth bundled demo <code>demo_trajectory.crb</code> (“PBMC - Monocle2 trajectory”, 501 cells) ships in <code>inst/extdata/v1.4/</code> so the tab is exercisable out of the box; the three PBMC immune-repertoire demos carry no trajectory data and therefore never show the tab.</li>
-</ul></div>
-</div>
-    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.7.6" id="cerebroapplite-176">cerebroAppLite 1.7.6<a class="anchor" aria-label="anchor" href="#cerebroapplite-176"></a></h2>
 <div class="section level3">
-<h3 id="multiple-data-sets-multi-crb-1-7-6">Multiple data sets (multi-crb)<a class="anchor" aria-label="anchor" href="#multiple-data-sets-multi-crb-1-7-6"></a></h3>
+<h3 id="immune-repertoire-1-7-6">Immune repertoire<a class="anchor" aria-label="anchor" href="#immune-repertoire-1-7-6"></a></h3>
 <ul><li>
-<strong>Dataset switcher</strong>: <code><a href="../reference/createShinyApp.html">createShinyApp()</a></code> now accepts a named vector of several <code>.crb</code> files and renders a “Select dataset:” dropdown in the sidebar, letting users move between data sets without restarting the app. Single-file usage is unchanged and shows no switcher. By default the smallest file is loaded first (<code>crb_pick_smallest_file</code>, default <code>TRUE</code>).</li>
+<strong>Clone Sharing tab</strong>: classifies every clonotype (V+J+CDR3 of the active chain) as Private (in a single unit), Public within-group, or Public cross-group, using a configurable “sharing unit” (any categorical metadata column, default <code>sample</code>) and the active group column. With no group selected it degrades to Private / Shared. Interactive plotly bars with on-bar count/percentage labels and a clean hover tooltip (one class per bar, no raw aesthetic names).</li>
 <li>
-<strong>URL selection</strong>: a data set can be opened directly via the URL, matched by the name given in <code>cerebro_data</code> or by file basename — either as a query string (<code>?dataset=TCR</code>) or a path segment (<code>/TCR</code>).</li>
-<li>
-<strong>Demo data sets</strong>: three genuinely distinct demo <code>.crb</code> files ship in <code>inst/extdata/v1.4/</code> — <code>demo_full_tcr_bcr.crb</code> (all cells, TCR + BCR), <code>demo_healthy_t.crb</code> (T + monocytes, TCR) and <code>demo_bcell_rich.crb</code> (B-cell rich, BCR). They differ in cell composition, so the UMAP and cell-type mix change as you switch, and clonotypes are assigned by lineage (TCR to T cells, BCR to B cells) rather than at random. Built from the public 10x Genomics <code>vdj_v1_hs_pbmc3</code> dataset; see <code>data-raw/README.md</code> for the reproducible build. The bundled app (<code>shiny::runApp("inst")</code>) now opens on these three data sets so the switcher is visible out of the box; pass a named vector to <code><a href="../reference/createShinyApp.html">createShinyApp()</a></code> for your own data (see <code><a href="../articles/multi_crb.html">vignette("multi_crb")</a></code>). New vignette: <em>Loading multiple data sets (multi-crb) with a dataset switcher</em>.</li>
+<strong>Definition</strong> (clone-definition resolution waterfall) is available but hidden from the default tab strip: it is an exploratory check for choosing a clone-call resolution rather than a reader-facing figure. Uncomment its <code>tabPanel</code> to re-enable.</li>
 </ul></div>
 </div>
     <div class="section level2">
@@ -111,9 +80,7 @@
 <div class="section level3">
 <h3 id="immune-repertoire-1-7-5">Immune repertoire<a class="anchor" aria-label="anchor" href="#immune-repertoire-1-7-5"></a></h3>
 <ul><li>
-<strong>Definition tab</strong>: a clone-definition resolution waterfall counting how many unique entities remain at each level — cells, V, J, V+J, CDR3, V+CDR3, V+J+CDR3 — so you can see how aggressively a clone definition collapses the data. Parsed from the CT* columns for the active chain, and optionally faceted by the active “Group results by” column. BCR chains carry a subtitle caveat that CDR3 is not collapsed by somatic hypermutation, so clones may be split.</li>
-<li>
-<strong>Clone Sharing tab</strong>: classifies every clonotype (V+J+CDR3 of the active chain) as Private (in a single unit), Public within-group, or Public cross-group, using a configurable “sharing unit” (any categorical metadata column, default <code>sample</code>) and the active group column. With no group selected it degrades to Private / Shared. Bars show the count and percentage of clonotypes in each class.</li>
+<strong>Clonal UMAP</strong>: axes now match the main projection style — <code>UMAP_1</code>/<code>UMAP_2</code> titles removed, with boxed/mirrored axes (showline + mirror) and autorange, so the Clonal UMAP sits visually consistent with the main projection tab.</li>
 </ul></div>
 </div>
     <div class="section level2">
