@@ -1,3 +1,36 @@
+#' Filter candidate fallback layers to the same semantic class as the request
+#'
+#' Given a requested layer name (e.g. "data", "counts", "scale.data") and the
+#' layers actually present in an assay, return the acceptable fallback layers.
+#' By default only layers sharing the same semantic root are kept, so that a
+#' missing "data" layer never silently falls back to "counts" (raw) or
+#' "scale.data" (scaled). Seurat v5 split layers ("data.1", "data.2", ...) share
+#' the root of their base layer and are therefore kept. Set
+#' \code{allow_cross_semantic = TRUE} for the legacy behaviour where any
+#' available layer is an acceptable fallback (requested layer ordered first).
+#'
+#' @keywords internal
+#' @noRd
+.filter_same_semantic_layers <- function(
+  requested_layer,
+  available_layers,
+  allow_cross_semantic = FALSE
+) {
+  # semantic root = layer name up to (but not including) a split-layer suffix,
+  # e.g. "data.1" -> "data", "scale.data" -> "scale.data" (no numeric suffix).
+  root_of <- function(x) sub("\\.[0-9]+$", "", x)
+
+  if (isTRUE(allow_cross_semantic)) {
+    return(unique(c(
+      intersect(requested_layer, available_layers),
+      setdiff(available_layers, requested_layer)
+    )))
+  }
+
+  requested_root <- root_of(requested_layer)
+  available_layers[root_of(available_layers) == requested_root]
+}
+
 #' @keywords internal
 #' @noRd
 .getExpressionMatrix <- function(
@@ -5,6 +38,7 @@
   assay = "RNA",
   slot = "data",
   join_samples = TRUE,
+  allow_cross_semantic_fallback = FALSE,
   verbose = FALSE
 ) {
   seurat_version <- as.character(utils::packageVersion("Seurat"))
@@ -96,46 +130,32 @@
         )
       }
 
-      fallback_layers <- c("data", "counts", "scale.data")
-      for (fallback_layer in fallback_layers) {
-        if (
-          fallback_layer %in% available_layers && fallback_layer != layer_name
-        ) {
-          if (verbose) {
-            message(
-              "[",
-              format(Sys.time(), "%H:%M:%S"),
-              "] Falling back to layer `",
-              fallback_layer,
-              "`"
-            )
-          }
-          expression_data <- Seurat::GetAssayData(
-            seurat,
-            assay = assay,
-            layer = fallback_layer
-          )
-          break
-        }
-      }
-
-      if (
-        inherits(expression_data, "try-error") && length(available_layers) > 0
-      ) {
+      # Only fall back to layers in the same semantic class as the request
+      # (e.g. data -> data.*, never data -> counts/scale.data), unless the
+      # caller explicitly opts into legacy cross-semantic fallback. This stops
+      # normalised/scaled values being silently returned as if they were counts.
+      fallback_candidates <- .filter_same_semantic_layers(
+        layer_name,
+        available_layers,
+        allow_cross_semantic = allow_cross_semantic_fallback
+      )
+      fallback_candidates <- setdiff(fallback_candidates, layer_name)
+      for (fallback_layer in fallback_candidates) {
         if (verbose) {
           message(
             "[",
             format(Sys.time(), "%H:%M:%S"),
-            "] Using first available layer: `",
-            available_layers[1],
+            "] Falling back to layer `",
+            fallback_layer,
             "`"
           )
         }
         expression_data <- Seurat::GetAssayData(
           seurat,
           assay = assay,
-          layer = available_layers[1]
+          layer = fallback_layer
         )
+        break
       }
 
       if (inherits(expression_data, "try-error")) {
@@ -145,7 +165,7 @@
             layer_name,
             "` could not be found in `",
             assay,
-            "` assay.\n",
+            "` assay, and no same-semantic fallback layer is available.\n",
             "Available layers: ",
             paste(available_layers, collapse = ", "),
             "\n",
@@ -154,7 +174,9 @@
             "  2. Check if the assay has been properly initialized\n",
             "  3. Verify the assay structure using: Layers(seurat[[\"",
             assay,
-            "\"]])"
+            "\"]])\n",
+            "  4. To allow cross-semantic fallback (e.g. data -> counts), call ",
+            ".getExpressionMatrix(..., allow_cross_semantic_fallback = TRUE)"
           ),
           call. = FALSE
         )
