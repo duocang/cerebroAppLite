@@ -19,7 +19,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cerebroAppLite</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.7.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,7 +56,6 @@
     <li><a class="dropdown-item" href="../articles/enriched_pathways.html">Enriched Pathways</a></li>
     <li><a class="dropdown-item" href="../articles/extra_material.html">Extra Material</a></li>
     <li><a class="dropdown-item" href="../articles/immune_repertoire_analysis.html">Immune Repertoire Analysis in cerebroAppLite</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory_analysis.html">Trajectory Analysis</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -92,9 +91,9 @@
                         <h4 data-toc-skip class="author">Xuesong
 Wang</h4>
             
-            <h4 data-toc-skip class="date">05 July, 2026</h4>
+            <h4 data-toc-skip class="date">06 July, 2026</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/mihem/cerebroAppLite/blob/dev/vignettes/multi_crb.Rmd" class="external-link"><code>vignettes/multi_crb.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/mihem/cerebroAppLite/blob/master/vignettes/multi_crb.Rmd" class="external-link"><code>vignettes/multi_crb.Rmd</code></a></small>
       <div class="d-none name"><code>multi_crb.Rmd</code></div>
     </div>
 
@@ -122,6 +121,7 @@ disappear as you switch.</p>
 shown:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/createShinyApp.html">createShinyApp</a></span><span class="op">(</span></span>
+<span>  result_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"cerebro_app_single"</span><span class="op">)</span>,</span>
 <span>  cerebro_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>demo <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
 <span>    <span class="st">"extdata/v1.4/example.crb"</span>,</span>
 <span>    package <span class="op">=</span> <span class="st">"cerebroAppLite"</span></span>
@@ -138,6 +138,7 @@ change as you switch — and each carries a biologically plausible immune
 repertoire (TCR on T cells, BCR on B cells):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/createShinyApp.html">createShinyApp</a></span><span class="op">(</span></span>
+<span>  result_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"cerebro_app_multi"</span><span class="op">)</span>,</span>
 <span>  cerebro_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="st">"PBMC - Full (T+B)"</span>     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/v1.4/demo_full_tcr_bcr.crb"</span>, package <span class="op">=</span> <span class="st">"cerebroAppLite"</span><span class="op">)</span>,</span>
 <span>    <span class="st">"PBMC - Healthy (T/NK)"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata/v1.4/demo_healthy_t.crb"</span>,    package <span class="op">=</span> <span class="st">"cerebroAppLite"</span><span class="op">)</span>,</span>
@@ -187,6 +188,7 @@ size on disk) is loaded first. Set
 the vector instead:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/createShinyApp.html">createShinyApp</a></span><span class="op">(</span></span>
+<span>  result_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"cerebro_app_order"</span><span class="op">)</span>,</span>
 <span>  cerebro_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    a <span class="op">=</span> <span class="st">"file_a.crb"</span>,</span>
 <span>    b <span class="op">=</span> <span class="st">"file_b.crb"</span></span>
@@ -204,10 +206,13 @@ the URL, so you can share a link that opens straight into one sample.
 Both a query string and a path segment are supported:</p>
 <pre><code>https://your-host/app/?dataset=TCR
 https://your-host/app/TCR</code></pre>
-<p>The token is matched against the <strong>names</strong> you gave in
-<code>cerebro_data</code> first, then against the file basename (with or
-without the <code>.crb</code> extension). If no match is found, the
-smallest-file default applies.</p>
+<p>The token is the <strong>last path segment</strong> (so it works even
+when the app is mounted under a sub-path such as <code>/app/</code>), or
+the value of the <code>dataset</code> query parameter. It is matched
+against the <strong>names</strong> you gave in <code>cerebro_data</code>
+first, then against the file basename (with or without the
+<code>.crb</code> extension). If no match is found, the smallest-file
+default applies.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

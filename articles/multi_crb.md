@@ -19,6 +19,7 @@ Passing a single path behaves exactly as before — no switcher is shown:
 
 ``` r
 createShinyApp(
+  result_dir = file.path(tempdir(), "cerebro_app_single"),
   cerebro_data = c(demo = system.file(
     "extdata/v1.4/example.crb",
     package = "cerebroAppLite"
@@ -36,6 +37,7 @@ cells, BCR on B cells):
 
 ``` r
 createShinyApp(
+  result_dir = file.path(tempdir(), "cerebro_app_multi"),
   cerebro_data = c(
     "PBMC - Full (T+B)"     = system.file("extdata/v1.4/demo_full_tcr_bcr.crb", package = "cerebroAppLite"),
     "PBMC - Healthy (T/NK)" = system.file("extdata/v1.4/demo_healthy_t.crb",    package = "cerebroAppLite"),
@@ -67,6 +69,7 @@ the vector instead:
 
 ``` r
 createShinyApp(
+  result_dir = file.path(tempdir(), "cerebro_app_order"),
   cerebro_data = c(
     a = "file_a.crb",
     b = "file_b.crb"
@@ -87,6 +90,9 @@ query string and a path segment are supported:
     https://your-host/app/?dataset=TCR
     https://your-host/app/TCR
 
-The token is matched against the **names** you gave in `cerebro_data`
-first, then against the file basename (with or without the `.crb`
-extension). If no match is found, the smallest-file default applies.
+The token is the **last path segment** (so it works even when the app is
+mounted under a sub-path such as `/app/`), or the value of the `dataset`
+query parameter. It is matched against the **names** you gave in
+`cerebro_data` first, then against the file basename (with or without
+the `.crb` extension). If no match is found, the smallest-file default
+applies.
