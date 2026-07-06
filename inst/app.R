@@ -28,16 +28,19 @@ Cerebro.options <<- list(
     "PBMC - Full (T+B)" = "extdata/v1.4/demo_full_tcr_bcr.crb",
     "PBMC - Healthy (T/NK)" = "extdata/v1.4/demo_healthy_t.crb",
     "PBMC - B-cell rich" = "extdata/v1.4/demo_bcell_rich.crb",
-    "Xenium - Spatial" = "extdata/v1.4/demo_spatial.crb"
+    ## Fully SYNTHETIC spatial demo: cell coordinates were generated to fall in
+    ## cortical-depth bands (they are NOT measured positions), and the cell-type
+    ## names are illustrative. It exists purely to demonstrate the Spatial tab.
+    "Cortex - Spatial (synthetic)" = "extdata/v1.4/demo_spatial.crb"
   ),
   "crb_pick_smallest_file" = FALSE,
   ## Synthetic (NOT real) H&E cerebral-cortex section (SVG) demonstrating the
   ## Spatial tab's histology-background overlay. Its cortical layer bands are
-  ## aligned with the demo cells' cortical-depth coordinates, so cell types
-  ## stratify across the layers. The name matches the crb_file_to_load key so
-  ## the Spatial tab pairs it with the Xenium demo dataset.
+  ## aligned with the demo cells' synthetic cortical-depth coordinates, so cell
+  ## types stratify across the layers. The name matches the crb_file_to_load key
+  ## so the Spatial tab pairs it with the synthetic cortex demo dataset.
   "spatial_images" = c(
-    "Xenium - Spatial" = "extdata/v1.4/demo_spatial_histology.svg"
+    "Cortex - Spatial (synthetic)" = "extdata/v1.4/demo_spatial_histology.svg"
   ),
   "cerebro_root" = ".",
   "welcome_message" = custom_welcome_message,

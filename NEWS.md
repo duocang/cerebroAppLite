@@ -12,8 +12,12 @@
   parameters. Matched images are copied into the app bundle and shown behind the
   cells, controlled by a **Background image** dropdown and an **Image opacity**
   slider. Unmatched entries are ignored with a warning rather than an error.
-- **Bundled demo**: the "Xenium - Spatial" demo ships a synthetic (non-patient)
-  histology placeholder so the overlay is demonstrable out of the box.
+- **Bundled demo**: the "Cortex - Spatial (synthetic)" demo pairs fully
+  synthetic cortical-depth cell coordinates (illustrative cell-type labels such
+  as Excitatory L2/3 … Oligodendrocyte) with a synthetic H&E cortex-section SVG
+  whose layer bands align with the cells, so cell types visibly stratify across
+  the cortex out of the box. Both the coordinates and the image are synthetic —
+  no patient data.
 - **Documentation**: added the `vignette("spatial_analysis")` guide.
 
 # cerebroAppLite 1.7.8
