@@ -142,7 +142,10 @@ meta <- data.frame(
   DR_1 = reduced[, 1],
   DR_2 = reduced[, 2],
   pseudotime = pData(cds)$Pseudotime,
-  state = as.character(pData(cds)$State),
+  # factor (not character): the by-state color code uses levels(meta$state) to
+  # build its palette; a character column makes levels() return NULL and the
+  # per-state colors silently vanish.
+  state = factor(as.character(pData(cds)$State)),
   row.names = colnames(expr_b),
   stringsAsFactors = FALSE
 )
