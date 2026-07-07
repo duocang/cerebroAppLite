@@ -559,6 +559,14 @@ server <- function(input, output, session) {
       getImmuneRepertoire()
     }
   )
+  insertConditionalTab(
+    "Trajectory",
+    "trajectory",
+    "route",
+    ## Only supported methods (monocle2) should surface the tab; an unsupported
+    ## method would otherwise render a blank tab instead of the empty state.
+    function() intersect(getMethodsForTrajectories(), c("monocle2"))
+  )
 
   ## Cleanup snapshot artifacts that may have been left by test runs.
   snapshot_dir <- file.path(
@@ -590,6 +598,13 @@ server <- function(input, output, session) {
     paste0(
       Cerebro.options[["cerebro_root"]],
       "/shiny/v1.4/immune_repertoire/server.R"
+    ),
+    local = TRUE
+  )
+  source(
+    paste0(
+      Cerebro.options[["cerebro_root"]],
+      "/shiny/v1.4/trajectory/server.R"
     ),
     local = TRUE
   )

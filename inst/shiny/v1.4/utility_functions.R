@@ -712,6 +712,26 @@ randomlySubsetCells <- function(table, percentage) {
 }
 
 ##----------------------------------------------------------------------------##
+## Merge a trajectory's per-cell meta data (DR_1/DR_2/pseudotime/state) with the
+## data set's full meta data, aligned BY CELL BARCODE.
+##
+## A trajectory may cover only a SUBSET of cells (e.g. a monocle2 trajectory
+## computed on B cells only). The trajectory meta data frame therefore has fewer
+## rows than getMetaData(), and its rownames are the covered cells' barcodes. A
+## positional `cbind()` would crash ("differing number of rows") or, worse,
+## silently mis-align cells. This joins on the barcode so every cell keeps its
+## own coordinates and cells outside the trajectory get NA pseudotime (which the
+## callers then drop via `filter(!is.na(pseudotime))`). The full meta data is the
+## left side, so the result has one row per cell in getMetaData() order.
+##----------------------------------------------------------------------------##
+mergeTrajectoryWithMetaData <- function(trajectory_data) {
+  trajectory_meta <- trajectory_data[["meta"]]
+  trajectory_meta[["cell_barcode"]] <- rownames(trajectory_meta)
+  getMetaData() %>%
+    dplyr::left_join(trajectory_meta, by = "cell_barcode")
+}
+
+##----------------------------------------------------------------------------##
 ## Calculate X-Y ranges for projections.
 ##----------------------------------------------------------------------------##
 getXYranges <- function(table) {
@@ -939,6 +959,171 @@ getTrajectory <- function(method, name) {
   if ('Cerebro_v1.3' %in% class(data_set())) {
     return(data_set()$getTrajectory(method, name))
   }
+}
+
+##----------------------------------------------------------------------------##
+## Metadata column detectors + comparison-variable choices.
+##
+## Restored from the original cerebroApp v1.3 utility layer; the Trajectory tab
+## depends on them (mito/ribo/ery expression-metric sub-tabs and the "variable
+## to compare" selector along pseudotime). They inspect the current data set's
+## metadata columns, so they honour whatever the loaded .crb carries.
+##----------------------------------------------------------------------------##
+getVariableToCompareChoices <- function() {
+  ## default: all metadata columns except cell_barcode
+  all_cols <- colnames(getMetaData())[
+    !colnames(getMetaData()) %in% c("cell_barcode")
+  ]
+
+  ## check if variable_to_compare option exists
+  if (
+    !exists('Cerebro.options') ||
+      is.null(Cerebro.options[['variable_to_compare']])
+  ) {
+    return(all_cols)
+  }
+
+  var_compare <- Cerebro.options[['variable_to_compare']]
+  use_groups_intersection <- FALSE
+
+  ## case 1: single boolean TRUE
+  if (
+    is.logical(var_compare) &&
+      length(var_compare) == 1 &&
+      !is.na(var_compare)
+  ) {
+    use_groups_intersection <- var_compare
+  } else if (
+    ## case 2: named list or vector
+    (is.list(var_compare) || is.vector(var_compare)) &&
+      !is.null(names(var_compare))
+  ) {
+    ## get current crb file name
+    current_name <- NULL
+    if (
+      exists("available_crb_files") &&
+        !is.null(available_crb_files$files) &&
+        !is.null(available_crb_files$selected)
+    ) {
+      idx <- which(available_crb_files$files == available_crb_files$selected)
+      if (length(idx) > 0 && !is.null(available_crb_files$names)) {
+        current_name <- available_crb_files$names[idx[1]]
+      }
+    }
+
+    ## check if current file name exists in the named list/vector
+    if (!is.null(current_name) && current_name %in% names(var_compare)) {
+      val <- var_compare[[current_name]]
+      if (is.logical(val) && length(val) == 1 && !is.na(val)) {
+        use_groups_intersection <- val
+      }
+    }
+  }
+
+  ## if should use intersection of groups and metadata columns
+  if (use_groups_intersection) {
+    groups <- getGroups()
+    if (!is.null(groups) && length(groups) > 0) {
+      intersection <- intersect(groups, all_cols)
+      if (length(intersection) > 0) {
+        return(intersection)
+      }
+    }
+  }
+
+  ## default fallback
+  return(all_cols)
+}
+
+getMitoColumn <- function() {
+  cols <- colnames(getMetaData())
+  patterns <- c(
+    "^percent[_.]?mt$",
+    "^percent[_.]?mito$",
+    "^percent[_.]?mitochondrial$",
+    "^pct[_.]?mt$",
+    "^pct[_.]?mito$",
+    "^pct[_.]?mitochondrial$",
+    "^mt[_.]?percent$",
+    "^mito[_.]?percent$",
+    "^mitochondrial[_.]?percent$",
+    "^mito[_.]?pct$",
+    "^mt[_.]?pct$"
+  )
+  for (pattern in patterns) {
+    matches <- grep(pattern, cols, ignore.case = TRUE, value = TRUE)
+    if (length(matches) > 0) {
+      return(matches[1])
+    }
+  }
+  return(NULL)
+}
+
+hasMitoColumn <- function() {
+  !is.null(getMitoColumn())
+}
+
+getRiboColumn <- function() {
+  cols <- colnames(getMetaData())
+  patterns <- c(
+    "^percent[_.]?ribo$",
+    "^percent[_.]?ribosomal$",
+    "^pct[_.]?ribo$",
+    "^pct[_.]?ribosomal$",
+    "^ribo[_.]?percent$",
+    "^ribosomal[_.]?percent$",
+    "^ribo[_.]?pct$",
+    "^ribosomal[_.]?pct$"
+  )
+  for (pattern in patterns) {
+    matches <- grep(pattern, cols, ignore.case = TRUE, value = TRUE)
+    if (length(matches) > 0) {
+      return(matches[1])
+    }
+  }
+  return(NULL)
+}
+
+hasRiboColumn <- function() {
+  !is.null(getRiboColumn())
+}
+
+getEryColumn <- function() {
+  cols <- colnames(getMetaData())
+  patterns <- c(
+    "^percent[_.]?ery$",
+    "^percent[_.]?erythrocyte$",
+    "^percent[_.]?hb$",
+    "^percent[_.]?hgb$",
+    "^percent[_.]?hemoglobin$",
+    "^percent[_.]?haemoglobin$",
+    "^pct[_.]?ery$",
+    "^pct[_.]?erythrocyte$",
+    "^pct[_.]?hb$",
+    "^pct[_.]?hgb$",
+    "^pct[_.]?hemoglobin$",
+    "^pct[_.]?haemoglobin$",
+    "^ery[_.]?percent$",
+    "^erythrocyte[_.]?percent$",
+    "^hb[_.]?percent$",
+    "^hgb[_.]?percent$",
+    "^hemoglobin[_.]?percent$",
+    "^haemoglobin[_.]?percent$",
+    "^ery[_.]?pct$",
+    "^hb[_.]?pct$",
+    "^hgb[_.]?pct$"
+  )
+  for (pattern in patterns) {
+    matches <- grep(pattern, cols, ignore.case = TRUE, value = TRUE)
+    if (length(matches) > 0) {
+      return(matches[1])
+    }
+  }
+  return(NULL)
+}
+
+hasEryColumn <- function() {
+  !is.null(getEryColumn())
 }
 ##----------------------------------------------------------------------------##
 ## Cerebro file reader (.rds via readRDS).

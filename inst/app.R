@@ -17,10 +17,13 @@ Cerebro.options <<- list(
   "mode" = "closed",
   ## This bundled app ships three distinct demo data sets so the sidebar
   ## "Select dataset:" switcher is visible out of the box: switching changes
-  ## the UMAP, the cell-type composition and the Immune Repertoire tab. They
-  ## are embedded-backend .crb files, so no h5 matrix is configured. The
-  ## richest data set (Full, T+B) is listed first and loaded by default
-  ## (crb_pick_smallest_file = FALSE) so the app opens on its fullest state.
+  ## the UMAP, the cell-type composition, and the conditional tabs (Immune
+  ## Repertoire on all three PBMC sets). They are embedded-backend .crb
+  ## files, so no h5 matrix is configured. The richest data set (Full, T+B)
+  ## is listed first and loaded by default (crb_pick_smallest_file = FALSE)
+  ## so the app opens on its fullest state. The full T+B set additionally
+  ## carries a monocle2 B-cell trajectory, which surfaces the Trajectory tab
+  ## (dynamically inserted by insertConditionalTab).
   "crb_file_to_load" = c(
     "PBMC - Full (T+B)" = "extdata/v1.4/demo_full_tcr_bcr.crb",
     "PBMC - Healthy (T/NK)" = "extdata/v1.4/demo_healthy_t.crb",
