@@ -14,6 +14,9 @@ vignettes/expression_backend_benchmark*
 .playwright-mcp/
 tmp/
 
+# local per-project memory (Loci brain) — personal, never tracked
+.loci/
+
 # shinytest2 snapshot comparison artifacts
 tests/testthat/_snaps/**/*.new.png
 
