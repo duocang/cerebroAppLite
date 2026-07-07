@@ -79,3 +79,34 @@ the cell-type composition and the Immune Repertoire tab.
 
 `data-raw/` is excluded from the built package via `.Rbuildignore`; it stays in
 the repository for reproducibility only.
+
+## Trajectory demo (monocle2)
+
+The **`demo_full_tcr_bcr.crb`** demo additionally carries a monocle2 pseudotime
+trajectory (`monocle2 / B_cell_maturation`), so a single dataset demonstrates
+TCR **and** BCR **and** trajectory — rather than shipping a separate
+trajectory-only file.
+
+- **Source:** derived entirely from `demo_full_tcr_bcr.crb` itself (no new
+  download). The trajectory is computed on that demo's 915 B cells.
+- **Method:** monocle2 `DDRTree` on the most variable genes, `set.seed(42)` for
+  reproducibility. See `build_trajectory_demo.R`.
+- **Honest scope:** these are peripheral-blood B cells, not a bone-marrow
+  developmental lineage — the trajectory is **illustrative** of the pseudotime
+  feature, not a biological claim about B-cell ontogeny.
+- **Note on reproducibility:** monocle2 (v2.x) is unmaintained and calls a few
+  igraph functions that are defunct in modern igraph; `build_trajectory_demo.R`
+  applies small, self-contained in-process shims (documented inline) so the
+  DDRTree ordering runs on current toolchains.
+
+### Rebuild
+
+From the package root, with `cerebroAppLite` and `monocle` (Bioconductor)
+installed:
+
+```bash
+Rscript data-raw/build_trajectory_demo.R
+```
+
+`monocle` is a **build-time-only** dependency (like `scRepertoire` for the IR
+demos) and is intentionally not a hard runtime dependency.

@@ -11,10 +11,10 @@
   (`insertConditionalTab`) only for data sets whose `.crb` carries trajectory
   data — the same content-driven sidebar mechanism used by the Immune
   Repertoire and Extra material tabs.
-- **Demo data**: a fourth bundled demo `demo_trajectory.crb`
-  ("PBMC - Monocle2 trajectory", 501 cells) ships in `inst/extdata/v1.4/` so the
-  tab is exercisable out of the box; the three PBMC immune-repertoire demos
-  carry no trajectory data and therefore never show the tab.
+- **Demo data**: the monocle2 pseudotime trajectory is now bundled inside the
+  `demo_full_tcr_bcr.crb` demo (computed on its B-cell subset) instead of a
+  separate `demo_trajectory.crb`, so one demo shows TCR + BCR + trajectory. The
+  trajectory is reproducible via `data-raw/build_trajectory_demo.R`.
 
 # cerebroAppLite 1.7.7
 
