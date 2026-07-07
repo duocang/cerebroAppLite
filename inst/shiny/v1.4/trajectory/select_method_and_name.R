@@ -15,7 +15,7 @@ output[["trajectory_select_method_and_name_UI"]] <- renderUI({
   available_methods <- getMethodsForTrajectories()
   available_methods <- available_methods[available_methods %in% c('monocle2')]
 
-  if (length(getMethodsForTrajectories()) == 0) {
+  if (length(available_methods) == 0) {
     fluidRow(
       cerebroBox(
         title = "Trajectory",

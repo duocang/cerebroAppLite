@@ -563,7 +563,9 @@ server <- function(input, output, session) {
     "Trajectory",
     "trajectory",
     "route",
-    function() getMethodsForTrajectories()
+    ## Only supported methods (monocle2) should surface the tab; an unsupported
+    ## method would otherwise render a blank tab instead of the empty state.
+    function() intersect(getMethodsForTrajectories(), c("monocle2"))
   )
 
   ## Cleanup snapshot artifacts that may have been left by test runs.
