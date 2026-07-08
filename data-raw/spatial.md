@@ -15,21 +15,21 @@ The four files above are **real measured data** and no longer ship a synthetic b
 - **MERFISH** and **Xenium** *embed* their genuine histology image (DAPI mosaic / DAPI morphology) inside the `.crb` under `histology_image`, with the image extent in coordinate space (`histology_image_bounds`). The Spatial tab offers this as the "Tissue image (real)" background.
 - **Visium** loads its genuine H&E from an *external* PNG (`demo_spatial_visium_he.png`) via the `spatial_images` option in `inst/app.R` — a live example of the external-image path, which also keeps the Visium `.crb` smaller. The tab offers it by filename.
 
-Both paths align the image to the cells automatically and honour a vertical-flip flag (`histology_image_flip_y` for embedded, `spatial_images_flip_y` for external).
+Images render in their native orientation; if a dataset needs a flip to align with the points, the user sets it from the Spatial tab's "Flip vertically/horizontally" checkboxes (external images can also be pre-flipped via `spatial_images_flip_y` in `inst/app.R`).
 Slide-seq carries no image by design (see the note below): the bead scatter is the complete spatial view.
 
 ### Image ↔ point alignment (the flip decision and the aspect lock)
 
 Getting the real image to line up with the points needs two things, because the Spatial tab draws the background as a DOM layer stretched to fill the plot's drawing area (it is not a Plotly `layout.image`):
 
-1. **A per-dataset vertical-flip flag.** The image is always stored NATIVE (row 0 = image top) in the `.crb`; the renderer draws it top-down while Plotly's y-axis grows upward. Whether the display needs a vertical flip is **not uniform** — it depends on how a dataset's point y relates to its image rows, which differs by platform (e.g. Seurat's `GetTissueCoordinates` vs a raw `y_centroid` vs `MerfishData::imgRaster`). So each `.crb` carries a `histology_image_flip_y` flag, set at build time by `export_and_verify(..., image_flip_y = …)` and applied by the renderer (`func_projection_update_plot.R` → `js_projection_update_plot.js`, via the background `scale(1, -1)`).
+1. **A vertical flip, when a dataset needs one (user control).** The image is always stored NATIVE (row 0 = image top) in the `.crb`; the renderer draws it top-down while Plotly's y-axis grows upward. Whether the display needs a vertical flip is **not uniform** — it depends on how a dataset's point y relates to its image rows, which differs by platform (e.g. Seurat's `GetTissueCoordinates` vs a raw `y_centroid` vs `MerfishData::imgRaster`). There is no stored per-`.crb` flip flag: the user aligns the image with the Spatial tab's "Flip vertically/horizontally" checkboxes (applied by `func_projection_update_plot.R` → `js_projection_update_plot.js`, via the background `scale(1, -1)`).
 
-   The correct value per dataset is decided by **visual comparison against a native ground-truth reference** — overlay the real cell centroids on the source raster in its native frame, note an unambiguous anatomical landmark, then confirm the app render places that landmark the same way. (Automated point-on-tissue "brightness" scores were tried and proved **unreliable** — dense tissue like the Xenium brain defeats them — so landmark comparison is the standard.) Verified values:
-   - **Visium** (mouse brain): `flip_y = TRUE` — olfactory bulb lower-left, tissue body lower-middle, matching Seurat's own `SpatialPlot`.
-   - **Xenium** (mouse brain CTX+HP): `flip_y = FALSE` — hippocampus lower-right, pial surface along the top, matching the native DAPI reference.
-   - **MERFISH** (mouse ileum): `flip_y = FALSE` — villi orientation confirmed by eye against the native DAPI.
+   Which orientation is correct per dataset is judged by **visual comparison against a native ground-truth reference** — overlay the real cell centroids on the source raster in its native frame, note an unambiguous anatomical landmark, then flip in the app until that landmark matches. (Automated point-on-tissue "brightness" scores were tried and proved **unreliable** — dense tissue like the Xenium brain defeats them — so landmark comparison is the standard.) For the shipped demos:
+   - **Visium** (mouse brain): needs a **vertical flip** — olfactory bulb lower-left, tissue body lower-middle, matching Seurat's own `SpatialPlot`.
+   - **Xenium** (mouse brain CTX+HP): **no flip** — hippocampus lower-right, pial surface along the top, matching the native DAPI reference.
+   - **MERFISH** (mouse ileum): **no flip** — villi orientation confirmed by eye against the native DAPI.
 
-   The lesson: do **not** apply one blanket flip rule, and do **not** trust the brightness score. When adding a new image demo, build a native-frame centroid overlay, pick a landmark, and set `image_flip_y` so the app matches it.
+   The lesson: do **not** apply one blanket flip rule, and do **not** trust the brightness score. When adding a new image demo, build a native-frame centroid overlay, pick a landmark, and flip in the app until it matches.
 2. **Aspect lock at render time.** The stretch-to-fill would squash a non-square image (the MERFISH DAPI mosaic is ~0.6:1, tall). When an embedded image is active the renderer sets `yaxis.scaleanchor = 'x'` (`func_projection_update_plot.R` flags `is_embedded`; `js_projection_update_plot.js` applies the lock), so the drawing area keeps the image's width:height and the stretch stays proportional. Non-embedded projections (UMAP etc.) are untouched.
 
 The old synthetic `demo_spatial.crb` + `demo_spatial_histology.svg` still exist on disk as test fixtures for the external-`spatial_images` overlay path, but are no longer wired into the bundled app dropdown.

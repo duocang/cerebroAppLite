@@ -166,15 +166,6 @@ spatial_projection_parameters_plot_raw <- reactive({
   ## its stored bounds — no external file, no manual flip/scale.
   embedded_image <- spatial_data$histology_image
   embedded_bounds <- spatial_data$histology_image_bounds
-  ## Whether the renderer must flip the embedded image vertically depends on how
-  ## THIS dataset's point y relates to its image rows — it differs per platform,
-  ## so it is stored per-.crb as `histology_image_flip_y` (set at build time,
-  ## ground-truth verified). Images default to NO flip when the flag is absent;
-  ## the user can flip from the tab if a dataset needs it.
-  embedded_flip_y <- spatial_data$histology_image_flip_y
-  if (is.null(embedded_flip_y)) {
-    embedded_flip_y <- FALSE
-  }
 
   ## Normalise the background choice against the CURRENT dataset. When the user
   ## switches from an image-bearing demo (where they picked "__embedded__") to
@@ -202,7 +193,6 @@ spatial_projection_parameters_plot_raw <- reactive({
     background_image = background_image,
     embedded_image = embedded_image,
     embedded_bounds = embedded_bounds,
-    embedded_flip_y = embedded_flip_y,
     background_flip_x = background_flip_x,
     background_flip_y = background_flip_y,
     background_scale_x = background_scale_x,

@@ -222,15 +222,11 @@ spatial_projection_update_plot <- function(input) {
     identical(plot_parameters[["background_image"]], "__embedded__") &&
     !is.null(plot_parameters[["embedded_image"]]) &&
     length(image_bounds) > 0
-  ## Whether an embedded image must be flipped vertically to sit the right way up
-  ## depends on how this dataset's point y relates to its image rows, which
-  ## differs per platform. It travels with the .crb as `embedded_flip_y` (set at
-  ## build time, ground-truth verified per dataset). External spatial_images keep
-  ## their own `background_flip_y`.
+  ## Images render in their native orientation by default. If a dataset needs a
+  ## vertical/horizontal flip to align with the points, the user sets it from the
+  ## tab's "Flip" checkboxes; both embedded and external images honour the same
+  ## `background_flip_y` / `background_flip_x`.
   background_flip_y <- plot_parameters[["background_flip_y"]]
-  if (using_embedded) {
-    background_flip_y <- isTRUE(plot_parameters[["embedded_flip_y"]])
-  }
 
   ## follow this when the coloring variable is numeric
   if (is.numeric(color_input)) {

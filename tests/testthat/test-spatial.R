@@ -506,18 +506,11 @@ test_that("image-free demo (Slide-seq) carries no histology image", {
   }
 })
 
-test_that("embedded image demos carry the ground-truth-verified render flip flag", {
-  # The vertical-flip needed to display each embedded image the right way up is
-  # NOT uniform across platforms — it is stored per-.crb as
-  # `histology_image_flip_y`, set from a landmark comparison against a native
-  # reference (see data-raw/spatial.md). Guard the verified values so a rebuild
-  # cannot silently flip a demo upside-down. (Visium uses an EXTERNAL image, so
-  # its flip lives in app.R's spatial_images_flip_y, asserted separately.)
-  expected <- c(
-    demo_spatial_xenium = FALSE, # hippocampus lower-right (vs native DAPI)
-    demo_spatial_merfish = FALSE # villi orientation (vs native DAPI)
-  )
-  for (f in names(expected)) {
+test_that("embedded image demos store the image natively with no flip flag", {
+  # Embedded images are stored in their native orientation; there is no per-.crb
+  # render-flip flag (removed — display alignment is a user control in the tab).
+  # Guard that the image is present and no stale flip flag lingers.
+  for (f in c("demo_spatial_xenium", "demo_spatial_merfish")) {
     path <- system.file(
       file.path("extdata/v1.4", paste0(f, ".crb")),
       package = "cerebroAppLite"
@@ -525,7 +518,8 @@ test_that("embedded image demos carry the ground-truth-verified render flip flag
     skip_if(path == "" || !file.exists(path), message = paste0(f, " missing"))
     crb <- readRDS(path)
     sd <- crb$getSpatialData(crb$availableSpatial()[1])
-    expect_identical(sd$histology_image_flip_y, expected[[f]], info = f)
+    expect_false(is.null(sd$histology_image), info = f)
+    expect_null(sd$histology_image_flip_y, info = f)
   }
 })
 

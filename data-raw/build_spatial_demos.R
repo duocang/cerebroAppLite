@@ -192,11 +192,9 @@ process_seurat <- function(obj, assay, max_genes = 2000) {
 ##
 ## `flip_y` mirrors the raster top-to-bottom before encoding. The demos do NOT
 ## use it: every embedded image is stored in its NATIVE orientation (row 0 =
-## image top). Whether the renderer flips a given image for display is decided
-## PER DATASET (it is not uniform — the point y direction relative to the image
-## rows differs by platform) and carried in the .crb as `histology_image_flip_y`
-## via export_and_verify's `image_flip_y` argument (see spatial.md). `flip_y`
-## here is kept only as a general escape hatch for a source stored bottom-up.
+## image top). It is kept only as an escape hatch for a source raster that is
+## stored bottom-up. Display alignment (if a dataset needs a flip) is a user
+## control in the Spatial tab, not a stored per-.crb flag.
 ## Normalise a raster/array to an H x W x 3 numeric array in [0, 1], optionally
 ## flipping it top-to-bottom and downscaling so the long edge is <= max_px.
 .prepare_raster_array <- function(arr, max_px = 1200, flip_y = FALSE) {
@@ -352,8 +350,7 @@ export_and_verify <- function(
   experiment_name,
   organism,
   image = NULL,
-  image_bounds = NULL,
-  image_flip_y = TRUE
+  image_bounds = NULL
 ) {
   if (file.exists(file)) {
     file.remove(file)
@@ -384,11 +381,6 @@ export_and_verify <- function(
       sd <- crb$getSpatialData(nm)
       sd$histology_image <- image
       sd$histology_image_bounds <- image_bounds
-      ## Per-dataset render flip (ground-truth verified). The renderer draws the
-      ## background top-down while Plotly y grows up, and how a dataset's point y
-      ## relates to its image rows differs per platform, so the correct flip is
-      ## NOT uniform — it travels with the image.
-      sd$histology_image_flip_y <- isTRUE(image_flip_y)
       crb$addSpatialData(nm, sd)
     }
     saveRDS(crb, file)
@@ -524,9 +516,9 @@ build_merfish <- function() {
   rownames(xy) <- cell_ids
 
   ## Real DAPI mosaic, stored in its NATIVE orientation (row 0 = image top). The
-  ## build never flips the raster; whether the renderer flips it for display is a
-  ## per-dataset decision carried by `image_flip_y` on export_and_verify (see the
-  ## call below and the note in spatial.md). MERFISH is verified to need NO flip.
+  ## build never flips the raster; if a display flip is ever needed it is a user
+  ## control in the Spatial tab (see the note in spatial.md). MERFISH is verified
+  ## to need NO flip.
   dapi <- imgRaster(getImg(spe, image_id = "dapi"))
   img_h <- nrow(dapi)
   img_w <- ncol(dapi)
@@ -569,12 +561,7 @@ build_merfish <- function() {
     experiment_name = "MERFISH mouse ileum",
     organism = "mm",
     image = dapi_uri,
-    image_bounds = dapi_bounds,
-    ## MERFISH villi are hard to orient by eye, so this was decided objectively:
-    ## sampling the RENDERED DAPI brightness under each cell for both orientations,
-    ## the un-flipped render is clearly brighter (points on tissue: ~73 vs ~63), so
-    ## MERFISH needs NO flip — same as Xenium, opposite of Visium.
-    image_flip_y = FALSE
+    image_bounds = dapi_bounds
   )
 }
 
@@ -686,9 +673,8 @@ build_xenium <- function() {
       max_px = 1400L
     )
     if (!is.null(res)) {
-      ## Stored native (no build flip). The renderer's per-dataset flip flag
-      ## (image_flip_y on export_and_verify, FALSE for Xenium — ground-truth
-      ## verified against the native DAPI reference) handles display orientation.
+      ## Stored native (no build flip). Display orientation, if a flip is ever
+      ## needed, is a user control in the Spatial tab.
       img_uri <- encode_raster_png(res$raster, max_px = 1400L)
       img_bounds <- res$bounds
     }
@@ -702,11 +688,7 @@ build_xenium <- function() {
     experiment_name = "Xenium mouse brain (CTX+HP)",
     organism = "mm",
     image = img_uri,
-    image_bounds = img_bounds,
-    ## Ground-truth verified against the native DAPI reference (hippocampus
-    ## lower-right, pial surface at top): Xenium needs NO render flip, unlike
-    ## Visium/MERFISH. Its RBioFormats raster + y_centroid frame differ.
-    image_flip_y = FALSE
+    image_bounds = img_bounds
   )
 }
 
