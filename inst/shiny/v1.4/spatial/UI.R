@@ -9,6 +9,15 @@ js_code_spatial_projection <- paste(
       "/shiny/v1.4/www/projection_layouts.js"
     )
   ),
+  ## Background-overlay layer, split out of js_projection_update_plot.js but
+  ## concatenated back into the SAME extendShinyjs() text, so all functions
+  ## still share one global scope (see the header in js_spatial_background.js).
+  readr::read_file(
+    paste0(
+      Cerebro.options[["cerebro_root"]],
+      "/shiny/v1.4/spatial/js_spatial_background.js"
+    )
+  ),
   readr::read_file(
     paste0(
       Cerebro.options[["cerebro_root"]],
