@@ -42,7 +42,9 @@ output[["spatial_projection_additional_parameters_UI"]] <- renderUI({
   ## That keeps one range usable whether the coordinates run 0–5k (Xenium) or
   ## 0–9k (MERFISH). Falls back to a generous default if coordinates are absent.
   offset_limit <- 5000
-  offset_step <- 25
+  ## Coarse step so each nudge visibly moves the image; a step of 1 was
+  ## imperceptible on datasets with a large coordinate span.
+  offset_step <- 50
   tryCatch(
     {
       sp <- getSpatialData(input[["spatial_projection_to_display"]])
@@ -53,7 +55,7 @@ output[["spatial_projection_additional_parameters_UI"]] <- renderUI({
       )
       if (is.finite(span) && span > 0) {
         offset_limit <- ceiling(span / 100) * 100
-        offset_step <- max(1, round(span / 400))
+        offset_step <- max(50, round(span / 400))
       }
     },
     error = function(e) NULL
@@ -143,7 +145,7 @@ output[["spatial_projection_additional_parameters_UI"]] <- renderUI({
             "spatial_projection_background_offset_x_num",
             label = NULL,
             value = 0,
-            step = 1
+            step = offset_step
           )
         )
       ),
@@ -171,7 +173,7 @@ output[["spatial_projection_additional_parameters_UI"]] <- renderUI({
             "spatial_projection_background_offset_y_num",
             label = NULL,
             value = 0,
-            step = 1
+            step = offset_step
           )
         )
       ),

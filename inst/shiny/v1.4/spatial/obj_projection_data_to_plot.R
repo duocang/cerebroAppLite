@@ -57,8 +57,12 @@ spatial_projection_data_to_plot_raw <- reactive({
     )
   }
 
-  ## Apply rotation to coordinates if configured
-  coordinates <- spatial_projection_coordinates()
+  ## Rotation angle (if configured for the current dataset). Applied to BOTH the
+  ## displayed subset and the full-extent coordinates below so the axis range and
+  ## the points stay in the same frame.
+  rotate_coords <- function(co) {
+    co
+  }
   if (
     exists("Cerebro.options") &&
       !is.null(Cerebro.options[["spatial_plot_rotation"]]) &&
@@ -81,20 +85,68 @@ spatial_projection_data_to_plot_raw <- reactive({
           theta <- rotation_angle * pi / 180
           cos_theta <- cos(theta)
           sin_theta <- sin(theta)
-          x <- coordinates[, 1]
-          y <- coordinates[, 2]
-          coordinates[, 1] <- x * cos_theta - y * sin_theta
-          coordinates[, 2] <- x * sin_theta + y * cos_theta
+          rotate_coords <- function(co) {
+            x <- co[, 1]
+            y <- co[, 2]
+            co[, 1] <- x * cos_theta - y * sin_theta
+            co[, 2] <- x * sin_theta + y * cos_theta
+            co
+          }
         }
       }
     }
+  }
+
+  ## Apply rotation to the displayed (subset) coordinates.
+  coordinates <- rotate_coords(spatial_projection_coordinates())
+
+  ## Pin the axes to the FULL cell extent, not the currently displayed subset.
+  ## Otherwise, changing "Show % of cells" rescales the axes to whatever subset
+  ## is plotted and the plot visibly jitters. We compute the range over ALL cells
+  ## (in the same rotated frame) and pass it as an explicit x/y range, unless the
+  ## user has set a manual range. A small margin keeps edge points off the frame.
+  if (
+    is.null(plot_parameters[["x_range"]]) ||
+      length(plot_parameters[["x_range"]]) < 2 ||
+      is.null(plot_parameters[["y_range"]]) ||
+      length(plot_parameters[["y_range"]]) < 2
+  ) {
+    full_coords <- rotate_coords(
+      getSpatialData(plot_parameters[["projection"]])$coordinates
+    )
+    x_full <- range(full_coords[[1]], na.rm = TRUE)
+    y_full <- range(full_coords[[2]], na.rm = TRUE)
+    x_margin <- diff(x_full) * 0.02
+    y_margin <- diff(y_full) * 0.02
+    if (all(is.finite(x_full)) && all(is.finite(y_full))) {
+      plot_parameters[["x_range"]] <- c(
+        x_full[1] - x_margin,
+        x_full[2] + x_margin
+      )
+      plot_parameters[["y_range"]] <- c(
+        y_full[1] - y_margin,
+        y_full[2] + y_margin
+      )
+    }
+  }
+
+  ## With an explicit full-extent range we must NOT let the JS autorange (which
+  ## would refit to the subset). reset_axes is meant to snap back to the full
+  ## view on a dataset switch — that is exactly the full-extent range we set, so
+  ## honour a manual range but otherwise keep the fixed range.
+  reset_axes <- isolate(spatial_projection_parameters_other[['reset_axes']])
+  if (
+    length(plot_parameters[["x_range"]]) >= 2 &&
+      length(plot_parameters[["y_range"]]) >= 2
+  ) {
+    reset_axes <- FALSE
   }
 
   ## return collect data
   to_return <- list(
     cells_df = metadata,
     coordinates = coordinates,
-    reset_axes = isolate(spatial_projection_parameters_other[['reset_axes']]),
+    reset_axes = reset_axes,
     plot_parameters = plot_parameters,
     color_assignments = color_assignments,
     hover_info = spatial_projection_hover_info()
