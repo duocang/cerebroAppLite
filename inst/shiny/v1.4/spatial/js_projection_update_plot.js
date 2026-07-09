@@ -1080,3 +1080,115 @@ shinyjs.spatialClearSelection = function () {
     });
   }
 };
+
+// When the user OPENS the Additional-parameters box, collapse the
+// Main-parameters box. This lifts the Additional panel (and the tall
+// background-image controls) up the page so the plot stays visible while
+// adjusting Rotate/Move — previously those controls sat below the fold.
+//
+// AdminLTE flips the `collapsed-box` class only AFTER its ~500ms slide
+// animation, so a fixed-delay check after the click is unreliable. Instead
+// watch the Additional box's class list with a MutationObserver and react the
+// moment it transitions from collapsed to expanded. The observer is (re)attached
+// whenever the panel is rebuilt by renderUI.
+(function () {
+  var additionalId = 'spatial_additional_parameters_wrapper';
+
+  function collapseMainParameters() {
+    var mainWrapper = document.getElementById('spatial_main_parameters_wrapper');
+    if (!mainWrapper) return;
+    var box = mainWrapper.querySelector('.box');
+    // AdminLTE marks a collapsed box with the `collapsed-box` class; skip if
+    // already collapsed so we don't toggle it back open.
+    if (!box || box.classList.contains('collapsed-box')) return;
+    var btn = box.querySelector('[data-widget="collapse"]');
+    if (btn) btn.click();
+  }
+
+  var observed = null; // the .box element currently observed
+  var wasCollapsed = true;
+
+  var observer = new MutationObserver(function () {
+    if (!observed) return;
+    var nowCollapsed = observed.classList.contains('collapsed-box');
+    // collapsed -> expanded transition: user just opened Additional.
+    if (wasCollapsed && !nowCollapsed) {
+      collapseMainParameters();
+    }
+    wasCollapsed = nowCollapsed;
+  });
+
+  // Keep the observer pointed at the current Additional box, reattaching after
+  // renderUI swaps it out. Polling is cheap and robust to those rebuilds.
+  setInterval(function () {
+    var wrapper = document.getElementById(additionalId);
+    var box = wrapper ? wrapper.querySelector('.box') : null;
+    if (box && box !== observed) {
+      observer.disconnect();
+      observed = box;
+      wasCollapsed = box.classList.contains('collapsed-box');
+      observer.observe(box, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+  }, 500);
+})();
+
+// 'More below' scroll hint for the Additional-parameters panel. The panel body
+// scrolls internally with a hidden scrollbar; this small bobbing chevron makes
+// the scrollability discoverable. It shows only while the body is scrollable and
+// not yet at the bottom, and hides as the user reaches the end.
+(function () {
+  var wrapperId = 'spatial_additional_parameters_wrapper';
+
+  function ensureHint(wrapper) {
+    var hint = document.getElementById('spatial_additional_scroll_hint');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'spatial_additional_scroll_hint';
+      hint.textContent = '⌄'; // ⌄
+      hint.title = 'Scroll for more';
+      wrapper.appendChild(hint);
+    }
+    return hint;
+  }
+
+  function update() {
+    var wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    var body = wrapper.querySelector('.box-body');
+    var box = wrapper.querySelector('.box');
+    var hint = ensureHint(wrapper);
+    // Hide when the panel is collapsed or not scrollable or scrolled to bottom.
+    var collapsed = box && box.classList.contains('collapsed-box');
+    var scrollable = body && body.scrollHeight - body.clientHeight > 4;
+    var atBottom =
+      body && body.scrollTop >= body.scrollHeight - body.clientHeight - 4;
+    if (!collapsed && scrollable && !atBottom) {
+      hint.classList.add('is-visible');
+    } else {
+      hint.classList.remove('is-visible');
+    }
+  }
+
+  // Recompute on scroll (delegated, since the body is rebuilt by renderUI), on
+  // resize, and periodically to catch renderUI swaps and control changes that
+  // alter the panel height.
+  document.addEventListener(
+    'scroll',
+    function (e) {
+      if (
+        e.target &&
+        e.target.classList &&
+        e.target.classList.contains('box-body') &&
+        e.target.closest('#' + wrapperId)
+      ) {
+        update();
+      }
+    },
+    true
+  );
+  window.addEventListener('resize', update);
+  setInterval(update, 800);
+})();

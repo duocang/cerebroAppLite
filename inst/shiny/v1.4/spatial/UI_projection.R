@@ -8,34 +8,40 @@ output[["spatial_projection_UI"]] <- renderUI({
       width = 3,
       offset = 0,
       style = "padding: 0px;",
-      cerebroBox(
-        title = tagList(
-          "Main parameters",
-          actionButton(
-            inputId = "spatial_projection_main_parameters_info",
-            label = "info",
-            icon = NULL,
-            class = "btn-xs",
-            title = "Show additional information for this panel.",
-            style = "margin-left: 5px"
-          )
-        ),
-        uiOutput("spatial_projection_main_parameters_UI")
+      tags$div(
+        id = "spatial_main_parameters_wrapper",
+        cerebroBox(
+          title = tagList(
+            "Main parameters",
+            actionButton(
+              inputId = "spatial_projection_main_parameters_info",
+              label = "info",
+              icon = NULL,
+              class = "btn-xs",
+              title = "Show additional information for this panel.",
+              style = "margin-left: 5px"
+            )
+          ),
+          uiOutput("spatial_projection_main_parameters_UI")
+        )
       ),
-      cerebroBox(
-        title = tagList(
-          "Additional parameters",
-          actionButton(
-            inputId = "spatial_projection_additional_parameters_info",
-            label = "info",
-            icon = NULL,
-            class = "btn-xs",
-            title = "Show additional information for this panel.",
-            style = "margin-left: 5px"
-          )
-        ),
-        uiOutput("spatial_projection_additional_parameters_UI"),
-        collapsed = TRUE
+      tags$div(
+        id = "spatial_additional_parameters_wrapper",
+        cerebroBox(
+          title = tagList(
+            "Additional parameters",
+            actionButton(
+              inputId = "spatial_projection_additional_parameters_info",
+              label = "info",
+              icon = NULL,
+              class = "btn-xs",
+              title = "Show additional information for this panel.",
+              style = "margin-left: 5px"
+            )
+          ),
+          uiOutput("spatial_projection_additional_parameters_UI"),
+          collapsed = TRUE
+        )
       ),
       cerebroBox(
         title = tagList(
