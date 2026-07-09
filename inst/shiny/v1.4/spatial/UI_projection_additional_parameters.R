@@ -71,7 +71,7 @@ output[["spatial_projection_additional_parameters_UI"]] <- renderUI({
   ## background reads these UI inputs, so seeding the inputs here is what makes a
   ## preset take effect — reading the option anywhere else has no visible result.
   preset_default <- function(option_name, fallback) {
-    cerebroAppLite:::resolve_spatial_image_preset(
+    resolve_spatial_image_preset(
       option_name,
       fallback,
       if (exists("Cerebro.options")) Cerebro.options else NULL,

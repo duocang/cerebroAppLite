@@ -47,7 +47,7 @@ output[["spatial_projection_morans_i"]] <- renderText({
     idx <- sort(sample(idx, max_cells))
   }
 
-  score <- cerebroAppLite:::morans_i(
+  score <- morans_i(
     coords[[1]][idx],
     coords[[2]][idx],
     expr[idx],

@@ -234,7 +234,7 @@ spatial_projection_update_plot <- function(input) {
   ## were populated in obj_projection_data_to_plot.R.
   is_coexpr <- identical(plot_parameters[["plot_type"]], "Co-expression (RGB)")
   if (is_coexpr) {
-    rgb_colors <- cerebroAppLite:::blend_genes_to_rgb(
+    rgb_colors <- blend_genes_to_rgb(
       r = if ("coexpr_r" %in% colnames(metadata)) {
         metadata[["coexpr_r"]]
       } else {
@@ -464,7 +464,7 @@ spatial_projection_update_plot <- function(input) {
         color = list()
       )
       if (isTRUE(plot_parameters[['show_region_outlines']])) {
-        hulls <- cerebroAppLite:::compute_group_hulls(
+        hulls <- compute_group_hulls(
           coordinates[[1]],
           coordinates[[2]],
           as.character(color_input)

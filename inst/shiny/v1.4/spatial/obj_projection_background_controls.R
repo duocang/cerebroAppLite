@@ -134,7 +134,7 @@ observeEvent(input[["spatial_projection_background_reset"]], {
   ## identity (0 move, 1 scale, FALSE flip) when no preset is set. Same
   ## per-dataset name lookup as the UI seeds it with.
   reset_preset_default <- function(option_name, fallback) {
-    cerebroAppLite:::resolve_spatial_image_preset(
+    resolve_spatial_image_preset(
       option_name,
       fallback,
       if (exists("Cerebro.options")) Cerebro.options else NULL,
@@ -276,7 +276,7 @@ observeEvent(input[["spatial_projection_background_copy_preset"]], {
     if (is.null(value) || !is.finite(value)) default else value
   }
 
-  code <- cerebroAppLite:::format_spatial_preset_code(
+  code <- format_spatial_preset_code(
     label = dataset_label,
     offset_x = null_to(input[["spatial_projection_background_offset_x"]], 0),
     offset_y = null_to(input[["spatial_projection_background_offset_y"]], 0),

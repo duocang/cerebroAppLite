@@ -92,7 +92,7 @@ spatial_projection_parameters_plot_raw <- reactive({
   ## overlay opens pre-aligned (see the flip/scale blocks below and the offset
   ## block that follows).
   resolve_bg_preset <- function(option_name, fallback) {
-    cerebroAppLite:::resolve_spatial_image_preset(
+    resolve_spatial_image_preset(
       option_name,
       fallback,
       if (exists("Cerebro.options")) Cerebro.options else NULL,
