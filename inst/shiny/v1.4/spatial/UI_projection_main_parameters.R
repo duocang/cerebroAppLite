@@ -96,7 +96,7 @@ output[["spatial_projection_main_parameters_UI"]] <- renderUI({
     selectInput(
       "spatial_projection_plot_type",
       label = "Plot type",
-      choices = c("ImageDimPlot", "ImageFeaturePlot"),
+      choices = c("ImageDimPlot", "ImageFeaturePlot", "Co-expression (RGB)"),
       selected = "ImageDimPlot"
     ),
     conditionalPanel(
@@ -122,6 +122,44 @@ output[["spatial_projection_main_parameters_UI"]] <- renderUI({
         )
       )
     ),
+    ## Co-expression: one gene per RGB channel; each cell's colour blends them so
+    ## spatial overlap reads as a mixed hue. Any channel may be left empty.
+    conditionalPanel(
+      condition = "input.spatial_projection_plot_type == 'Co-expression (RGB)'",
+      selectizeInput(
+        "spatial_projection_coexpr_r",
+        label = "Red channel gene",
+        choices = NULL,
+        options = list(
+          maxOptions = 1000,
+          placeholder = 'Gene for red...',
+          create = FALSE,
+          loadThrottle = 300
+        )
+      ),
+      selectizeInput(
+        "spatial_projection_coexpr_g",
+        label = "Green channel gene",
+        choices = NULL,
+        options = list(
+          maxOptions = 1000,
+          placeholder = 'Gene for green...',
+          create = FALSE,
+          loadThrottle = 300
+        )
+      ),
+      selectizeInput(
+        "spatial_projection_coexpr_b",
+        label = "Blue channel gene",
+        choices = NULL,
+        options = list(
+          maxOptions = 1000,
+          placeholder = 'Gene for blue...',
+          create = FALSE,
+          loadThrottle = 300
+        )
+      )
+    ),
     if (length(background_choices) > 1) {
       ## Only the image PICKER lives in Main parameters. All the appearance
       ## adjustments (opacity, move, flip, scale, rotate) live in Additional
@@ -142,6 +180,22 @@ serverSideGeneSelector(
   extra_triggers = function() input[["spatial_projection_plot_type"]],
   active = function() length(availableSpatial()) > 0
 )
+
+## Co-expression channel gene pickers. Same server-side population + active gate
+## as the feature selector, so their later:: callbacks don't leak into other
+## tabs' tests when no spatial data is present.
+for (channel_id in c(
+  "spatial_projection_coexpr_r",
+  "spatial_projection_coexpr_g",
+  "spatial_projection_coexpr_b"
+)) {
+  serverSideGeneSelector(
+    session,
+    channel_id,
+    extra_triggers = function() input[["spatial_projection_plot_type"]],
+    active = function() length(availableSpatial()) > 0
+  )
+}
 
 ## Render even when tab is hidden so that input values are available for
 ## programmatic access (e.g. shinytest2) without waiting for tab activation.

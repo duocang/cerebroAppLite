@@ -228,6 +228,89 @@ spatial_projection_update_plot <- function(input) {
   ## `background_flip_y` / `background_flip_x`.
   background_flip_y <- plot_parameters[["background_flip_y"]]
 
+  ## Co-expression: colour each cell by blending up to three genes' expression
+  ## onto RGB channels. Reuses the continuous render path, but the per-cell
+  ## colour is a pre-computed rgb() string (no colorscale). The channel columns
+  ## were populated in obj_projection_data_to_plot.R.
+  is_coexpr <- identical(plot_parameters[["plot_type"]], "Co-expression (RGB)")
+  if (is_coexpr) {
+    rgb_colors <- cerebroAppLite:::blend_genes_to_rgb(
+      r = if ("coexpr_r" %in% colnames(metadata)) {
+        metadata[["coexpr_r"]]
+      } else {
+        NULL
+      },
+      g = if ("coexpr_g" %in% colnames(metadata)) {
+        metadata[["coexpr_g"]]
+      } else {
+        NULL
+      },
+      b = if ("coexpr_b" %in% colnames(metadata)) {
+        metadata[["coexpr_b"]]
+      } else {
+        NULL
+      }
+    )
+    coexpr_labels <- paste(
+      c(
+        if (nzchar(plot_parameters[["coexpr_r"]] %||% "")) {
+          paste0("R: ", plot_parameters[["coexpr_r"]])
+        },
+        if (nzchar(plot_parameters[["coexpr_g"]] %||% "")) {
+          paste0("G: ", plot_parameters[["coexpr_g"]])
+        },
+        if (nzchar(plot_parameters[["coexpr_b"]] %||% "")) {
+          paste0("B: ", plot_parameters[["coexpr_b"]])
+        }
+      ),
+      collapse = "  "
+    )
+    output_meta <- list(
+      color_type = "coexpression",
+      traces = coexpr_labels,
+      color_variable = coexpr_labels,
+      background_image = background_image_data,
+      is_embedded = using_embedded,
+      image_bounds = image_bounds,
+      background_flip_x = plot_parameters[["background_flip_x"]],
+      background_flip_y = background_flip_y,
+      background_scale_x = plot_parameters[["background_scale_x"]],
+      background_scale_y = plot_parameters[["background_scale_y"]],
+      background_offset_x = plot_parameters[["background_offset_x"]],
+      background_offset_y = plot_parameters[["background_offset_y"]],
+      background_opacity = plot_parameters[["background_opacity"]]
+    )
+    output_data <- list(
+      x = coordinates[[1]],
+      y = coordinates[[2]],
+      color = rgb_colors,
+      point_size = plot_parameters[["point_size"]],
+      point_opacity = plot_parameters[["point_opacity"]],
+      point_line = list(),
+      x_range = x_range_out,
+      y_range = y_range_out,
+      reset_axes = reset_axes
+    )
+    if (plot_parameters[["draw_border"]]) {
+      output_data[["point_line"]] <- list(color = "rgb(196,196,196)", width = 1)
+    }
+    output_hover <- list(
+      hoverinfo = ifelse(plot_parameters[["hover_info"]], "text", "skip"),
+      text = "empty"
+    )
+    if (plot_parameters[["hover_info"]]) {
+      output_hover[["text"]] <- unname(hover_info)
+    }
+    shinyjs::js$updatePlot2DContinuousSpatial(
+      output_meta,
+      output_data,
+      output_hover,
+      list(),
+      container_info
+    )
+    return(invisible(NULL))
+  }
+
   ## follow this when the coloring variable is numeric
   if (is.numeric(color_input)) {
     ## put together meta data

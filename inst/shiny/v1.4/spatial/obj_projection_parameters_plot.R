@@ -46,6 +46,22 @@ spatial_projection_parameters_plot_raw <- reactive({
     feature_to_display <- input[["spatial_projection_feature_to_display"]]
     req(feature_to_display)
     color_variable <- feature_to_display
+  } else if (plot_type == "Co-expression (RGB)") {
+    ## One gene per channel; any channel may be empty. Require at least one so
+    ## the render has something to colour by.
+    coexpr_genes <- list(
+      r = input[["spatial_projection_coexpr_r"]],
+      g = input[["spatial_projection_coexpr_g"]],
+      b = input[["spatial_projection_coexpr_b"]]
+    )
+    blank <- function(x) is.null(x) || !nzchar(x)
+    req(
+      !(blank(coexpr_genes$r) && blank(coexpr_genes$g) && blank(coexpr_genes$b))
+    )
+    ## The cell colour comes from the RGB blend, not a metadata column, but the
+    ## downstream code still indexes metadata[[color_variable]] — give it a valid
+    ## placeholder column so that lookup can't fail on a NULL name.
+    color_variable <- colnames(getMetaData())[1]
   }
 
   ## Background APPEARANCE (opacity, move, flip, scale, rotate) is deliberately
@@ -202,6 +218,9 @@ spatial_projection_parameters_plot_raw <- reactive({
     color_variable = color_variable,
     plot_type = plot_type,
     feature_to_display = feature_to_display,
+    coexpr_r = input[["spatial_projection_coexpr_r"]],
+    coexpr_g = input[["spatial_projection_coexpr_g"]],
+    coexpr_b = input[["spatial_projection_coexpr_b"]],
     point_size = input[["spatial_projection_point_size"]],
     point_opacity = input[["spatial_projection_point_opacity"]],
     draw_border = input[["spatial_projection_point_border"]],

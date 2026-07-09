@@ -43,6 +43,38 @@ spatial_projection_data_to_plot_raw <- reactive({
     }
   }
 
+  ## Co-expression: pull each channel's gene expression into metadata columns
+  ## keyed by a stable channel name, so the renderer can blend them onto RGB.
+  if (plot_parameters$plot_type == "Co-expression (RGB)") {
+    if ("cell_barcode" %in% colnames(metadata)) {
+      cells_to_extract <- metadata$cell_barcode
+    } else {
+      cells_to_extract <- rownames(metadata)
+    }
+    ## Use a list, not c(): an empty channel is NULL, and c() would DROP it and
+    ## shift the remaining names, misaligning genes to channels.
+    coexpr_genes <- list(
+      coexpr_r = plot_parameters$coexpr_r,
+      coexpr_g = plot_parameters$coexpr_g,
+      coexpr_b = plot_parameters$coexpr_b
+    )
+    for (channel in names(coexpr_genes)) {
+      gene <- coexpr_genes[[channel]]
+      metadata[[channel]] <- NA_real_
+      if (!is.null(gene) && nzchar(gene) && gene %in% getGeneNames()) {
+        expression_data <- data_set()$getExpressionMatrix(
+          cells = cells_to_extract,
+          genes = gene
+        )
+        if (!is.null(expression_data) && gene %in% rownames(expression_data)) {
+          metadata[[channel]] <- as.vector(
+            expression_data[gene, cells_to_extract]
+          )
+        }
+      }
+    }
+  }
+
   ## get colors for groups (if applicable)
   if (
     plot_parameters[['color_variable']] %in%

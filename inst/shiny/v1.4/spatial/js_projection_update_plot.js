@@ -483,38 +483,63 @@ shinyjs.updatePlot2DContinuousSpatial = function (params) {
   shinyjs.removeCustomLegend();
   shinyjs.removeContinuousLegend();
   const data = [];
-  const colorArray = params.data.color;
-  const colorMin = Math.min(...colorArray);
-  const colorMax = Math.max(...colorArray);
-  // Fluent blue ramp (matches CSS --theme-primary #0f6cbd family)
-  const colorscale = [
-    [0,   '#f7fbff'],
-    [0.2, '#dbeaf6'],
-    [0.4, '#a4c8e1'],
-    [0.6, '#5e9bc7'],
-    [0.8, '#2c7ab3'],
-    [1,   '#0c4b85'],
-  ];
-  data.push({
-    x: params.data.x,
-    y: params.data.y,
-    mode: 'markers',
-    type: 'scattergl',
-    marker: {
-      size: params.data.point_size,
-      opacity: params.data.point_opacity,
-      line: params.data.point_line,
-      color: params.data.color,
-      cmin: colorMin,
-      cmax: colorMax,
-      colorscale: colorscale,
-      showscale: false,
-    },
-    hoverinfo: params.hover.hoverinfo,
-  });
-  // Keep the prior selection: selected cells stay solid, the rest dim.
-  applySpatialSelection(data, selectedKeys);
-  shinyjs.createContinuousLegend(params.meta.color_variable, colorMin, colorMax, colorscale);
+  // Co-expression mode: params.data.color is already an array of per-cell
+  // 'rgb(r,g,b)' strings (genes blended onto RGB channels). Use them verbatim,
+  // with no colorscale and no gradient legend — the channel/gene mapping is
+  // shown as a plain text legend instead.
+  const isCoexpr = params.meta.color_type === 'coexpression';
+
+  if (isCoexpr) {
+    data.push({
+      x: params.data.x,
+      y: params.data.y,
+      mode: 'markers',
+      type: 'scattergl',
+      marker: {
+        size: params.data.point_size,
+        opacity: params.data.point_opacity,
+        line: params.data.point_line,
+        color: params.data.color,
+      },
+      hoverinfo: params.hover.hoverinfo,
+    });
+    applySpatialSelection(data, selectedKeys);
+    // Reuse the categorical legend as a plain label showing the R/G/B genes.
+    shinyjs.createCustomLegend([params.meta.color_variable], ['#888888']);
+  } else {
+    const colorArray = params.data.color;
+    const colorMin = Math.min(...colorArray);
+    const colorMax = Math.max(...colorArray);
+    // Fluent blue ramp (matches CSS --theme-primary #0f6cbd family)
+    const colorscale = [
+      [0,   '#f7fbff'],
+      [0.2, '#dbeaf6'],
+      [0.4, '#a4c8e1'],
+      [0.6, '#5e9bc7'],
+      [0.8, '#2c7ab3'],
+      [1,   '#0c4b85'],
+    ];
+    data.push({
+      x: params.data.x,
+      y: params.data.y,
+      mode: 'markers',
+      type: 'scattergl',
+      marker: {
+        size: params.data.point_size,
+        opacity: params.data.point_opacity,
+        line: params.data.point_line,
+        color: params.data.color,
+        cmin: colorMin,
+        cmax: colorMax,
+        colorscale: colorscale,
+        showscale: false,
+      },
+      hoverinfo: params.hover.hoverinfo,
+    });
+    // Keep the prior selection: selected cells stay solid, the rest dim.
+    applySpatialSelection(data, selectedKeys);
+    shinyjs.createContinuousLegend(params.meta.color_variable, colorMin, colorMax, colorscale);
+  }
 
   // Use deep clone to avoid mutating global layout
   const layout_here = JSON.parse(JSON.stringify(spatial_projection_layout_2D));

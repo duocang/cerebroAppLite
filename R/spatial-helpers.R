@@ -164,3 +164,39 @@ compute_group_hulls <- function(x, y, group) {
   }
   result
 }
+
+#' Blend up to three genes' expression onto RGB channels
+#'
+#' Maps each gene's expression onto one colour channel (red / green / blue) so a
+#' cell's colour blends the genes it expresses — spatial co-expression reads as a
+#' mixed hue. Each channel is normalised independently to its own maximum, so it
+#' reports intensity relative to that gene's own range rather than across genes.
+#' A `NULL` channel contributes 0; `NA` expression is treated as 0 for that cell.
+#' A channel whose values are all equal and non-zero is treated as fully
+#' expressed (avoids dividing by a zero range); an all-zero channel stays 0.
+#'
+#' @param r,g,b Numeric expression vectors (same length), or `NULL` for an
+#'   unused channel.
+#'
+#' @return A character vector of `"rgb(R,G,B)"` strings, one per cell.
+#' @keywords internal
+#' @noRd
+blend_genes_to_rgb <- function(r = NULL, g = NULL, b = NULL) {
+  ## Determine the cell count from whichever channel is supplied.
+  n <- max(length(r), length(g), length(b))
+  channel <- function(values) {
+    if (is.null(values)) {
+      return(rep(0L, n))
+    }
+    values[is.na(values)] <- 0
+    mx <- max(values)
+    if (mx <= 0) {
+      return(rep(0L, n))
+    }
+    as.integer(round(values / mx * 255))
+  }
+  rc <- channel(r)
+  gc <- channel(g)
+  bc <- channel(b)
+  paste0("rgb(", rc, ",", gc, ",", bc, ")")
+}
