@@ -8,7 +8,7 @@
 # available crb files (a named vector of file -> label) and the selected file,
 # return the preset value for the current dataset or a fallback.
 
-resolve <- cerebroAppLite:::resolve_spatial_image_preset
+resolve <- resolve_spatial_image_preset
 
 # A minimal fixture: two datasets, one carrying an offset preset.
 crb_files <- c(

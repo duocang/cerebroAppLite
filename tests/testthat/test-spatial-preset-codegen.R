@@ -8,7 +8,7 @@
 # (offset_x/y, scale_x/y, flip_x/y) and only the non-identity ones, so a clean
 # alignment yields a short snippet.
 
-codegen <- cerebroAppLite:::format_spatial_preset_code
+codegen <- format_spatial_preset_code
 
 test_that("emits every non-identity option keyed by the dataset label", {
   out <- codegen(

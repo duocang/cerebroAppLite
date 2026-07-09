@@ -6,7 +6,7 @@
 # to its own max, so a channel is only dark where that gene is low relative to
 # its own range. A missing channel (NULL) contributes 0.
 
-blend <- cerebroAppLite:::blend_genes_to_rgb
+blend <- blend_genes_to_rgb
 
 test_that("each channel scales to its own max independently", {
   # R gene peaks at 10, G gene peaks at 4; both cells at their own max -> full.

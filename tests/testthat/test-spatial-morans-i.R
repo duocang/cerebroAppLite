@@ -6,7 +6,7 @@
 # Weights are binary k-nearest-neighbour (each cell's k closest neighbours by
 # Euclidean distance count 1, others 0).
 
-mi <- cerebroAppLite:::morans_i
+mi <- morans_i
 
 test_that("a segregated high/low split is strongly positive", {
   # Two well-separated clusters: left cells all low, right cells all high.

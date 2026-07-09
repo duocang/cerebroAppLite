@@ -7,7 +7,7 @@
 # hull (x/y vertex vectors, first vertex repeated at the end) for each group
 # that has enough points to enclose an area.
 
-hulls <- cerebroAppLite:::compute_group_hulls
+hulls <- compute_group_hulls
 
 test_that("returns one closed hull per group with >= 3 points", {
   # Group A: a unit square (4 points). Group B: a triangle (3 points).
