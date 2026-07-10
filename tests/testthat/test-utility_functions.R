@@ -6,8 +6,9 @@
 ## are pure R and require neither a running app nor Seurat.
 ##
 ## Coverage focuses on the edge cases that previously crashed the app at
-## runtime: NA-only percentage columns, NULL/NA toggle inputs, and a missing
-## grouping column. See the git history of utility_functions.R for context.
+## runtime (NA-only percentage columns, NULL/NA toggle inputs, a missing
+## grouping column) plus the caching contract of the cachePlot() wrapper. See
+## the git history of utility_functions.R for context.
 
 ## Prefer the installed copy (mirrors how test-app-inst.R locates the app),
 ## falling back to the source tree when running against an uninstalled
@@ -34,6 +35,7 @@ utils_env <- new.env()
 source(utils_file, local = utils_env)
 prettifyTable <- utils_env$prettifyTable
 centerOfGroups <- utils_env$centerOfGroups
+cachePlot <- utils_env$cachePlot
 
 ## ---------------------------------------------------------------------------
 ## centerOfGroups
@@ -131,4 +133,59 @@ test_that("prettifyTable tolerates NA / NULL toggle inputs", {
   expect_no_error(
     prettifyTable(table, filter = "none", dom = "t", hide_long_columns = NA)
   )
+})
+
+## ---------------------------------------------------------------------------
+## cachePlot: the shared bindCache wrapper used by the plot renderers.
+##
+## Drives a minimal server that caches a counting reactive through cachePlot,
+## then asserts the caching contract: the reactive evaluates, an unchanged key
+## does not recompute, a changed plot-specific key invalidates the cache, and a
+## changed dataset key invalidates the cache. The last case would regress if
+## the dataset key were forwarded as an already-evaluated value instead of an
+## unevaluated expression, so this also guards the wrapper's cache-key scoping.
+## ---------------------------------------------------------------------------
+
+test_that("cachePlot caches by key and invalidates on key or dataset change", {
+  skip_if_not_installed("shiny", "1.6.0")
+
+  compute_count <- 0
+
+  server <- function(input, output, session) {
+    available_crb_files <- shiny::reactiveValues(selected = "datasetA")
+    cached <- shiny::reactive({
+      compute_count <<- compute_count + 1
+      paste(input$metric, available_crb_files$selected)
+    }) %>%
+      cachePlot(input$metric, available_crb_files$selected)
+    output$val <- shiny::renderText(cached())
+  }
+
+  shiny::testServer(server, {
+    ## 1. evaluates successfully
+    session$setInputs(metric = "nUMI")
+    expect_equal(cached(), "nUMI datasetA")
+    first <- compute_count
+    expect_equal(first, 1)
+
+    ## 2. unchanged keys do not recompute
+    cached()
+    expect_equal(compute_count, first)
+
+    ## 3. changing a plot-specific key invalidates the cache
+    session$setInputs(metric = "nGene")
+    expect_equal(cached(), "nGene datasetA")
+    expect_equal(compute_count, first + 1)
+
+    ## returning to a previously cached key hits the cache
+    session$setInputs(metric = "nUMI")
+    cached()
+    expect_equal(compute_count, first + 1)
+
+    ## 4. changing the dataset key invalidates the cache
+    available_crb_files$selected <- "datasetB"
+    session$flushReact()
+    expect_equal(cached(), "nUMI datasetB")
+    expect_equal(compute_count, first + 2)
+  })
 })

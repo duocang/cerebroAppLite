@@ -63,7 +63,8 @@ output[["spatial_projection_morans_i"]] <- renderText({
 }) %>%
   cachePlot(
     spatial_projection_parameters_plot()[["projection"]],
-    spatial_projection_parameters_plot()[["feature_to_display"]]
+    spatial_projection_parameters_plot()[["feature_to_display"]],
+    available_crb_files$selected
   )
 
 ## Keep it computed while the Additional-parameters box is collapsed, so the

@@ -148,7 +148,8 @@ output[["groups_by_other_group_plot"]] <- plotly::renderPlotly({
     input[["groups_by_other_group_plot_type"]],
     input[["groups_selected_group"]],
     input[["groups_by_other_group_second_group"]],
-    input[["groups_by_other_group_show_as_percent"]]
+    input[["groups_by_other_group_show_as_percent"]],
+    available_crb_files$selected
   )
 
 ##----------------------------------------------------------------------------##

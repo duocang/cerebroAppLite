@@ -67,7 +67,11 @@ output[["groups_nUMI_plot"]] <- plotly::renderPlotly({
     mode = "integer"
   )
 }) %>%
-  cachePlot(input[["groups_selected_group"]], "nUMI")
+  cachePlot(
+    input[["groups_selected_group"]],
+    "nUMI",
+    available_crb_files$selected
+  )
 
 ##----------------------------------------------------------------------------##
 ## Number of expressed genes.
@@ -95,7 +99,11 @@ output[["groups_nGene_plot"]] <- plotly::renderPlotly({
     mode = "integer"
   )
 }) %>%
-  cachePlot(input[["groups_selected_group"]], "nGene")
+  cachePlot(
+    input[["groups_selected_group"]],
+    "nGene",
+    available_crb_files$selected
+  )
 
 ##----------------------------------------------------------------------------##
 ## Expression from mitochondrial genes.
@@ -123,7 +131,11 @@ output[["groups_percent_mt_plot"]] <- plotly::renderPlotly({
     mode = "percent"
   )
 }) %>%
-  cachePlot(input[["groups_selected_group"]], "percent_mt")
+  cachePlot(
+    input[["groups_selected_group"]],
+    "percent_mt",
+    available_crb_files$selected
+  )
 
 ##----------------------------------------------------------------------------##
 ## Expression from ribosomal genes.
@@ -151,7 +163,11 @@ output[["groups_percent_ribo_plot"]] <- plotly::renderPlotly({
     mode = "percent"
   )
 }) %>%
-  cachePlot(input[["groups_selected_group"]], "percent_ribo")
+  cachePlot(
+    input[["groups_selected_group"]],
+    "percent_ribo",
+    available_crb_files$selected
+  )
 
 ##----------------------------------------------------------------------------##
 ## Info box that gets shown when pressing the "info" button.

@@ -4,18 +4,24 @@
 ## Mirrors the immune_repertoire module's ir_bindCache():
 ##   - no-op on shiny < 1.6.0, where renderPlotly() %>% bindCache() is not
 ##     supported (DESCRIPTION only requires shiny >= 1.3.2);
-##   - cache = "session" so caches are never shared across users/sessions;
-##   - available_crb_files$selected is appended to every key, so switching
-##     datasets invalidates the cache and never serves a stale plot.
-## Pass the plot-specific cache keys (selected group, metric, ...) via `...`.
+##   - cache = "session" so caches are never shared across users/sessions.
+## Pass every cache key via `...`, including the dataset identifier
+## (available_crb_files$selected) so switching datasets invalidates the cache.
+##
+## The keys are captured as quosures with enquos() and spliced back into
+## bindCache() with !!!, so their expressions reach bindCache() unevaluated.
+## This matters for two reasons: bindCache() builds its reactive dependencies
+## from the key *expressions*, so forwarding an already-evaluated value would
+## break invalidation (e.g. a dataset switch would keep serving the previous
+## dataset's plot); and it avoids relying on this helper being sourced into the
+## server environment to see available_crb_files. rlang is already a direct
+## dependency, so this adds no new package.
 ##----------------------------------------------------------------------------##
 cachePlot <- function(x, ...) {
   if (utils::packageVersion("shiny") >= "1.6.0") {
-    shiny::bindCache(
-      x,
-      ...,
-      available_crb_files$selected,
-      cache = "session"
+    keys <- rlang::enquos(...)
+    rlang::inject(
+      shiny::bindCache(x, !!!keys, cache = "session")
     )
   } else {
     x
@@ -614,10 +620,10 @@ calculateTableAB <- function(
 
   ## prepare table in long format
   table <- table %>%
-    dplyr::arrange(dplyr::across(tidyselect::all_of(c(groupA, groupB)))) %>%
-    dplyr::group_by(dplyr::across(tidyselect::all_of(c(groupA, groupB)))) %>%
+    dplyr::arrange(dplyr::across(dplyr::all_of(c(groupA, groupB)))) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(c(groupA, groupB)))) %>%
     dplyr::summarise(count = dplyr::n(), .groups = 'drop') %>%
-    dplyr::group_by(dplyr::across(tidyselect::all_of(groupA))) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(groupA))) %>%
     dplyr::mutate(total_cell_count = sum(count)) %>%
     dplyr::ungroup()
 
@@ -626,7 +632,7 @@ calculateTableAB <- function(
     table <- table %>%
       dplyr::mutate(count = count / total_cell_count) %>%
       dplyr::select(
-        tidyselect::all_of(c(groupA, "total_cell_count", groupB, "count"))
+        dplyr::all_of(c(groupA, "total_cell_count", groupB, "count"))
       )
   }
 
@@ -634,15 +640,15 @@ calculateTableAB <- function(
   if (mode == "wide") {
     table <- table %>%
       tidyr::pivot_wider(
-        id_cols = tidyselect::all_of(c(groupA, "total_cell_count")),
-        names_from = tidyselect::all_of(groupB),
+        id_cols = dplyr::all_of(c(groupA, "total_cell_count")),
+        names_from = dplyr::all_of(groupB),
         values_from = "count",
         values_fill = 0
       ) %>%
       dplyr::select(
-        tidyselect::all_of(groupA),
+        dplyr::all_of(groupA),
         'total_cell_count',
-        tidyselect::any_of(levels_groupB)
+        dplyr::any_of(levels_groupB)
       )
 
     ## fix order of columns if cell cycle info was chosen as second group
@@ -654,7 +660,7 @@ calculateTableAB <- function(
     ) {
       table <- table %>%
         dplyr::select(
-          tidyselect::all_of(c(groupA, 'total_cell_count', 'G1', 'S', 'G2M')),
+          dplyr::all_of(c(groupA, 'total_cell_count', 'G1', 'S', 'G2M')),
           dplyr::everything()
         )
     }

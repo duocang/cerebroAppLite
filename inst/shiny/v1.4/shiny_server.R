@@ -394,7 +394,10 @@ server <- function(input, output, session) {
     # message(str(hover_info))
     return(hover_info)
   }) %>%
-    cachePlot(preferences[["show_hover_info_in_projections"]])
+    cachePlot(
+      preferences[["show_hover_info_in_projections"]],
+      available_crb_files$selected
+    )
 
   ## Dynamic sidebar: conditional tabs are inserted/removed based on dataset
   ## content (see insertConditionalTab() below). The old renderMenu +

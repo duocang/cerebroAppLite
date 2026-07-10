@@ -128,7 +128,8 @@ output[["trajectory_states_nUMI_plot"]] <- plotly::renderPlotly({
   cachePlot(
     input[["trajectory_selected_method"]],
     input[["trajectory_selected_name"]],
-    "nUMI"
+    "nUMI",
+    available_crb_files$selected
   )
 
 ##----------------------------------------------------------------------------##
@@ -180,7 +181,8 @@ output[["trajectory_states_nGene_plot"]] <- plotly::renderPlotly({
   cachePlot(
     input[["trajectory_selected_method"]],
     input[["trajectory_selected_name"]],
-    "nGene"
+    "nGene",
+    available_crb_files$selected
   )
 
 ##----------------------------------------------------------------------------##
@@ -235,7 +237,8 @@ output[["trajectory_states_percent_mt_plot"]] <- plotly::renderPlotly({
   cachePlot(
     input[["trajectory_selected_method"]],
     input[["trajectory_selected_name"]],
-    "percent_mt"
+    "percent_mt",
+    available_crb_files$selected
   )
 
 ##----------------------------------------------------------------------------##
@@ -290,7 +293,8 @@ output[["trajectory_states_percent_ribo_plot"]] <- plotly::renderPlotly({
   cachePlot(
     input[["trajectory_selected_method"]],
     input[["trajectory_selected_name"]],
-    "percent_ribo"
+    "percent_ribo",
+    available_crb_files$selected
   )
 
 ##----------------------------------------------------------------------------##
@@ -345,7 +349,8 @@ output[["trajectory_states_percent_ery_plot"]] <- plotly::renderPlotly({
   cachePlot(
     input[["trajectory_selected_method"]],
     input[["trajectory_selected_name"]],
-    "percent_ery"
+    "percent_ery",
+    available_crb_files$selected
   )
 
 ##----------------------------------------------------------------------------##
