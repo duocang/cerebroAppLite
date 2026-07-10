@@ -124,7 +124,13 @@ output[["trajectory_states_nUMI_plot"]] <- plotly::renderPlotly({
     y_title = "Number of transcripts",
     mode = "integer"
   )
-})
+}) %>%
+  cachePlot(
+    input[["trajectory_selected_method"]],
+    input[["trajectory_selected_name"]],
+    "nUMI",
+    available_crb_files$selected
+  )
 
 ##----------------------------------------------------------------------------##
 ## Number of expressed genes.
@@ -171,7 +177,13 @@ output[["trajectory_states_nGene_plot"]] <- plotly::renderPlotly({
     y_title = "Number of expressed genes",
     mode = "integer"
   )
-})
+}) %>%
+  cachePlot(
+    input[["trajectory_selected_method"]],
+    input[["trajectory_selected_name"]],
+    "nGene",
+    available_crb_files$selected
+  )
 
 ##----------------------------------------------------------------------------##
 ## Expression from mitochondrial genes.
@@ -221,7 +233,13 @@ output[["trajectory_states_percent_mt_plot"]] <- plotly::renderPlotly({
     y_title = "Percentage of transcripts",
     mode = "percent"
   )
-})
+}) %>%
+  cachePlot(
+    input[["trajectory_selected_method"]],
+    input[["trajectory_selected_name"]],
+    "percent_mt",
+    available_crb_files$selected
+  )
 
 ##----------------------------------------------------------------------------##
 ## Expression from ribosomal genes.
@@ -271,7 +289,13 @@ output[["trajectory_states_percent_ribo_plot"]] <- plotly::renderPlotly({
     y_title = "Percentage of transcripts",
     mode = "percent"
   )
-})
+}) %>%
+  cachePlot(
+    input[["trajectory_selected_method"]],
+    input[["trajectory_selected_name"]],
+    "percent_ribo",
+    available_crb_files$selected
+  )
 
 ##----------------------------------------------------------------------------##
 ## Expression from erythrocyte/hemoglobin genes.
@@ -321,7 +345,13 @@ output[["trajectory_states_percent_ery_plot"]] <- plotly::renderPlotly({
     y_title = "Percentage of transcripts",
     mode = "percent"
   )
-})
+}) %>%
+  cachePlot(
+    input[["trajectory_selected_method"]],
+    input[["trajectory_selected_name"]],
+    "percent_ery",
+    available_crb_files$selected
+  )
 
 ##----------------------------------------------------------------------------##
 ## Info box that gets shown when pressing the "info" button.

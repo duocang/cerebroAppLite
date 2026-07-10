@@ -99,13 +99,18 @@ output[["expression_by_pseudotime"]] <- plotly::renderPlotly({
   } else {
     color_scale <- input[["expression_projection_color_scale"]]
   }
+  ## Pick scatter trace type up-front based on the WebGL toggle; replaces the
+  ## former plotly::toWebGL() post-processing, which had to rebuild the whole
+  ## figure. Applied to both the marker trace and the trend line below.
+  scatter_type <- if (isTRUE(preferences$use_webgl)) "scattergl" else "scatter"
+
   ## prepare plot
   plot <- plotly::plot_ly() %>%
     plotly::add_trace(
       data = cells_df,
       x = ~pseudotime,
       y = ~level,
-      type = "scatter",
+      type = scatter_type,
       mode = "markers",
       marker = list(
         colorbar = list(
@@ -164,7 +169,7 @@ output[["expression_by_pseudotime"]] <- plotly::renderPlotly({
       plot,
       x = trend_line$x,
       y = trend_line$y,
-      type = "scatter",
+      type = scatter_type,
       mode = "lines",
       line = list(
         dash = "solid",
@@ -181,12 +186,9 @@ output[["expression_by_pseudotime"]] <- plotly::renderPlotly({
       showlegend = FALSE
     )
   }
-  ## if set in options, return plot with WebGL
-  if (preferences$use_webgl == TRUE) {
-    plotly::toWebGL(plot)
-  } else {
-    plot
-  }
+  ## scatter_type already respects preferences$use_webgl, so no toWebGL()
+  ## post-processing is needed.
+  plot
 })
 
 ##----------------------------------------------------------------------------##

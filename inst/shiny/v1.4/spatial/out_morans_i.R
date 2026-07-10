@@ -60,7 +60,12 @@ output[["spatial_projection_morans_i"]] <- renderText({
     formatC(score, format = "f", digits = 3),
     if (n > max_cells) paste0(" (", max_cells, "-cell subsample)") else ""
   )
-})
+}) %>%
+  cachePlot(
+    spatial_projection_parameters_plot()[["projection"]],
+    spatial_projection_parameters_plot()[["feature_to_display"]],
+    available_crb_files$selected
+  )
 
 ## Keep it computed while the Additional-parameters box is collapsed, so the
 ## value is ready the moment the user expands it.
