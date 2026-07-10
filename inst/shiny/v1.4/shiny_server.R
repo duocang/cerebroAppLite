@@ -373,7 +373,12 @@ server <- function(input, output, session) {
     rownames(data_set()$expression)
   })
 
-  # hover info for projection
+  # hover info for projection.
+  # Cached by (dataset path, hover toggle): selecting a different gene does
+  # not re-build the per-cell hover strings because they only depend on the
+  # metadata of the current dataset, not on the active gene. Unlike the
+  # expression-level reactive, this chain has no gene dependency and no
+  # isolate(), so the cache key stays consistent across gene switches.
   hover_info_projections <- reactive({
     # message('--> trigger "hover_info_projections"')
     if (
@@ -388,7 +393,11 @@ server <- function(input, output, session) {
     }
     # message(str(hover_info))
     return(hover_info)
-  })
+  }) %>%
+    shiny::bindCache(
+      available_crb_files$selected,
+      preferences[["show_hover_info_in_projections"]]
+    )
 
   ## Dynamic sidebar: conditional tabs are inserted/removed based on dataset
   ## content (see insertConditionalTab() below). The old renderMenu +
