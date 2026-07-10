@@ -614,10 +614,10 @@ calculateTableAB <- function(
 
   ## prepare table in long format
   table <- table %>%
-    dplyr::arrange(dplyr::across(c(groupA, groupB))) %>%
-    dplyr::group_by(dplyr::across(c(groupA, groupB))) %>%
+    dplyr::arrange(dplyr::across(tidyselect::all_of(c(groupA, groupB)))) %>%
+    dplyr::group_by(dplyr::across(tidyselect::all_of(c(groupA, groupB)))) %>%
     dplyr::summarise(count = dplyr::n(), .groups = 'drop') %>%
-    dplyr::group_by(dplyr::across(c(groupA))) %>%
+    dplyr::group_by(dplyr::across(tidyselect::all_of(groupA))) %>%
     dplyr::mutate(total_cell_count = sum(count)) %>%
     dplyr::ungroup()
 

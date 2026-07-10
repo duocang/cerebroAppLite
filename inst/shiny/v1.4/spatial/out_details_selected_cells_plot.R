@@ -58,7 +58,7 @@ output[["spatial_details_selected_cells_plot"]] <- plotly::renderPlotly({
     if (nrow(cells_df) > 0) {
       ## count the number of cells by selected meta data column
       cells_df <- cells_df %>%
-        dplyr::group_by(dplyr::across(c(color_variable))) %>%
+        dplyr::group_by(dplyr::across(tidyselect::all_of(color_variable))) %>%
         dplyr::tally() %>%
         dplyr::ungroup()
       ## ... no cell is selected
