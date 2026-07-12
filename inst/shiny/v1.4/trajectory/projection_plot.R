@@ -119,6 +119,16 @@ trajectory_projection_prepared <- reactive({
   )
 })
 
+## Debounce the prepared reactive so dragging a slider (point size / opacity /
+## "% of cells") coalesces its rapid-fire input events into a single redraw
+## after the drag settles, instead of re-running the WebGL render on every
+## intermediate value. Mirrors the debounce the other projection tabs already
+## apply to their parameter/data reactives.
+trajectory_projection_prepared <- debounce(
+  trajectory_projection_prepared,
+  200
+)
+
 ##----------------------------------------------------------------------------##
 ## Axis-reset state, mirroring the overview / gene-expression projections.
 ##

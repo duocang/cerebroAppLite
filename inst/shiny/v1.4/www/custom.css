@@ -92,6 +92,7 @@ html, body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 h1, h2, h3, h4, h5, h6 {
   color: var(--c-text);
@@ -1126,6 +1127,30 @@ body .btn:active { transform: translateY(0.5px); }
 }
 .cerebro-projection-gate.is-sized .js-plotly-plot {
   visibility: visible !important;
+}
+
+/* -------------------------------------------------------------------------
+   Projection re-render loading feedback (all projection tabs)
+
+   A parameter change (colour variable, point size, "% of cells", …) sends the
+   render over a Shiny round trip; on a large data set the plot can sit frozen
+   for a beat with no signal that anything is happening. The shared renderer
+   (www/projection_scatter.js) dims the plot to `opacity` below while a render
+   is in flight and restores it in the Plotly.react `.then()`, so a slow render
+   fades slightly instead of appearing stuck.
+
+   This is a pure OPACITY transition on the plotly div — deliberately ORTHOGONAL
+   to the gate above, which uses `visibility` for first-paint. The two never
+   fight: `visibility` decides whether the settled plot is shown at all;
+   `opacity` decides how a re-render of an already-visible plot reads. The dim
+   is only armed after a 100ms delay (JS side), so fast renders never flash.
+   Respects prefers-reduced-motion via the global reset above (which zeroes all
+   transition durations), so reduced-motion users get an instant swap. */
+.cerebro-projection-gate .js-plotly-plot {
+  transition: opacity 0.18s ease;
+}
+.cerebro-projection-gate .js-plotly-plot.cerebro-plot-loading {
+  opacity: 0.55;
 }
 
 /* -------------------------------------------------------------------------

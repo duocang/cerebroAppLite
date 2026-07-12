@@ -894,6 +894,58 @@
       .forEach((el) => el.remove());
   }
 
+  // --- re-render loading feedback ---------------------------------------------
+  // A parameter change (colour, point size, "% of cells", …) sends the render
+  // over a Shiny round trip; on a large data set the plot can sit frozen for a
+  // beat with nothing signalling that work is happening. Dim the plotly div to
+  // a low opacity WHILE a render is in flight and restore it once Plotly.react
+  // resolves, so a slow render fades slightly instead of looking stuck.
+  //
+  // Two rules make this safe:
+  //  * The dim is a pure CSS OPACITY class on the .js-plotly-plot div, kept
+  //    strictly separate from the first-paint gate (which uses `visibility`);
+  //    the two properties never interfere. It is NEVER applied to the gate.
+  //  * The dim is ARMED but not applied for 100ms; a render that resolves inside
+  //    that window clears the timer and never dims at all, so the common fast
+  //    render has zero flash. Only a genuinely slow render actually fades.
+  // Deliberately NOT a Plotly transition: scattergl ignores transition on
+  // restyle/react, so the only reliable fade is this container-level CSS one.
+  const LOADING_CLASS = 'cerebro-plot-loading';
+  const LOADING_ARM_DELAY = 100; // ms before a slow render visibly dims
+  const loadingTimers = new Map(); // plotId -> timeout handle
+
+  function plotlyDivFor(plotId) {
+    const el = document.getElementById(plotId);
+    // The htmlwidget marks the graph div itself with .js-plotly-plot; the CSS
+    // opacity rule targets that class, so dim the element only once it is one.
+    return el && el.classList && el.classList.contains('js-plotly-plot')
+      ? el
+      : null;
+  }
+
+  function beginRenderFeedback(plotId) {
+    // Re-entrant: a render firing while a previous dim is armed/applied reuses
+    // the same cycle. Clear any pending arm, then arm a fresh one.
+    const prev = loadingTimers.get(plotId);
+    if (prev) window.clearTimeout(prev);
+    const timer = window.setTimeout(function () {
+      const div = plotlyDivFor(plotId);
+      if (div) div.classList.add(LOADING_CLASS);
+      loadingTimers.delete(plotId);
+    }, LOADING_ARM_DELAY);
+    loadingTimers.set(plotId, timer);
+  }
+
+  function endRenderFeedback(plotId) {
+    const timer = loadingTimers.get(plotId);
+    if (timer) {
+      window.clearTimeout(timer);
+      loadingTimers.delete(plotId);
+    }
+    const div = plotlyDivFor(plotId);
+    if (div) div.classList.remove(LOADING_CLASS);
+  }
+
   // Our own plotly_selected handlers, one per plot id, so we can detach ONLY
   // ours on re-render without touching plotly-binding's handler on the same div.
   const selectionHandlers = new Map(); // plotId -> function
@@ -932,6 +984,7 @@
   function render2DContinuous(meta, data, hover, group_centers, container, extra) {
     const plotId = meta.plot_id;
     if (!projectionTargetReady(plotId)) return;
+    beginRenderFeedback(plotId);
     extra = extra || {};
     const selectedKeys = getSelection(plotId);
     const selectionOutline = harvestSelectionOutline(plotId);
@@ -1000,17 +1053,23 @@
     apply2DAxes(layout, data);
     applyContainerSize(layout, plotId, container);
 
-    Plotly.react(plotId, traces, layout, REACT_CONFIG).then(() => {
-      setupSelection(plotId);
-      syncBackground(plotId, meta);
-      detachModebar(plotId);
-      scheduleProjectionResize(plotId);
-    });
+    Plotly.react(plotId, traces, layout, REACT_CONFIG)
+      .then(() => {
+        endRenderFeedback(plotId);
+        setupSelection(plotId);
+        syncBackground(plotId, meta);
+        detachModebar(plotId);
+        scheduleProjectionResize(plotId);
+      })
+      // Never leave the plot stuck dimmed if a render rejects: clear the
+      // loading state even on failure (the .then() above would be skipped).
+      .catch(() => endRenderFeedback(plotId));
   }
 
   function render3DContinuous(meta, data, hover, group_centers, container, extra) {
     const plotId = meta.plot_id;
     if (!projectionTargetReady(plotId)) return;
+    beginRenderFeedback(plotId);
     extra = extra || {};
     const selectedKeys = getSelection(plotId);
     removeCustomLegend(plotId);
@@ -1054,12 +1113,17 @@
 
     const layout = baseLayout3D();
     applyContainerSize(layout, plotId, container);
-    Plotly.react(plotId, traces, layout, REACT_CONFIG).then(() => {
-      setupSelection(plotId);
-      syncBackground(plotId, meta);
-      detachModebar(plotId);
-      scheduleProjectionResize(plotId);
-    });
+    Plotly.react(plotId, traces, layout, REACT_CONFIG)
+      .then(() => {
+        endRenderFeedback(plotId);
+        setupSelection(plotId);
+        syncBackground(plotId, meta);
+        detachModebar(plotId);
+        scheduleProjectionResize(plotId);
+      })
+      // Never leave the plot stuck dimmed if a render rejects: clear the
+      // loading state even on failure (the .then() above would be skipped).
+      .catch(() => endRenderFeedback(plotId));
   }
 
   // The target plotly div must already be in the DOM before Plotly.react runs.
@@ -1075,6 +1139,7 @@
   function render2DCategorical(meta, data, hover, group_centers, container, extra) {
     const plotId = meta.plot_id;
     if (!projectionTargetReady(plotId)) return;
+    beginRenderFeedback(plotId);
     extra = extra || {};
     const selectedKeys = getSelection(plotId);
     const selectionOutline = harvestSelectionOutline(plotId);
@@ -1167,12 +1232,17 @@
     applyContainerSize(layout, plotId, container);
     applyNativeLegend(layout, legendPosition, meta.legend_font_size);
 
-    Plotly.react(plotId, traces, layout, REACT_CONFIG).then(() => {
-      setupSelection(plotId);
-      syncBackground(plotId, meta);
-      detachModebar(plotId);
-      scheduleProjectionResize(plotId);
-    });
+    Plotly.react(plotId, traces, layout, REACT_CONFIG)
+      .then(() => {
+        endRenderFeedback(plotId);
+        setupSelection(plotId);
+        syncBackground(plotId, meta);
+        detachModebar(plotId);
+        scheduleProjectionResize(plotId);
+      })
+      // Never leave the plot stuck dimmed if a render rejects: clear the
+      // loading state even on failure (the .then() above would be skipped).
+      .catch(() => endRenderFeedback(plotId));
   }
 
   // Position plotly's native legend for the categorical tabs that opt in via
@@ -1206,6 +1276,7 @@
   function render3DCategorical(meta, data, hover, group_centers, container, extra) {
     const plotId = meta.plot_id;
     if (!projectionTargetReady(plotId)) return;
+    beginRenderFeedback(plotId);
     extra = extra || {};
     const selectedKeys = getSelection(plotId);
     removeContinuousLegend(plotId);
@@ -1251,12 +1322,17 @@
 
     const layout = baseLayout3D();
     applyContainerSize(layout, plotId, container);
-    Plotly.react(plotId, traces, layout, REACT_CONFIG).then(() => {
-      setupSelection(plotId);
-      syncBackground(plotId, meta);
-      detachModebar(plotId);
-      scheduleProjectionResize(plotId);
-    });
+    Plotly.react(plotId, traces, layout, REACT_CONFIG)
+      .then(() => {
+        endRenderFeedback(plotId);
+        setupSelection(plotId);
+        syncBackground(plotId, meta);
+        detachModebar(plotId);
+        scheduleProjectionResize(plotId);
+      })
+      // Never leave the plot stuck dimmed if a render rejects: clear the
+      // loading state even on failure (the .then() above would be skipped).
+      .catch(() => endRenderFeedback(plotId));
   }
 
   // Clear the selection for one plot (button / Esc / Delete). Also drop any
