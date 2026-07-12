@@ -85,12 +85,13 @@ trajectory_projection_prepared <- reactive({
   ## put rows in random order (so no group is drawn systematically on top)
   cells_df <- cells_df[sample(seq_len(nrow(cells_df))), ]
 
-  ## trajectory path as line-segment shapes (black), drawn under the points
+  ## trajectory path as line-segment shapes (warm near-black, the theme title
+  ## colour), drawn under the points as the structural backbone
   trajectory_edges <- trajectory_data[["edges"]]
   trajectory_lines <- lapply(seq_len(nrow(trajectory_edges)), function(i) {
     list(
       type = "line",
-      line = list(color = "black", width = 1),
+      line = list(color = cerebro_plotly_theme()$title, width = 1),
       xref = "x",
       yref = "y",
       x0 = trajectory_edges$source_dim_1[i],
@@ -119,11 +120,42 @@ trajectory_projection_prepared <- reactive({
 })
 
 ##----------------------------------------------------------------------------##
+## Axis-reset state, mirroring the overview / gene-expression projections.
+##
+## Previously reset_axes was hardcoded TRUE on every render, so any parameter
+## change (colour variable, point size, group filter) re-ran autorange and the
+## axes visibly snapped — on top of the reveal/resize settle this read as a
+## jump. Instead reset only when the *trajectory itself* changes (method/name);
+## every other re-render holds the current range. Reset back to FALSE after each
+## push so a subsequent parameter change does not autorange.
+##----------------------------------------------------------------------------##
+trajectory_projection_parameters_other <- reactiveValues(
+  reset_axes = TRUE
+)
+
+observeEvent(
+  {
+    input[["trajectory_selected_method"]]
+    input[["trajectory_selected_name"]]
+  },
+  {
+    trajectory_projection_parameters_other[["reset_axes"]] <- TRUE
+  }
+)
+
+##----------------------------------------------------------------------------##
 ## Observer that pushes the prepared data to the shared JS renderer.
 ##----------------------------------------------------------------------------##
 observeEvent(trajectory_projection_prepared(), {
   prepared <- trajectory_projection_prepared()
   req(prepared)
+
+  ## resolve current reset_axes, then clear it so only a trajectory switch (not
+  ## a colour / point-size tweak) triggers the next autorange.
+  reset_axes_now <- isolate(
+    trajectory_projection_parameters_other[["reset_axes"]]
+  )
+  trajectory_projection_parameters_other[["reset_axes"]] <- FALSE
 
   cells_df <- prepared[["cells_df"]]
   color_variable <- prepared[["color_variable"]]
@@ -139,7 +171,7 @@ observeEvent(trajectory_projection_prepared(), {
     height = container_dimensions[["height"]]
   )
 
-  point_line <- list(color = "rgb(196,196,196)", width = 1)
+  point_line <- list(color = cerebro_plotly_theme()$axis, width = 1)
 
   ## continuous colouring (pseudotime / numeric metadata)
   if (is.numeric(color_input)) {
@@ -157,7 +189,7 @@ observeEvent(trajectory_projection_prepared(), {
       point_line = point_line,
       x_range = list(),
       y_range = list(),
-      reset_axes = TRUE
+      reset_axes = reset_axes_now
     )
     output_hover <- list(hoverinfo = "text", text = prepared[["hover_info"]])
     shinyjs::js$trajectoryUpdatePlot2DContinuous(
@@ -176,7 +208,7 @@ observeEvent(trajectory_projection_prepared(), {
     if (is.null(color_assignments)) {
       levels_here <- unique(as.character(color_input))
       color_assignments <- stats::setNames(
-        default_colorset[seq_along(levels_here)],
+        cerebro_group_colors(length(levels_here)),
         levels_here
       )
     }
@@ -196,7 +228,7 @@ observeEvent(trajectory_projection_prepared(), {
       point_line = point_line,
       x_range = list(),
       y_range = list(),
-      reset_axes = TRUE
+      reset_axes = reset_axes_now
     )
     output_hover <- list(hoverinfo = "text", text = list())
 

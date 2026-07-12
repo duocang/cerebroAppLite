@@ -774,6 +774,9 @@ ir_build_definition_plot <- function(data, chain, group_by = NULL) {
       vjust = -0.3,
       size = 3
     ) +
+    ggplot2::scale_fill_manual(
+      values = cerebro_group_colors(length(unique(df$definition)))
+    ) +
     ggplot2::scale_y_continuous(
       expand = ggplot2::expansion(mult = c(0, 0.15)),
       labels = scales::comma
@@ -881,6 +884,9 @@ ir_build_sharing_plot <- function(data, chain, unit_col, group_by = NULL) {
       ggplot2::aes(label = label, y = Freq + label_lift),
       vjust = 0,
       size = 3.2
+    ) +
+    ggplot2::scale_fill_manual(
+      values = cerebro_group_colors(length(unique(counts$display)))
     ) +
     ggplot2::scale_y_continuous(
       expand = ggplot2::expansion(mult = c(0, 0.2))

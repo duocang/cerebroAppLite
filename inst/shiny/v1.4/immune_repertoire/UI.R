@@ -6,8 +6,43 @@
 ## holding the visualization tab strip and the current plot.
 ##----------------------------------------------------------------------------##
 
+## Prepend the shared plotly layout factory and the shared projection-scatter
+## renderer, then IR's thin Clonal UMAP wrapper — all in ONE extendShinyjs()
+## text so they share a global scope (same pattern as overview/spatial UI.R).
+## Only the NON-FACETED Clonal UMAP renders through the shared renderer; the
+## faceted variant stays on the static ggplot renderPlot (see visualizations.R).
+js_code_ir_projection <- paste(
+  readr::read_file(
+    paste0(
+      Cerebro.options[["cerebro_root"]],
+      "/shiny/v1.4/www/projection_layouts.js"
+    )
+  ),
+  readr::read_file(
+    paste0(
+      Cerebro.options[["cerebro_root"]],
+      "/shiny/v1.4/www/projection_scatter.js"
+    )
+  ),
+  readr::read_file(
+    paste0(
+      Cerebro.options[["cerebro_root"]],
+      "/shiny/v1.4/immune_repertoire/js_projection_update_plot.js"
+    )
+  ),
+  sep = "\n"
+)
+
 tab_immune_repertoire <- tabItem(
   tabName = "immune_repertoire",
+  shinyjs::extendShinyjs(
+    text = js_code_ir_projection,
+    functions = c(
+      "updateClonalUMAP",
+      "irClonalUMAPClearSelection",
+      "irClonalUMAPZoomToSelection"
+    )
+  ),
   fluidRow(
     class = "cerebro-viz-row",
     ## ---- Left column: parameter boxes ---------------------------------- ##

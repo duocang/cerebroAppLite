@@ -66,15 +66,20 @@ output[["spatial_projection_additional_parameters_UI"]] <- renderUI({
   offset_step <- 50
   tryCatch(
     {
+      req(
+        !is.null(input[["spatial_projection_to_display"]]),
+        input[["spatial_projection_to_display"]] %in% availableSpatial()
+      )
       sp <- getSpatialData(input[["spatial_projection_to_display"]])
       co <- sp$coordinates
-      span <- max(
-        diff(range(co$x, na.rm = TRUE)),
-        diff(range(co$y, na.rm = TRUE))
-      )
-      if (is.finite(span) && span > 0) {
-        offset_limit <- ceiling(span / 100) * 100
-        offset_step <- max(50, round(span / 400))
+      x <- co[[1]][is.finite(co[[1]])]
+      y <- co[[2]][is.finite(co[[2]])]
+      if (length(x) > 0 && length(y) > 0) {
+        span <- max(diff(range(x)), diff(range(y)))
+        if (is.finite(span) && span > 0) {
+          offset_limit <- ceiling(span / 100) * 100
+          offset_step <- max(50, round(span / 400))
+        }
       }
     },
     error = function(e) NULL

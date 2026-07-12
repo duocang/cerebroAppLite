@@ -204,11 +204,22 @@ output$ir_visualizations_UI <- renderUI({
 ## built in data.R (ir_clonal_umap_data); here we draw the coloured scatter.
 ## Point size / opacity come from the generic display options; font size and
 ## title are applied by safeRenderPlot via ir_apply_display.
-## Expansion-level colours: turbo runs cool -> warm, so larger (more expanded)
-## clones read as warmer, which matches the ordering. Keys must match the
-## factor levels produced in data.R (IR_CLONE_LABELS).
+## Expansion level is an ordinal magnitude (clone size increasing), so it gets a
+## sequential ramp in the app's --c-blue family (matches the projection's
+## continuous colourscale) instead of the old rainbow turbo: larger (more
+## expanded) clones read as a deeper blue. Keys must match the factor levels
+## produced in data.R (IR_CLONE_LABELS).
+## Named hcl.colors palette passed to scRepertoire plotting functions and the
+## R-side diversity/compare fills. Was "inferno" — a high-saturation SEQUENTIAL
+## scale that, applied to categorical groups, produced garish black/magenta/
+## yellow. "Harmonic" is a low-saturation QUALITATIVE hcl palette (muted
+## gold/green/blue) that reads calm and in-system, and is the correct kind of
+## palette for unordered groups. scRepertoire's `palette` arg only accepts an
+## hcl.colors palette *name* (a string), so this must stay a name, not a vector.
+IR_PALETTE <- "Harmonic"
+
 IR_EXPANSION_COLORS <- stats::setNames(
-  viridis::turbo(5, begin = 0.05, end = 0.95),
+  c("#c7dcf0", "#8bb8de", "#5e9bc7", "#2f6fd6", "#1d4ea0"),
   c(
     "Single (0 < X <= 1)",
     "Small (1 < X <= 5)",
@@ -217,6 +228,35 @@ IR_EXPANSION_COLORS <- stats::setNames(
     "Hyperexpanded (100 < X)"
   )
 )
+
+## Shared projection look, mirrored for the Clonal UMAP so it reads as the same
+## app as the Main / spatial / trajectory projections. Colours/font come from the
+## single shared source cerebro_plotly_theme() (mirrors projection_layouts.js and
+## the custom.css --chart-* tokens) instead of a private copy. The Clonal UMAP
+## keeps its own engine (per-level traces, faceting, grey "Other cells") — only
+## the layout styling is aligned.
+IR_PROJECTION_FONT <- cerebro_plotly_theme()$font
+IR_PROJECTION_STYLE <- cerebro_plotly_theme()
+
+## Axis styled like the shared projection.
+ir_projection_axis <- function() {
+  list(
+    autorange = TRUE,
+    mirror = TRUE,
+    showline = TRUE,
+    zeroline = FALSE,
+    gridcolor = IR_PROJECTION_STYLE$grid,
+    linecolor = IR_PROJECTION_STYLE$axis,
+    tickfont = list(
+      color = IR_PROJECTION_STYLE$tick,
+      family = IR_PROJECTION_FONT
+    ),
+    titlefont = list(
+      color = IR_PROJECTION_STYLE$title,
+      family = IR_PROJECTION_FONT
+    )
+  )
+}
 
 ## Render a scRepertoire ggplot as an interactive plotly figure. safeRenderPlot
 ## still does the heavy lifting (display options, empty-state and error plots,
@@ -442,8 +482,15 @@ ir_clonal_umap_ggplot <- function(df, group_by, point_size, alpha, ncol) {
 output$ir_ui_clonalUMAP <- renderUI({
   group_by <- ir_param("ir_p_umap_group_by", "")
   if (is.null(group_by) || !nzchar(group_by)) {
-    return(ir_fill_plot("ir_plot_clonalUMAP", spinner = FALSE, plotly = TRUE))
+    ## Non-faceted: render through the shared projection-scatter engine (same
+    ## host div + selection buttons as Main/spatial). The plot itself is drawn
+    ## client-side by js$updateClonalUMAP into this plotlyOutput; the empty
+    ## bootstrap renderPlotly below only creates the target div.
+    return(ir_clonalUMAP_projection_ui())
   }
+  ## Faceted: a group_by column is chosen. Faceting needs a multi-panel ggplot,
+  ## which the single-canvas shared renderer cannot express, so this variant
+  ## stays on the static plotOutput.
   ir_fill_plot(
     "ir_plot_clonalUMAP_static",
     spinner = FALSE,
@@ -451,12 +498,83 @@ output$ir_ui_clonalUMAP <- renderUI({
   )
 })
 
-output$ir_plot_clonalUMAP <- plotly::renderPlotly({
-  ## No req_plot_space() here: plotly sizes itself client-side, and gating on
-  ## server-reported pixel dimensions caused a blank plot when the output div is
-  ## created at tab-open (e.g. arriving via the Main tab) — the renderer would
-  ## run once before the browser reported the new div's size and never re-fire.
-  ## req_plot_space is only needed for base-R/grid plots (see req_plot_space).
+## Shared-projection host for the non-faceted Clonal UMAP: the plotly div the
+## shared renderer targets, plus the Clear/Zoom-to-selection buttons (hidden
+## until a selection exists). Mirrors overview/UI_projection.R.
+ir_clonalUMAP_projection_ui <- function() {
+  tagList(
+    div(
+      class = "cerebro-projection-gate",
+      shinycssloaders::withSpinner(
+        plotly::plotlyOutput(
+          "ir_clonalUMAP_projection",
+          width = "auto",
+          height = IR_PLOT_HEIGHT
+        ),
+        type = 8,
+        hide.ui = FALSE
+      )
+    ),
+    div(
+      class = "cerebro-selection-actions",
+      style = "margin-top: 6px;",
+      shinyjs::hidden(
+        actionButton(
+          inputId = "ir_clonalUMAP_projection_zoom_to_selection",
+          label = "Zoom to selection",
+          icon = icon("magnifying-glass-plus"),
+          class = "btn-xs btn-default"
+        )
+      ),
+      shinyjs::hidden(
+        actionButton(
+          inputId = "ir_clonalUMAP_projection_clear_selection",
+          label = "Clear selection",
+          icon = icon("eraser"),
+          class = "btn-xs btn-default btn-breathing"
+        )
+      )
+    )
+  )
+}
+
+## Bootstrap the shared-projection host div. The shared renderer draws into this
+## same plotly output via Plotly.react (js$updateClonalUMAP); this empty
+## scattergl only creates the target div, exactly like overview/out_projection.R.
+output$ir_clonalUMAP_projection <- plotly::renderPlotly({
+  plotly::plot_ly(
+    type = "scattergl",
+    mode = "markers",
+    source = "ir_clonalUMAP_projection"
+  ) %>%
+    plotly::layout(
+      xaxis = ir_projection_axis(),
+      yaxis = ir_projection_axis()
+    )
+})
+
+## Draw the non-faceted Clonal UMAP through the shared projection-scatter engine.
+## We marshal the same grey "Other cells" background + one-trace-per-expansion-
+## level data the old renderPlotly built, but as the meta/data/hover arrays the
+## shared render2DCategorical consumes, then hand off to JS. Runs only when no
+## grouping column is chosen (the faceted variant uses the static ggplot below).
+observe({
+  group_by <- ir_param("ir_p_umap_group_by", "")
+  ## Faceting is handled by the static ggplot path; nothing to push here.
+  if (!is.null(group_by) && nzchar(group_by)) {
+    return()
+  }
+
+  ## Depend on the host div's reported width so the render RE-FIRES once the div
+  ## materialises. The host lives behind renderUI (emitted only when non-faceted),
+  ## so unlike the always-present Main plot, the div may not exist when this first
+  ## runs. clientData width is populated once the div is in the DOM and sized;
+  ## requiring it both registers the dependency and avoids a react on a 0-size or
+  ## absent div (which would draw blank or throw). Re-fires on faceted->non-
+  ## faceted switches and tab re-open, and harmlessly on resize.
+  plot_width <- session$clientData[["output_ir_clonalUMAP_projection_width"]]
+  req(!is.null(plot_width) && plot_width > 0)
+
   receptor <- ir_param("ir_p_umap_receptor")
   projection <- ir_param("ir_p_umap_projection")
   clone_call <- "gene"
@@ -469,151 +587,162 @@ output$ir_plot_clonalUMAP <- plotly::renderPlotly({
     show_all = show_all,
     cells = cells
   )
+  req(!is.null(df) && nrow(df) > 0)
 
-  fig <- tryCatch(
-    {
-      if (is.null(df) || nrow(df) == 0) {
-        ir_empty_plotly(paste0(
-          "No clonal UMAP to display. Needs a cell projection and ",
-          if (is.null(receptor)) "TCR/BCR" else receptor,
-          " clonotypes whose barcodes match the cells."
-        ))
-      } else {
-        dp <- tryCatch(ir_display_params(), error = function(e) list())
-        point_size <- suppressWarnings(as.numeric(dp[["ir_d_point_size"]]))
-        if (length(point_size) != 1 || is.na(point_size)) {
-          point_size <- 1
-        }
-        alpha <- suppressWarnings(as.numeric(dp[["ir_d_alpha"]]))
-        if (length(alpha) != 1 || is.na(alpha)) {
-          alpha <- 0.8
-        }
-        # plotly marker sizes read larger than ggplot's; scale up so the points
-        # are comparable to the other UMAPs.
-        marker_size <- point_size * 5
+  dp <- tryCatch(ir_display_params(), error = function(e) list())
+  point_size <- suppressWarnings(as.numeric(dp[["ir_d_point_size"]]))
+  if (length(point_size) != 1 || is.na(point_size)) {
+    point_size <- 1
+  }
+  alpha <- suppressWarnings(as.numeric(dp[["ir_d_alpha"]]))
+  if (length(alpha) != 1 || is.na(alpha)) {
+    alpha <- 0.8
+  }
+  ## plotly marker sizes read larger than ggplot's; scale up so the points are
+  ## comparable to the other UMAPs (matches the old renderer).
+  marker_size <- point_size * 5
 
-        # Grey background = cells without the selected receptor (expansion = NA);
-        # coloured foreground = receptor cells with an expansion level.
-        bg <- df[is.na(df$expansion), , drop = FALSE]
-        fg <- df[!is.na(df$expansion), , drop = FALSE]
+  legend_size <- suppressWarnings(as.numeric(dp[["ir_d_legend_size"]]))
+  if (length(legend_size) != 1 || is.na(legend_size) || legend_size <= 0) {
+    legend_size <- 12
+  }
+  ## Map the IR legend-position choice onto the shared renderer's legend modes:
+  ## "top" -> the custom top bar (shared default); right/bottom/left -> plotly's
+  ## native legend; "none" -> hidden. Default to the top bar for the unified look.
+  legend_pos <- dp[["ir_d_legend_pos"]]
+  if (!is.character(legend_pos) || length(legend_pos) != 1) {
+    legend_pos <- "top"
+  }
+  legend_position <- switch(
+    legend_pos,
+    top = "top",
+    right = "right",
+    bottom = "bottom",
+    left = "left",
+    none = "none",
+    "top"
+  )
 
-        p <- plotly::plot_ly(source = "ir_plot_clonalUMAP")
-        if (nrow(bg) > 0) {
-          p <- plotly::add_trace(
-            p,
-            x = bg$x,
-            y = bg$y,
-            type = "scattergl",
-            mode = "markers",
-            marker = list(
-              size = marker_size,
-              color = "#D9D9D9",
-              opacity = alpha
-            ),
-            name = "Other cells",
-            hoverinfo = "skip",
-            showlegend = TRUE
-          )
-        }
-        if (nrow(fg) > 0) {
-          # One trace per expansion level so the legend is clickable and each
-          # gets its turbo colour; keep the canonical level order.
-          for (lvl in names(IR_EXPANSION_COLORS)) {
-            sub <- fg[
-              !is.na(fg$expansion) & as.character(fg$expansion) == lvl,
-              ,
-              drop = FALSE
-            ]
-            if (nrow(sub) == 0) {
-              next
-            }
-            p <- plotly::add_trace(
-              p,
-              x = sub$x,
-              y = sub$y,
-              type = "scattergl",
-              mode = "markers",
-              marker = list(
-                size = marker_size,
-                color = IR_EXPANSION_COLORS[[lvl]],
-                opacity = alpha
-              ),
-              name = lvl,
-              text = sub$barcode,
-              hovertemplate = paste0(
-                "%{text}<br>",
-                lvl,
-                "<br>UMAP_1: %{x:.2f}<br>UMAP_2: %{y:.2f}<extra></extra>"
-              ),
-              showlegend = TRUE
-            )
-          }
-        }
-        title <- dp[["ir_d_title"]]
-        legend_size <- suppressWarnings(as.numeric(dp[["ir_d_legend_size"]]))
-        if (
-          length(legend_size) != 1 || is.na(legend_size) || legend_size <= 0
-        ) {
-          legend_size <- 12
-        }
-        legend_pos <- dp[["ir_d_legend_pos"]]
-        if (!is.character(legend_pos) || length(legend_pos) != 1) {
-          legend_pos <- "right"
-        }
-        # Map the shared position choices onto plotly's legend orientation/anchor.
-        show_legend <- legend_pos != "none"
-        legend_cfg <- list(
-          itemsizing = "constant",
-          font = list(size = legend_size),
-          title = list(text = "Clonotype")
-        )
-        if (legend_pos == "bottom") {
-          legend_cfg <- c(
-            legend_cfg,
-            list(orientation = "h", x = 0, y = -0.15)
-          )
-        } else if (legend_pos == "top") {
-          legend_cfg <- c(
-            legend_cfg,
-            list(orientation = "h", x = 0, y = 1.1)
-          )
-        } else if (legend_pos == "left") {
-          legend_cfg <- c(legend_cfg, list(x = -0.2))
-        }
-        plotly::layout(
-          p,
-          xaxis = list(
-            autorange = TRUE,
-            mirror = TRUE,
-            showline = TRUE,
-            zeroline = FALSE
-          ),
-          yaxis = list(
-            autorange = TRUE,
-            mirror = TRUE,
-            showline = TRUE,
-            zeroline = FALSE
-          ),
-          showlegend = show_legend,
-          legend = legend_cfg,
-          title = if (is.character(title) && nzchar(title)) title else NULL
-        )
-      }
-    },
-    error = function(e) {
-      ir_empty_plotly(paste("Clonal UMAP error:", conditionMessage(e)))
+  ## Grey background = cells without the selected receptor (expansion = NA);
+  ## coloured foreground = receptor cells with an expansion level. One trace per
+  ## expansion level, in canonical order, so each keeps its turbo colour.
+  bg <- df[is.na(df$expansion), , drop = FALSE]
+  fg <- df[!is.na(df$expansion), , drop = FALSE]
+
+  traces <- list()
+  data_x <- list()
+  data_y <- list()
+  data_color <- list()
+  hover_info <- list()
+  hover_text <- list()
+
+  if (nrow(bg) > 0) {
+    traces[[length(traces) + 1]] <- "Other cells"
+    data_x[[length(data_x) + 1]] <- bg$x
+    data_y[[length(data_y) + 1]] <- bg$y
+    data_color[[length(data_color) + 1]] <- "#D9D9D9"
+    ## Background cells skip hover (per-trace hoverinfo, honoured by shared JS).
+    hover_info[[length(hover_info) + 1]] <- "skip"
+    hover_text[[length(hover_text) + 1]] <- ""
+  }
+  for (lvl in names(IR_EXPANSION_COLORS)) {
+    sub <- fg[
+      !is.na(fg$expansion) & as.character(fg$expansion) == lvl,
+      ,
+      drop = FALSE
+    ]
+    if (nrow(sub) == 0) {
+      next
     }
+    traces[[length(traces) + 1]] <- lvl
+    data_x[[length(data_x) + 1]] <- sub$x
+    data_y[[length(data_y) + 1]] <- sub$y
+    data_color[[length(data_color) + 1]] <- unname(IR_EXPANSION_COLORS[[lvl]])
+    hover_info[[length(hover_info) + 1]] <- "text"
+    hover_text[[length(hover_text) + 1]] <- paste0(
+      sub$barcode,
+      "<br>",
+      lvl,
+      "<br>UMAP_1: ",
+      formatC(sub$x, format = "f", digits = 2),
+      "<br>UMAP_2: ",
+      formatC(sub$y, format = "f", digits = 2)
+    )
+  }
+  req(length(traces) > 0)
+
+  output_meta <- list(
+    color_type = "categorical",
+    traces = traces,
+    color_variable = "expansion",
+    legend_position = legend_position,
+    legend_font_size = legend_size
   )
-  plotly::toWebGL(fig)
-}) %>%
-  ir_bindCache(
-    input$ir_p_umap_receptor,
-    input$ir_p_umap_projection,
-    input$ir_p_umap_show_all,
-    input$ir_p_umap_group_by,
-    input$ir_d_point_size,
-    input$ir_d_alpha
+  output_data <- list(
+    x = data_x,
+    y = data_y,
+    color = data_color,
+    point_size = marker_size,
+    point_opacity = alpha,
+    point_line = list(),
+    reset_axes = TRUE
   )
+  output_hover <- list(
+    hoverinfo = hover_info,
+    text = hover_text
+  )
+
+  shinyjs::js$updateClonalUMAP(output_meta, output_data, output_hover)
+})
+
+## ---- Clonal UMAP selection buttons (shared-projection engine) ----------- ##
+## Delegate to the shared JS clear/zoom for this plot id, mirroring
+## overview/event_projection_clear_selection.R.
+observeEvent(input[["ir_clonalUMAP_projection_clear_selection"]], {
+  shinyjs::js$irClonalUMAPClearSelection()
+})
+observeEvent(input[["ir_clonalUMAP_projection_zoom_to_selection"]], {
+  shinyjs::js$irClonalUMAPZoomToSelection()
+})
+
+## Reflect the zoom state on the button (filled "Reset zoom" while zoomed in),
+## toggled from the <plot_id>_zoom_state input the shared JS pushes.
+observeEvent(
+  input[["ir_clonalUMAP_projection_zoom_state"]],
+  {
+    zoomed <- isTRUE(input[["ir_clonalUMAP_projection_zoom_state"]])
+    shinyjs::toggleClass(
+      id = "ir_clonalUMAP_projection_zoom_to_selection",
+      class = "is-zoomed",
+      condition = zoomed
+    )
+    updateActionButton(
+      session,
+      "ir_clonalUMAP_projection_zoom_to_selection",
+      label = if (zoomed) "Reset zoom" else "Zoom to selection",
+      icon = if (zoomed) {
+        icon("magnifying-glass-minus")
+      } else {
+        icon("magnifying-glass-plus")
+      }
+    )
+  },
+  ignoreInit = TRUE
+)
+
+## Show the selection buttons only while a persistent selection exists. The
+## shared JS pushes the selection payload under <plot_id>_persistent_selection.
+observe({
+  sel <- input[["ir_clonalUMAP_projection_persistent_selection"]]
+  has_selection <- !is.null(sel) && length(sel) > 0
+  if (has_selection) {
+    shinyjs::show("ir_clonalUMAP_projection_clear_selection")
+    shinyjs::show("ir_clonalUMAP_projection_zoom_to_selection")
+  } else {
+    shinyjs::hide("ir_clonalUMAP_projection_clear_selection")
+    shinyjs::hide("ir_clonalUMAP_projection_zoom_to_selection")
+  }
+})
 
 output$ir_plot_clonalUMAP_static <- renderPlot(
   {
@@ -903,7 +1032,7 @@ output$ir_plot_pairedScatter <- renderPlot({
           dot.size = ir_param("ir_p_dot_size", "total"),
           graph = ir_param("ir_p_graph", "proportion"),
           exportTable = FALSE,
-          palette = "inferno"
+          palette = IR_PALETTE
         )
         p <- p + ggplot2::ggtitle(paste(x, "vs", y))
         p
@@ -934,7 +1063,7 @@ output$ir_plot_pairedScatter <- renderPlot({
                   dot.size = ir_param("ir_p_dot_size", "total"),
                   graph = ir_param("ir_p_graph", "proportion"),
                   exportTable = FALSE,
-                  palette = "inferno"
+                  palette = IR_PALETTE
                 )
                 p <- p +
                   ggplot2::ggtitle(paste0(fl, ": ", lvls[1], " vs ", lvls[2]))
@@ -969,7 +1098,7 @@ output$ir_plot_pairedScatter <- renderPlot({
             dot.size = ir_param("ir_p_dot_size", "total"),
             graph = ir_param("ir_p_graph", "proportion"),
             exportTable = FALSE,
-            palette = "inferno"
+            palette = IR_PALETTE
           )
           p <- p + ggplot2::ggtitle(paste(lvls[1], "vs", lvls[2]))
           p
@@ -1038,7 +1167,7 @@ output$ir_plot_clonalCompare <- renderPlot({
       graph = ir_param("ir_p_compare_graph", "alluvial"),
       proportion = isTRUE(ir_param("ir_p_compare_prop", TRUE)),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "clonalCompare"
   )
@@ -1062,7 +1191,7 @@ ir_plot_clonal_diversity <- function(
   metric,
   x_axis,
   n_boots,
-  palette = "inferno"
+  palette = IR_PALETTE
 ) {
   # scRepertoire 2.6.x can coerce factor x.axis values to numeric positions and
   # its boxplot layer does not explicitly group by x.axis. Use its bootstrap
@@ -1215,7 +1344,7 @@ output$ir_plot_clonalDiversity <- renderPlot({
       metric = metric,
       x_axis = x_axis,
       n_boots = n_boots,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "clonalDiversity"
   )
@@ -1245,7 +1374,7 @@ output$ir_plot_clonalHomeostasis <- plotly::renderPlotly({
       group.by = pars$groupBy,
       order.by = ir_order_by(),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "clonalHomeostasis"
   )
@@ -1289,7 +1418,7 @@ output$ir_plot_clonalLength <- renderPlot({
         order.by = ir_order_by(),
         scale = scale_on,
         exportTable = FALSE,
-        palette = "inferno"
+        palette = IR_PALETTE
       ),
       "clonalLength"
     )
@@ -1305,7 +1434,7 @@ output$ir_plot_clonalLength <- renderPlot({
       group.by = pars$groupBy,
       order.by = order_by,
       exportTable = TRUE,
-      palette = "inferno"
+      palette = IR_PALETTE
     )
     safeRenderPlot(
       ir_length_facet_plot(
@@ -1340,7 +1469,7 @@ output$ir_plot_clonalOverlap <- renderPlot({
       group.by = pars$groupBy,
       method = ir_param("ir_p_overlap_method", "overlap"),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "clonalOverlap"
   )
@@ -1374,7 +1503,7 @@ output$ir_plot_clonalProportion <- renderPlot({
       group.by = pars$groupBy,
       clonalSplit = csplit,
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "clonalProportion"
   )
@@ -1400,7 +1529,7 @@ output$ir_plot_clonalQuant <- renderPlot({
       group.by = pars$groupBy,
       scale = isTRUE(ir_param("ir_p_scale", FALSE)),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "clonalQuant"
   )
@@ -1442,7 +1571,7 @@ output$ir_plot_clonalRarefaction <- renderPlot({
         hill.numbers = as.numeric(ir_param("ir_p_hill_numbers", 0)),
         n.boots = n_boots,
         exportTable = FALSE,
-        palette = "inferno"
+        palette = IR_PALETTE
       )
     ),
     "clonalRarefaction"
@@ -1504,7 +1633,7 @@ output$ir_plot_clonalScatter <- renderPlot({
       dot.size = ir_param("ir_p_dot_size", "total"),
       graph = ir_param("ir_p_graph", "proportion"),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "clonalScatter"
   )
@@ -1581,7 +1710,7 @@ output$ir_plot_percentGeneUsage <- renderPlot({
       summary.fun = ir_param("ir_p_gu_summary", "percent"),
       plot.type = ir_param("ir_p_gu_plot_type", "heatmap"),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "percentGeneUsage"
   )
@@ -1624,7 +1753,7 @@ output$ir_plot_vizGenes <- renderPlot({
       plot = ir_param("ir_p_vg_plot", "heatmap"),
       summary.fun = ir_param("ir_p_vg_summary", "percent"),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "vizGenes"
   )
@@ -1662,7 +1791,7 @@ output$ir_plot_percentGenes <- renderPlot({
       order.by = ir_order_by(),
       summary.fun = ir_param("ir_p_pg_summary", "percent"),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "percentGenes"
   )
@@ -1698,7 +1827,7 @@ output$ir_plot_percentVJ <- renderPlot({
       order.by = ir_order_by(),
       summary.fun = ir_param("ir_p_vj_summary", "percent"),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "percentVJ"
   )
@@ -1741,7 +1870,7 @@ output$ir_plot_percentAA <- renderPlot({
       order.by = ir_order_by(),
       aa.length = aa_len,
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "percentAA"
   )
@@ -1774,7 +1903,7 @@ output$ir_plot_positionalEntropy <- renderPlot({
       aa.length = aa_len,
       method = ir_param("ir_p_pe_method", "norm.entropy"),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "positionalEntropy"
   )
@@ -1865,7 +1994,7 @@ output$ir_plot_positionalProperty <- renderPlot({
       method = method,
       aa.length = as.numeric(ir_param("ir_p_pp_aa_length", 20)),
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "positionalProperty"
   )
@@ -1912,7 +2041,7 @@ output$ir_plot_percentKmer <- renderPlot({
       min.depth = as.numeric(ir_param("ir_p_min_depth", 3)),
       top.motifs = top_m,
       exportTable = FALSE,
-      palette = "inferno"
+      palette = IR_PALETTE
     ),
     "percentKmer"
   )

@@ -1,58 +1,55 @@
 ##----------------------------------------------------------------------------##
 ## Color management.
 ##----------------------------------------------------------------------------##
-# Dutch palette from flatuicolors.com
-colorset_dutch <- c(
-  "#FFC312",
-  "#C4E538",
-  "#12CBC4",
-  "#FDA7DF",
-  "#ED4C67",
-  "#F79F1F",
-  "#A3CB38",
-  "#1289A7",
-  "#D980FA",
-  "#B53471",
-  "#EE5A24",
-  "#009432",
-  "#0652DD",
-  "#9980FA",
-  "#833471",
-  "#EA2027",
-  "#006266",
-  "#1B1464",
-  "#5758BB",
-  "#6F1E51"
+# Low-saturation qualitative palette for categorical groups (clusters, samples,
+# ...) when the user has NOT picked colours in the Color management tab. It
+# replaces the old high-saturation flatuicolors sets so plots read as calm and
+# publication-like. Warm/cool balanced, aligned to the app --c-blue / --c-amber
+# accents; no neon primaries. 12 base hues.
+#
+# Users can still override any group colour with the colour picker; this is only
+# the default fallback (see reactive_colors() below).
+default_colorset_base <- c(
+  "#4c72a6", # muted blue    (aligns with --c-blue)
+  "#dd8452", # terracotta    (aligns with --c-amber)
+  "#6e9e6b", # sage green
+  "#b5606a", # dusty rose
+  "#9d6fae", # muted violet (nudged lighter/warmer to clear ΔE>=20 from the blue)
+  "#8c7b6b", # warm taupe
+  "#c99bc4", # soft lilac
+  "#7e9bb0", # slate blue
+  "#c2a25a", # muted gold
+  "#5fa8a3", # dusty teal
+  "#a98b78", # clay
+  "#9aa06b" # olive
 )
 
-# Spanish palette from flatuicolors.com
-colorset_spanish <- c(
-  "#40407a",
-  "#706fd3",
-  "#f7f1e3",
-  "#34ace0",
-  "#33d9b2",
-  "#2c2c54",
-  "#474787",
-  "#aaa69d",
-  "#227093",
-  "#218c74",
-  "#ff5252",
-  "#ff793f",
-  "#d1ccc0",
-  "#ffb142",
-  "#ffda79",
-  "#b33939",
-  "#cd6133",
-  "#84817a",
-  "#cc8e35",
-  "#ccae62"
-)
+## Build n visually distinct qualitative colours from the base palette. For
+## n <= length(base) we take the first n base hues (hand-tuned, best contrast).
+## For n > length(base) we interpolate across the whole base ring with
+## colorRampPalette so a data set with many clusters still gets n *valid*
+## colours instead of NAs — the old `default_colorset[seq_along(...)]` slicing
+## silently returned NA past 40 groups.
+cerebro_group_colors <- function(n) {
+  n <- max(0L, as.integer(n))
+  if (n == 0L) {
+    return(character(0))
+  }
+  if (n <= length(default_colorset_base)) {
+    return(default_colorset_base[seq_len(n)])
+  }
+  grDevices::colorRampPalette(default_colorset_base)(n)
+}
 
-default_colorset <- c(colorset_dutch, colorset_spanish)
+# Kept for backward compatibility: any code that still indexes a flat vector
+# gets a long-enough, low-saturation set instead of the old flatuicolors.
+default_colorset <- cerebro_group_colors(40)
 
+# Cell-cycle phases: low-saturation four-colour set matching the app palette.
+# G1 = calm blue, S = muted gold, G2M = muted brick (was tomato #e74c3c),
+# "-"/unknown = warm grey.
 cell_cycle_colorset <- setNames(
-  c("#45aaf2", "#f1c40f", "#e74c3c", "#7f8c8d"),
+  c("#4c72a6", "#c2a25a", "#c05b5b", "#9a9aa0"),
   c("G1", "S", "G2M", "-")
 )
 
@@ -87,9 +84,9 @@ reactive_colors <- reactive({
         )]]
       }
     } else {
-      colors[[group_name]] <- default_colorset[seq_along(getGroupLevels(
-        group_name
-      ))]
+      colors[[group_name]] <- cerebro_group_colors(
+        length(getGroupLevels(group_name))
+      )
       names(colors[[group_name]]) <- getGroupLevels(group_name)
       if ('N/A' %in% getGroupLevels(group_name)) {
         colors[[group_name]][which(

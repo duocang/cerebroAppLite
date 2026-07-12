@@ -34,7 +34,7 @@ pltExpProj2DSglPanExp <- function(
       alpha = point_opacity
     ) +
     lims(x = x_range, y = y_range) +
-    theme_bw()
+    cerebro_export_theme()
   ## check if selected color scale
   ## ... selected color scale is "Viridis"
   if (tolower(color_scale) == 'viridis') {

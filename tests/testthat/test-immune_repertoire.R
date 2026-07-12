@@ -405,10 +405,14 @@ test_that("Clonal UMAP does not depend on the hidden Clone call control", {
   viz <- file.path(shiny_root, "immune_repertoire", "visualizations.R")
   skip_if_not(file.exists(viz))
   content <- paste(readLines(viz), collapse = "\n")
+  ## The Clonal UMAP renderers (non-faceted shared-projection observe + faceted
+  ## static ggplot) live between the "Draw the non-faceted Clonal UMAP" marker
+  ## and the BCR-specific renderers section. Both must colour by clone_call
+  ## "gene" and must not read the hidden Clone-call control.
   block <- regmatches(
     content,
     regexpr(
-      "output\\$ir_plot_clonalUMAP <- plotly::renderPlotly\\(\\{[\\s\\S]*?## ---- BCR-specific renderers",
+      "## Draw the non-faceted Clonal UMAP[\\s\\S]*?## ---- BCR-specific renderers",
       content,
       perl = TRUE
     )

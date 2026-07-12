@@ -38,6 +38,20 @@ centerOfGroups <- utils_env$centerOfGroups
 cachePlot <- utils_env$cachePlot
 dynamicPointSize <- utils_env$dynamicPointSize
 
+test_that("spatial offset ranges require finite coordinates", {
+  path <- file.path(
+    dirname(utils_file),
+    "spatial/UI_projection_additional_parameters.R"
+  )
+  source_text <- paste(readLines(path, warn = FALSE), collapse = "\n")
+
+  expect_match(
+    source_text,
+    "x <- co\\[\\[1\\]\\]\\[is.finite\\(co\\[\\[1\\]\\]\\)\\]"
+  )
+  expect_match(source_text, "length\\(x\\) > 0 && length\\(y\\) > 0")
+})
+
 ## ---------------------------------------------------------------------------
 ## centerOfGroups
 ## ---------------------------------------------------------------------------

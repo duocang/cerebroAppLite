@@ -353,7 +353,8 @@ prettifyTable <- function(
     ) %>%
     DT::formatStyle(
       columns = c(columns_numeric, columns_p_value),
-      textAlign = 'right'
+      textAlign = 'right',
+      "white-space" = "nowrap"
     )
 
   # show cellular barcodes in monospace font
@@ -438,6 +439,17 @@ prettifyTable <- function(
   }
 
   if (color_highlighting == TRUE) {
+    ## Highlight colours pulled from the shared chart theme (mirrors the
+    ## custom.css --chart-* tokens and cerebro_plotly_theme()), so the table
+    ## heat/bars read as the same design system as the plots instead of the old
+    ## orange/red/pink mix. Magnitude ramps use the accent; magnitude bars use
+    ## the signal blue; logical up/down uses the up/down tokens.
+    chart_theme <- tryCatch(cerebro_plotly_theme(), error = function(e) NULL)
+    ramp_hi <- if (is.null(chart_theme)) "#f97316" else chart_theme$accent
+    bar_col <- if (is.null(chart_theme)) "#2f6fd6" else chart_theme$signal
+    up_col <- if (is.null(chart_theme)) "#4c9a6b" else chart_theme$up
+    down_col <- if (is.null(chart_theme)) "#c05b5b" else chart_theme$down
+
     ## integer
     if (
       !is.null(columns_integer) &&
@@ -452,7 +464,7 @@ prettifyTable <- function(
               columns = i,
               backgroundColor = DT::styleInterval(
                 seq(range[1], range[2], (range[2] - range[1]) / 100),
-                colorRampPalette(colors = c('white', '#e67e22'))(102)
+                colorRampPalette(colors = c('white', ramp_hi))(102)
               )
             )
         }
@@ -467,7 +479,7 @@ prettifyTable <- function(
       table <- table %>%
         DT::formatStyle(
           columns = columns_p_value,
-          background = DT::styleColorBar(c(1, 0), '#e74c3c'),
+          background = DT::styleColorBar(c(1, 0), bar_col),
           backgroundSize = '98% 88%',
           backgroundRepeat = 'no-repeat',
           backgroundPosition = 'center'
@@ -488,7 +500,7 @@ prettifyTable <- function(
               columns = i,
               backgroundColor = DT::styleInterval(
                 seq(range[1], range[2], (range[2] - range[1]) / 100),
-                colorRampPalette(colors = c('white', '#e67e22'))(102)
+                colorRampPalette(colors = c('white', ramp_hi))(102)
               )
             )
         }
@@ -503,7 +515,7 @@ prettifyTable <- function(
       table <- table %>%
         DT::formatStyle(
           columns = columns_percent,
-          background = DT::styleColorBar(c(0, 1), 'pink'),
+          background = DT::styleColorBar(c(0, 1), bar_col),
           backgroundSize = '98% 88%',
           backgroundRepeat = 'no-repeat',
           backgroundPosition = 'center'
@@ -524,7 +536,7 @@ prettifyTable <- function(
               columns = i,
               backgroundColor = DT::styleInterval(
                 seq(range[1], range[2], (range[2] - range[1]) / 100),
-                colorRampPalette(colors = c('white', '#e67e22'))(102)
+                colorRampPalette(colors = c('white', ramp_hi))(102)
               )
             )
         }
@@ -539,7 +551,7 @@ prettifyTable <- function(
       table <- table %>%
         DT::formatStyle(
           columns_logical,
-          color = DT::styleEqual(c(TRUE, FALSE), c('#27ae60', '#e74c3c')),
+          color = DT::styleEqual(c(TRUE, FALSE), c(up_col, down_col)),
           fontWeight = DT::styleEqual(c(TRUE, FALSE), c('bold', 'normal'))
         )
     }
@@ -754,7 +766,7 @@ assignColorsToGroups <- function(table, grouping_variable) {
     if (is.factor(table[[grouping_variable]])) {
       ## get factor levels and assign colors
       colors_for_groups <- setNames(
-        default_colorset[seq_along(levels(table[[grouping_variable]]))],
+        cerebro_group_colors(length(levels(table[[grouping_variable]]))),
         levels(table[[grouping_variable]])
       )
 
@@ -762,7 +774,7 @@ assignColorsToGroups <- function(table, grouping_variable) {
     } else if (is.character(table[[grouping_variable]])) {
       ## get unique values and assign colors
       colors_for_groups <- setNames(
-        default_colorset[seq_along(unique(table[[grouping_variable]]))],
+        cerebro_group_colors(length(unique(table[[grouping_variable]]))),
         unique(table[[grouping_variable]])
       )
     }

@@ -466,12 +466,12 @@ IR_DISPLAY_BASE <- list(
     min = 6,
     max = 30,
     step = 1
-  ),
-  list(
-    id = "ir_d_title",
-    label = "Title:",
-    type = "text",
-    value = ""
+    # ),
+    # list(
+    #   id = "ir_d_title",
+    #   label = "Title:",
+    #   type = "text",
+    #   value = ""
   )
 )
 
@@ -529,7 +529,7 @@ IR_DISPLAY_LEGEND <- list(
       "Left" = "left",
       "Hidden" = "none"
     ),
-    value = "right"
+    value = "top"
   )
 )
 

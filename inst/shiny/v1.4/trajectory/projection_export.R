@@ -85,7 +85,7 @@ observeEvent(input[["trajectory_projection_export"]], {
         linetype = "solid",
         na.rm = TRUE
       ) +
-      theme_bw()
+      cerebro_export_theme()
 
     ## depending on type of cell coloring, add different color scale
     ## ... categorical

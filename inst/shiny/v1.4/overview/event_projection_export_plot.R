@@ -55,7 +55,7 @@ observeEvent(input[["overview_projection_export"]], {
         x = plot_parameters[["x_range"]],
         y = plot_parameters[["y_range"]]
       ) +
-      theme_bw()
+      cerebro_export_theme()
     ## depending on type of cell coloring, add different color scale
     ## ... categorical
     if (

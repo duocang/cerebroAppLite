@@ -197,8 +197,26 @@
     // some machine. Revealing on two equal measurements is deterministic: it
     // fires exactly when layout has actually settled, on every machine, with no
     // magic number to tune.
+    // Reveal only when (a) height has settled across two frames AND (b) no
+    // relayout repaint is still in flight. (b) is the fix for the trajectory
+    // "jump": Plotly's scattergl (WebGL) repaint after a size relayout lands a
+    // frame or two later, so revealing on height-settle alone showed the plot
+    // at the old canvas size and it visibly rescaled. Waiting for
+    // relayoutPending to clear ties reveal to the actual repaint. Condition (b)
+    // never blocks the first-frame-already-correct case because relayoutPending
+    // starts false and is only set when a relayout is actually issued.
+    // plotlySizeMatches guards the same-frame race: this reveal check runs
+    // BEFORE the relayout below, so if Plotly's canvas is not yet at the target
+    // size a relayout is about to be issued this very frame — revealing now
+    // would show the old size for one frame. Requiring plotlySizeMatches (and
+    // !relayoutPending for the in-flight case) defers reveal to a frame where
+    // the canvas is confirmed at the settled size.
     if (state && fullLayout && !projectionRevealed.has(plotId)) {
-      if (shouldRevealProjection(fullLayout, height, state.settledHeight)) {
+      if (
+        !state.relayoutPending &&
+        plotlySizeMatches &&
+        shouldRevealProjection(fullLayout, height, state.settledHeight)
+      ) {
         revealProjectionHost(elements.plot);
         projectionRevealed.add(plotId);
       } else {
@@ -234,12 +252,35 @@
       typeof Plotly.relayout === 'function' &&
       !plotlySizeMatches
     ) {
-      Plotly.relayout(elements.plot, { width: width, height: height });
+      // transition duration 0: the size change must be instantaneous, never an
+      // animated tween (which would itself read as a slow rescale on the SVG
+      // layer). Mark a relayout in flight so reveal waits for its repaint, then
+      // clear it and reschedule so the confirming frame re-checks the gate.
+      state && (state.relayoutPending = true);
+      const relayoutDone = Plotly.relayout(elements.plot, {
+        width: width,
+        height: height,
+        'transition.duration': 0,
+      });
+      if (relayoutDone && typeof relayoutDone.then === 'function') {
+        relayoutDone.then(function () {
+          if (state) state.relayoutPending = false;
+          scheduleProjectionResize(plotId);
+        });
+      } else {
+        // relayout did not return a thenable (older Plotly): fall back to the
+        // frame-settle path so reveal is not blocked forever.
+        if (state) state.relayoutPending = false;
+        scheduleProjectionResize(plotId);
+      }
     } else if (
       typeof Plotly !== 'undefined' &&
       Plotly.Plots &&
       Plotly.Plots.resize
     ) {
+      // No full layout yet (pre-init) — resize returns no promise; reveal keeps
+      // using the two-frame-settle path, which is correct here because there is
+      // no data-bearing relayout to wait on.
       Plotly.Plots.resize(elements.plot);
     }
   }
@@ -272,6 +313,12 @@
         settledHeight: null,
         observer: null,
         legend: null,
+        // true while a Plotly.relayout(width/height) is in flight but its
+        // WebGL/DOM repaint has not resolved yet. Reveal waits for this to
+        // clear so the host is not shown at the pre-relayout size (the visible
+        // "jump"). Starts false: a plot whose first measured size already
+        // matches never calls relayout, so it must still be revealable.
+        relayoutPending: false,
       };
       projectionResizeState.set(plotId, state);
     }
@@ -711,7 +758,8 @@
     scheduleProjectionResize(plotId);
   }
 
-  // Fluent blue ramp for continuous colouring (matches --theme-primary family).
+  // Sequential blue ramp for continuous colouring, in the --c-blue family so it
+  // reads as the same design system as the signal/accent tokens.
   const CONTINUOUS_COLORSCALE = [
     [0,   '#f7fbff'],
     [0.2, '#dbeaf6'],
@@ -754,14 +802,20 @@
     return arr;
   }
 
+  // Hover label styling, sourced from the shared theme (projection_layouts.js)
+  // so scatter hovers match the app --chart-* tokens instead of drifting with
+  // their own palette. Falls back to the previous inline values if the layout
+  // factory has not loaded yet (defensive; it is always prepended in practice).
+  const _THEME = (window.cerebroProjectionLayout &&
+    window.cerebroProjectionLayout.theme) || {};
   const HOVERLABEL = {
-    bgcolor: 'rgba(255, 255, 255, 0.95)',
-    bordercolor: '#E2E8F0',
+    bgcolor: _THEME.hoverBg || 'rgba(255, 255, 255, 0.95)',
+    bordercolor: _THEME.grid || '#ececec',
     font: {
-      color: '#2D3748',
+      color: _THEME.title || '#1c1c1e',
       size: 12,
-      family:
-        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      family: _THEME.font ||
+        '"Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
     },
   };
 
@@ -877,6 +931,7 @@
 
   function render2DContinuous(meta, data, hover, group_centers, container, extra) {
     const plotId = meta.plot_id;
+    if (!projectionTargetReady(plotId)) return;
     extra = extra || {};
     const selectedKeys = getSelection(plotId);
     const selectionOutline = harvestSelectionOutline(plotId);
@@ -955,6 +1010,7 @@
 
   function render3DContinuous(meta, data, hover, group_centers, container, extra) {
     const plotId = meta.plot_id;
+    if (!projectionTargetReady(plotId)) return;
     extra = extra || {};
     const selectedKeys = getSelection(plotId);
     removeCustomLegend(plotId);
@@ -1006,13 +1062,46 @@
     });
   }
 
+  // The target plotly div must already be in the DOM before Plotly.react runs.
+  // Every tab creates it via an empty bootstrap renderPlotly, but a tab whose
+  // host lives behind a renderUI branch (immune_repertoire's Clonal UMAP is only
+  // emitted when non-faceted) can fire an update before/without the div. Bail
+  // quietly in that case instead of throwing; the next update redraws once the
+  // div exists. Harmless for the always-present hosts of the other tabs.
+  function projectionTargetReady(plotId) {
+    return !!(plotId && document.getElementById(plotId));
+  }
+
   function render2DCategorical(meta, data, hover, group_centers, container, extra) {
     const plotId = meta.plot_id;
+    if (!projectionTargetReady(plotId)) return;
     extra = extra || {};
     const selectedKeys = getSelection(plotId);
     const selectionOutline = harvestSelectionOutline(plotId);
     removeContinuousLegend(plotId);
-    createCustomLegend(plotId, meta.traces, data.color);
+
+    // Legend mode. Existing tabs (spatial/overview/gene_expr/trajectory) never
+    // set meta.legend_position, so they keep the custom top-bar legend. A tab
+    // that DOES set it (immune_repertoire, whose users pick a position) gets
+    // plotly's native legend for right/bottom/left, and 'none' hides both — the
+    // custom bar only covers the 'top' choice. Native-legend traces set
+    // showlegend so plotly draws them; the custom bar keeps showlegend false.
+    const legendPosition = meta.legend_position || 'custom';
+    const useCustomLegend = legendPosition === 'custom' || legendPosition === 'top';
+    const useNativeLegend =
+      legendPosition === 'right' ||
+      legendPosition === 'bottom' ||
+      legendPosition === 'left';
+    if (useCustomLegend) {
+      createCustomLegend(plotId, meta.traces, data.color);
+    } else {
+      removeCustomLegend(plotId);
+    }
+
+    // hover.hoverinfo may be a single value (all traces share it — the existing
+    // tabs) or a per-trace array (immune_repertoire: the grey "Other cells"
+    // background skips hover, the coloured levels show it). Resolve per trace.
+    const perTraceHoverinfo = Array.isArray(hover.hoverinfo);
 
     const traces = data.x.map((xVal, i) => ({
       x: xVal,
@@ -1026,10 +1115,10 @@
         line: data.point_line,
         color: data.color[i],
       },
-      hoverinfo: hover.hoverinfo,
+      hoverinfo: perTraceHoverinfo ? hover.hoverinfo[i] : hover.hoverinfo,
       text: hover.text[i],
       hoverlabel: HOVERLABEL,
-      showlegend: false,
+      showlegend: useNativeLegend,
     }));
 
     // Optional per-group convex-hull outlines (spatial). Drawn under labels.
@@ -1076,6 +1165,7 @@
     if (extra.shapes) layout.shapes = extra.shapes;
     apply2DAxes(layout, data);
     applyContainerSize(layout, plotId, container);
+    applyNativeLegend(layout, legendPosition, meta.legend_font_size);
 
     Plotly.react(plotId, traces, layout, REACT_CONFIG).then(() => {
       setupSelection(plotId);
@@ -1085,8 +1175,37 @@
     });
   }
 
+  // Position plotly's native legend for the categorical tabs that opt in via
+  // meta.legend_position (immune_repertoire). The base layout is tuned for the
+  // custom top bar (no native legend), so the default 'custom'/'top'/'none'
+  // paths leave showlegend off and let the custom bar (or nothing) handle it.
+  function applyNativeLegend(layout, legendPosition, fontSize) {
+    const font = { size: fontSize > 0 ? fontSize : 12 };
+    if (legendPosition === 'right') {
+      layout.showlegend = true;
+      layout.legend = { itemsizing: 'constant', font: font };
+    } else if (legendPosition === 'left') {
+      layout.showlegend = true;
+      layout.legend = { itemsizing: 'constant', font: font, x: -0.2 };
+    } else if (legendPosition === 'bottom') {
+      layout.showlegend = true;
+      layout.legend = {
+        itemsizing: 'constant',
+        font: font,
+        orientation: 'h',
+        x: 0,
+        y: -0.15,
+      };
+    } else {
+      // 'custom' / 'top' (custom bar handles it) or 'none' (hidden): no native
+      // legend. Explicitly off so a re-render from a side position clears it.
+      layout.showlegend = false;
+    }
+  }
+
   function render3DCategorical(meta, data, hover, group_centers, container, extra) {
     const plotId = meta.plot_id;
+    if (!projectionTargetReady(plotId)) return;
     extra = extra || {};
     const selectedKeys = getSelection(plotId);
     removeContinuousLegend(plotId);

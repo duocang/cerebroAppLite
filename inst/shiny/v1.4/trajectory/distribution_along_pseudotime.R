@@ -219,23 +219,15 @@ output[[
       ## add layout to plot
       plot <- plot %>%
         plotly::layout(
-          xaxis = list(
+          xaxis = cerebro_plotly_axis(
             title = "Pseudotime",
-            mirror = TRUE,
-            showline = TRUE,
-            zeroline = FALSE,
             range = range(cells_df[["pseudotime"]])
           ),
-          yaxis = list(
-            title = "Density",
-            mirror = TRUE,
-            showline = TRUE,
-            zeroline = FALSE
-          ),
+          yaxis = cerebro_plotly_axis(title = "Density"),
           hovermode = "compare",
-          hoverlabel = list(
-            align = 'left'
-          )
+          hoverlabel = cerebro_plotly_hoverlabel(),
+          plot_bgcolor = cerebro_plotly_theme()$transparent,
+          paper_bgcolor = cerebro_plotly_theme()$transparent
         )
 
       ## ... cells should be colored by a numeric variable; instead of showing the
@@ -283,7 +275,7 @@ output[[
           marker = list(
             opacity = input[["trajectory_point_opacity"]],
             line = list(
-              color = "rgb(196,196,196)",
+              color = cerebro_plotly_theme()$axis,
               width = 1
             ),
             size = input[["trajectory_point_size"]]
@@ -292,25 +284,11 @@ output[[
           text = ~hover_info
         ) %>%
         plotly::layout(
-          xaxis = list(
-            title = "Pseudotime",
-            mirror = TRUE,
-            showline = TRUE,
-            zeroline = FALSE
-          ),
-          yaxis = list(
-            title = color_variable,
-            mirror = TRUE,
-            showline = TRUE,
-            zeroline = FALSE
-          ),
-          hoverlabel = list(
-            font = list(
-              size = 11,
-              color = "black"
-            ),
-            align = 'left'
-          )
+          xaxis = cerebro_plotly_axis(title = "Pseudotime"),
+          yaxis = cerebro_plotly_axis(title = color_variable),
+          hoverlabel = cerebro_plotly_hoverlabel(),
+          plot_bgcolor = cerebro_plotly_theme()$transparent,
+          paper_bgcolor = cerebro_plotly_theme()$transparent
         )
 
       ## add trend line if activated
@@ -341,7 +319,7 @@ output[[
             width = input[[
               "trajectory_distribution_along_pseudotime_trend_line_width"
             ]],
-            color = "#e74c3c"
+            color = cerebro_plotly_theme()$accent
           ),
           name = "Trend line",
           hoverinfo = "text",

@@ -333,8 +333,10 @@ test_that("Clonal UMAP tab renders with receptor + projection selectors", {
   expect_gte(as.numeric(n_options("ir_p_umap_projection")), 1)
 
   # The interactive plotly UMAP should render a plotly canvas (not an R error).
+  # Non-faceted Clonal UMAP now renders through the shared projection engine, so
+  # the plotly host is #ir_clonalUMAP_projection (not the old #ir_plot_clonalUMAP).
   has_plotly <- app$get_js(
-    "document.querySelector('#ir_plot_clonalUMAP .plotly') !== null;"
+    "document.querySelector('#ir_clonalUMAP_projection .plotly') !== null;"
   )
   expect_true(isTRUE(has_plotly))
 
@@ -434,8 +436,9 @@ test_that("Clonal UMAP has Show-all toggle and group filters", {
   expect_true(isTRUE(has_group_filter))
 
   # The interactive plotly UMAP should render a plotly canvas (not an R error).
+  # Non-faceted host is the shared projection engine's #ir_clonalUMAP_projection.
   has_plotly <- app$get_js(
-    "document.querySelector('#ir_plot_clonalUMAP .plotly') !== null;"
+    "document.querySelector('#ir_clonalUMAP_projection .plotly') !== null;"
   )
   expect_true(isTRUE(has_plotly))
 
@@ -461,14 +464,16 @@ test_that("Clonal UMAP switches to static facets only when grouped", {
     app$get_js(sprintf("document.querySelector('%s') !== null;", sel))
   }
 
+  # Ungrouped: the non-faceted host renders through the shared projection engine
+  # (#ir_clonalUMAP_projection); grouping swaps in the static faceted ggplot.
   expect_true(isTRUE(exists_el("#ir_p_umap_group_by")))
-  expect_true(isTRUE(exists_el("#ir_plot_clonalUMAP .plotly")))
+  expect_true(isTRUE(exists_el("#ir_clonalUMAP_projection .plotly")))
   expect_false(isTRUE(exists_el("#ir_plot_clonalUMAP_static img")))
 
   app$set_inputs(ir_p_umap_group_by = "sample", wait_ = FALSE)
   app$wait_for_idle(timeout = 20000)
 
-  expect_false(isTRUE(exists_el("#ir_plot_clonalUMAP .plotly")))
+  expect_false(isTRUE(exists_el("#ir_clonalUMAP_projection .plotly")))
   expect_true(isTRUE(exists_el("#ir_plot_clonalUMAP_static img")))
   plot_value <- app$get_value(output = "ir_plot_clonalUMAP_static")
   panel_rows <- vapply(

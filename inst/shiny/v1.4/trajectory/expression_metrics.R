@@ -105,7 +105,7 @@ output[["trajectory_states_nUMI_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 
@@ -155,7 +155,7 @@ output[["trajectory_states_nGene_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 
@@ -208,7 +208,7 @@ output[["trajectory_states_percent_mt_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 
@@ -261,7 +261,7 @@ output[["trajectory_states_percent_ribo_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 
@@ -314,7 +314,7 @@ output[["trajectory_states_percent_ery_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 

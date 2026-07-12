@@ -44,6 +44,11 @@ ir_env$getMetaData <- function(...) NULL
 ir_env$availableProjections <- function(...) character(0)
 ir_env$getProjection <- function(...) NULL
 ir_env$detect_chains <- function(...) character(0)
+# Shared palette helper (defined in color_setup.R inside the running app); the
+# plot builders call it for fill colours, so provide a lightweight stand-in.
+ir_env$cerebro_group_colors <- function(n) {
+  grDevices::colorRampPalette(c("#4c72a6", "#dd8452", "#6e9e6b"))(max(1L, n))
+}
 ir_env$input <- list()
 ir_env$session <- list()
 sys.source(data_r, envir = ir_env, keep.source = FALSE)
