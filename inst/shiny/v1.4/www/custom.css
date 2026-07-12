@@ -1,0 +1,921 @@
+/* =========================================================================
+   Cerebro theme — "Console" design language.
+   Warm, calm, card-based surfaces inspired by modern developer consoles
+   (DeepSeek / Vercel / Linear): soft neutral paper, generous rounding,
+   gentle layered shadows, a restrained slate-blue for structure and a warm
+   amber accent for data and emphasis.
+
+   All AdminLTE 2 / shinydashboard chrome is overridden with specificity +
+   !important, driven entirely by the tokens in :root so the whole look can
+   be re-tuned from one place.
+   ========================================================================= */
+
+:root {
+  /* --- Neutrals (warm gray paper, not blue-gray) ------------------------ */
+  --c-white:        #ffffff;
+  --c-bg:           #f7f7f8;   /* app background (warm paper) */
+  --c-surface:      #ffffff;   /* card surface */
+  --c-surface-2:    #f4f4f5;   /* inset / hover fill */
+  --c-surface-3:    #ecebeb;   /* pressed / stronger hover */
+  --c-border:       #ececec;   /* hairline stroke */
+  --c-border-2:     #e0e0e0;   /* control stroke */
+  --c-text:         #1c1c1e;   /* primary text (near-black, warm) */
+  --c-text-2:       #6b6b70;   /* secondary text */
+  --c-text-3:       #9a9aa0;   /* tertiary / placeholder */
+
+  /* --- Brand: calm slate-blue for structure/links --------------------- */
+  --c-blue-50:  #eef4fb;
+  --c-blue-100: #d7e6f7;
+  --c-blue-300: #7bb0e8;
+  --c-blue:     #2f6fd6;   /* primary structural blue */
+  --c-blue-600: #2560bd;
+  --c-blue-700: #1d4ea0;
+
+  /* --- Accent: warm amber for data, emphasis, active state ------------ */
+  --c-amber-50:  #fff4ec;
+  --c-amber-100: #ffe4d1;
+  --c-amber-300: #ffb27a;
+  --c-amber:     #f97316;  /* signature accent (DeepSeek-warm orange) */
+  --c-amber-600: #ea6a0f;
+  --c-amber-700: #c85a0e;
+
+  /* --- Status --------------------------------------------------------- */
+  --c-success: #16a34a;
+  --c-warning: #d97706;
+  --c-error:   #dc2626;
+
+  /* --- Elevation: soft, layered, low-contrast shadows ----------------- */
+  --shadow-1: 0 1px 2px rgba(17,17,26,0.04), 0 1px 3px rgba(17,17,26,0.05);
+  --shadow-2: 0 2px 4px rgba(17,17,26,0.04), 0 4px 12px rgba(17,17,26,0.06);
+  --shadow-3: 0 4px 8px rgba(17,17,26,0.05), 0 12px 28px rgba(17,17,26,0.09);
+  --shadow-4: 0 8px 20px rgba(17,17,26,0.08), 0 24px 56px rgba(17,17,26,0.14);
+
+  /* --- Radii: generous, console-like ---------------------------------- */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  /* --- Motion --------------------------------------------------------- */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur:  0.16s;
+
+  /* --- Fonts ---------------------------------------------------------- */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter",
+               "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", ui-monospace, Menlo, Consolas, monospace;
+}
+
+/* -------------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------------- */
+html, body {
+  background: var(--c-bg) !important;
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  font-weight: 650;
+  margin-top: 0;
+  letter-spacing: -0.011em;
+  line-height: 1.25;
+}
+h1 { font-size: 26px; }
+h2 { font-size: 20px; }
+h3 { font-size: 16px; }
+h4 { font-size: 14px; }
+h5, h6 { font-size: 13px; }
+p { margin-bottom: 12px; }
+
+/* Section headings that follow other content get breathing room above, so
+   stacked sections (e.g. the Data-info page's "Preferences" / "Sample
+   information") don't collide with the block before them. The first heading
+   in a block keeps margin-top: 0 so pages don't start with a gap. */
+.content-wrapper h2:not(:first-child),
+.content-wrapper h3:not(:first-child) { margin-top: 22px; }
+
+a {
+  color: var(--c-blue);
+  text-decoration: none;
+  transition: color var(--dur) var(--ease);
+}
+a:hover { color: var(--c-blue-700); text-decoration: underline; text-underline-offset: 2px; }
+a:active { color: var(--c-blue-700); }
+
+hr { border-top: 1px solid var(--c-border); }
+
+code, pre {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  border-radius: var(--r-xs);
+  padding: 1px 6px;
+  border: none;
+}
+pre { padding: 12px; border: 1px solid var(--c-border); }
+
+/* -------------------------------------------------------------------------
+   Header (topbar) — clean white bar, hairline bottom border
+   ------------------------------------------------------------------------- */
+/* White header surface. The bottom hairline lives ONLY on .main-header — the
+   inner .logo and .navbar are 1-3px shorter, so bordering them too stacked
+   two or three parallel lines. Keep the border on the outer bar only. */
+body.skin-blue .main-header,
+body.skin-blue .main-header .navbar,
+body.skin-blue .main-header .logo {
+  background: var(--c-white) !important;
+  color: var(--c-text) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+body.skin-blue .main-header {
+  border-bottom: 1px solid var(--c-border) !important;
+}
+body.skin-blue .main-header .logo {
+  font-family: var(--font-sans) !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  letter-spacing: -0.02em !important;
+  color: var(--c-text) !important;
+}
+/* R-side stuffs an inline white-colored <span> into .logo; force it visible. */
+body.skin-blue .main-header .logo > span[style] {
+  color: var(--c-text) !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+}
+body.skin-blue .main-header .logo:hover { background: var(--c-surface-2) !important; }
+body.skin-blue .main-header .navbar .sidebar-toggle {
+  color: var(--c-text-2) !important;
+  background: transparent !important;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+body.skin-blue .main-header .navbar .sidebar-toggle:hover {
+  color: var(--c-text) !important;
+  background: var(--c-surface-2) !important;
+}
+body.skin-blue .main-header .navbar-custom-menu > .navbar-nav > li > a {
+  color: var(--c-text-2) !important;
+  background: transparent !important;
+}
+body.skin-blue .main-header .navbar-custom-menu > .navbar-nav > li > a:hover {
+  color: var(--c-text) !important;
+  background: var(--c-surface-2) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Sidebar — white nav rail, rounded items, warm active pill
+   ------------------------------------------------------------------------- */
+body.skin-blue .main-sidebar {
+  background: var(--c-white) !important;
+  border-right: 1px solid var(--c-border) !important;
+  box-shadow: none !important;
+}
+body.skin-blue .sidebar { padding-top: 8px; }
+body.skin-blue .sidebar-menu > li { position: relative; }
+body.skin-blue .sidebar-menu > li > a {
+  color: var(--c-text) !important;
+  background: transparent !important;
+  border-left: none !important;
+  padding: 9px 14px !important;
+  margin: 2px 10px;
+  border-radius: var(--r-sm) !important;
+  font-size: 14px;
+  font-weight: 450;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+body.skin-blue .sidebar-menu > li > a:hover {
+  background: var(--c-surface-2) !important;
+  color: var(--c-text) !important;
+  border-left: none !important;
+}
+/* Active item: a clean rounded pill fill, no left accent bar (that vertical
+   line read as clutter next to the rounded item — modern consoles like
+   DeepSeek use a plain filled block). We keep a soft warm tint + warm text so
+   the brand accent still marks the selection. */
+body.skin-blue .sidebar-menu > li.active > a,
+body.skin-blue .sidebar-menu > li.active > a:hover,
+body.skin-blue .sidebar-menu > li.active > a:focus {
+  background: var(--c-amber-50) !important;
+  color: var(--c-amber-700) !important;
+  font-weight: 600;
+  border-left: none !important;
+}
+body.skin-blue .sidebar-menu > li > a > .fa,
+body.skin-blue .sidebar-menu > li > a > .glyphicon,
+body.skin-blue .sidebar-menu > li > a > .ion {
+  color: var(--c-text-2) !important;
+  width: 18px; margin-right: 11px; text-align: center; font-size: 14px;
+  transition: color var(--dur) var(--ease);
+}
+body.skin-blue .sidebar-menu > li.active > a > .fa,
+body.skin-blue .sidebar-menu > li.active > a > .glyphicon,
+body.skin-blue .sidebar-menu > li.active > a > .ion,
+body.skin-blue .sidebar-menu > li > a:hover > .fa {
+  color: var(--c-amber) !important;
+}
+body.skin-blue .sidebar-menu > li.header {
+  background: transparent !important;
+  color: var(--c-text-3) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 16px 20px 6px;
+  font-weight: 700;
+}
+
+/* Content wrapper */
+body .content-wrapper, body .right-side {
+  background: var(--c-bg) !important;
+  min-height: 100vh;
+  padding: 18px 26px;
+}
+.content-header { padding: 6px 0 16px; }
+.content-header > h1 { font-size: 22px; font-weight: 650; margin: 0; }
+
+/* -------------------------------------------------------------------------
+   Boxes — Console card: white, large radius, soft layered shadow
+   ------------------------------------------------------------------------- */
+.box,
+body .box.box-primary, body .box.box-info, body .box.box-success,
+body .box.box-warning, body .box.box-danger,
+body .box.box-solid, body .box.box-solid.box-primary,
+body .box.box-solid.box-info, body .box.box-solid.box-success,
+body .box.box-solid.box-warning, body .box.box-solid.box-danger {
+  background: var(--c-surface) !important;
+  border: 1px solid var(--c-border) !important;
+  border-top: 1px solid var(--c-border) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-1) !important;
+  margin-bottom: 18px;
+  overflow: visible;
+  transition: box-shadow var(--dur) var(--ease);
+}
+body .box > .box-header,
+body .box.box-solid > .box-header,
+body .box.box-solid.box-primary > .box-header,
+body .box.box-solid.box-info > .box-header,
+body .box.box-solid.box-success > .box-header,
+body .box.box-solid.box-warning > .box-header,
+body .box.box-solid.box-danger > .box-header {
+  background: var(--c-surface) !important;
+  color: var(--c-text) !important;
+  border-bottom: 1px solid var(--c-border) !important;
+  border-top-left-radius: var(--r-lg);
+  border-top-right-radius: var(--r-lg);
+  padding: 15px 20px !important;
+}
+body .box-header .box-title,
+body .box.box-solid > .box-header .box-title,
+body .box.box-solid > .box-header .box-title > p {
+  color: var(--c-text) !important;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.008em;
+}
+body .box-header .btn-box-tool,
+body .box.box-solid > .box-header .btn-box-tool {
+  color: var(--c-text-2) !important;
+  background: transparent !important;
+  border-radius: var(--r-xs) !important;
+  padding: 4px 7px !important;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+body .box-header .btn-box-tool:hover,
+body .box.box-solid > .box-header .btn-box-tool:hover {
+  color: var(--c-text) !important;
+  background: var(--c-surface-2) !important;
+}
+body .box-body { padding: 18px 20px; }
+body .box-footer {
+  background: var(--c-surface) !important;
+  border-top: 1px solid var(--c-border) !important;
+  border-bottom-left-radius: var(--r-lg);
+  border-bottom-right-radius: var(--r-lg);
+}
+
+/* tabBox (nav-tabs-custom) — underline pivot inside a card */
+body .nav-tabs-custom {
+  background: var(--c-surface) !important;
+  border: 1px solid var(--c-border) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-1) !important;
+}
+body .nav-tabs-custom > .nav-tabs {
+  background: transparent !important;
+  border-bottom: 1px solid var(--c-border) !important;
+  padding: 0 14px;
+  margin: 0;
+}
+body .nav-tabs-custom > .nav-tabs > li { margin: 0 !important; border: none !important; }
+body .nav-tabs-custom > .nav-tabs > li > a {
+  background: transparent !important;
+  color: var(--c-text-2) !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  padding: 13px 15px !important;
+  margin: 0 !important;
+  font-weight: 500;
+  font-size: 14px;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  position: relative;
+}
+body .nav-tabs-custom > .nav-tabs > li > a:hover {
+  color: var(--c-text) !important;
+  background: transparent !important;
+}
+body .nav-tabs-custom > .nav-tabs > li.active > a,
+body .nav-tabs-custom > .nav-tabs > li.active > a:hover,
+body .nav-tabs-custom > .nav-tabs > li.active > a:focus {
+  color: var(--c-amber-700) !important;
+  border-bottom: 2px solid var(--c-amber) !important;
+  background: transparent !important;
+  font-weight: 650;
+}
+body .nav-tabs-custom > .nav-tabs > li.active { border-top: none !important; }
+body .nav-tabs-custom > .tab-content { padding: 20px; background: var(--c-surface) !important; }
+
+/* -------------------------------------------------------------------------
+   valueBox / small-box / bg-boxes — Console stat card (white, big number)
+   Replaces AdminLTE's saturated solid-fill stat blocks with a calm white
+   card: large tabular number, muted label, soft shadow that lifts on hover.
+   ------------------------------------------------------------------------- */
+body .small-box,
+body .small-box[class*="bg-"] {
+  background: var(--c-surface) !important;
+  color: var(--c-text) !important;
+  border: 1px solid var(--c-border) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-1) !important;
+  padding: 0;
+  min-height: auto;
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+body .small-box:hover { box-shadow: var(--shadow-2) !important; transform: translateY(-1px); }
+body .small-box > .inner { padding: 20px 22px 18px !important; }
+body .small-box h3 {
+  color: var(--c-text) !important;
+  font-family: var(--font-sans) !important;
+  font-weight: 700 !important;
+  font-size: 34px !important;
+  line-height: 1.1 !important;
+  margin: 0 0 4px !important;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+body .small-box p {
+  color: var(--c-text-2) !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+/* Keep the decorative icon but fade + shrink it to a quiet corner glyph
+   tinted with the warm accent, instead of AdminLTE's huge ghost icon.
+   shinydashboard renders it as `.icon-large > i`, so target both. */
+body .small-box .icon,
+body .small-box .icon-large,
+body .small-box .icon-large > i,
+body .small-box .icon > i {
+  color: var(--c-amber) !important;
+  opacity: 0.18;
+  font-size: 42px !important;
+  top: 50% !important;
+  right: 18px !important;
+  transform: translateY(-50%);
+  transition: opacity var(--dur) var(--ease);
+}
+body .small-box:hover .icon,
+body .small-box:hover .icon-large,
+body .small-box:hover .icon-large > i { opacity: 0.28; }
+body .small-box .small-box-footer, body .small-box > a { display: none !important; }
+
+/* box(background = "...") — the Organism / Date cards on the Data-info page */
+body .box[class*="bg-"] {
+  background: var(--c-surface) !important;
+  color: var(--c-text) !important;
+}
+body .box[class*="bg-"] > .box-header {
+  background: var(--c-surface) !important;
+  color: var(--c-text-2) !important;
+  border-bottom: none !important;
+  padding: 18px 22px 2px !important;
+}
+body .box[class*="bg-"] .box-title {
+  color: var(--c-text-2) !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+body .box[class*="bg-"] > .box-body {
+  padding: 2px 22px 20px !important;
+  color: var(--c-text) !important;
+  font-family: var(--font-sans);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* -------------------------------------------------------------------------
+   Buttons — Console button (primary amber / neutral default)
+   ------------------------------------------------------------------------- */
+body .btn {
+  border-radius: var(--r-sm) !important;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 7px 16px;
+  min-height: 34px;
+  border: 1px solid transparent;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+              color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  box-shadow: none !important;
+}
+body .btn:focus {
+  outline: 2px solid var(--c-amber) !important;
+  outline-offset: 2px;
+  box-shadow: none !important;
+}
+body .btn-sm { padding: 5px 12px; font-size: 13px; min-height: 30px; }
+body .btn-xs { padding: 3px 10px; font-size: 12px; min-height: 26px; border-radius: var(--r-xs) !important; }
+
+body .btn-default,
+body .btn-default:focus {
+  background: var(--c-surface) !important;
+  color: var(--c-text) !important;
+  border-color: var(--c-border-2) !important;
+}
+body .btn-default:hover {
+  background: var(--c-surface-2) !important;
+  border-color: var(--c-border-2) !important;
+}
+body .btn-default:active, body .btn-default.active {
+  background: var(--c-surface-3) !important;
+  color: var(--c-text) !important;
+}
+
+/* Primary = warm accent (the console's calls-to-action) */
+body .btn-primary,
+body .btn-primary:focus {
+  background: var(--c-amber) !important;
+  color: var(--c-white) !important;
+  border-color: var(--c-amber) !important;
+}
+body .btn-primary:hover {
+  background: var(--c-amber-600) !important;
+  border-color: var(--c-amber-600) !important;
+  color: var(--c-white) !important;
+  box-shadow: var(--shadow-1) !important;
+}
+body .btn-primary:active, body .btn-primary.active {
+  background: var(--c-amber-700) !important;
+  border-color: var(--c-amber-700) !important;
+}
+
+body .btn-success { background: var(--c-success) !important; border-color: var(--c-success) !important; color: var(--c-white) !important; }
+body .btn-warning { background: var(--c-warning) !important; border-color: var(--c-warning) !important; color: var(--c-white) !important; }
+body .btn-danger  { background: var(--c-error)   !important; border-color: var(--c-error)   !important; color: var(--c-white) !important; }
+
+/* subtle info button next to box titles */
+body .btn.btn-xs[title*="additional information"],
+body .btn-xs[id$="_info"],
+body .box-header .btn-xs[id$="_info"] {
+  background: transparent !important;
+  color: var(--c-text-2) !important;
+  border: 1px solid var(--c-border-2) !important;
+  font-weight: 500;
+  font-size: 11.5px;
+  padding: 2px 9px !important;
+  min-height: 24px;
+}
+body .btn-xs[id$="_info"]:hover {
+  background: var(--c-amber-50) !important;
+  color: var(--c-amber-700) !important;
+  border-color: var(--c-amber-300) !important;
+}
+body .btn-xs[id$="_info"] .action-label { color: inherit !important; }
+
+/* radioGroupButtons / segmented control */
+body .btn-group > .btn { box-shadow: none !important; border-radius: 0 !important; }
+body .btn-group > .btn:first-child { border-top-left-radius: var(--r-sm) !important; border-bottom-left-radius: var(--r-sm) !important; }
+body .btn-group > .btn:last-child  { border-top-right-radius: var(--r-sm) !important; border-bottom-right-radius: var(--r-sm) !important; }
+
+body .btn-group > .btn.radiobtn,
+body .btn-group-justified > .btn.radiobtn,
+body .btn-group > .btn.radiobtn.btn-primary,
+body .btn-group-justified > .btn.radiobtn.btn-primary {
+  background: var(--c-surface) !important;
+  color: var(--c-text) !important;
+  border: 1px solid var(--c-border-2) !important;
+  font-weight: 500;
+}
+body .btn-group > .btn.radiobtn:hover,
+body .btn-group-justified > .btn.radiobtn:hover {
+  background: var(--c-surface-2) !important;
+  border-color: var(--c-border-2) !important;
+}
+body .btn-group > .btn.radiobtn.active,
+body .btn-group-justified > .btn.radiobtn.active,
+body .btn-group > .btn.radiobtn.btn-primary.active,
+body .btn-group-justified > .btn.radiobtn.btn-primary.active {
+  background: var(--c-amber) !important;
+  color: var(--c-white) !important;
+  border-color: var(--c-amber) !important;
+  font-weight: 650;
+}
+
+/* -------------------------------------------------------------------------
+   Form controls — soft inputs, warm focus ring
+   ------------------------------------------------------------------------- */
+/* colourInput (colourpicker) renders as a .form-control whose INLINE
+   background-color IS the swatch preview, and whose inline text color is
+   chosen for contrast. Exclude it from the generic white-fill rule via :not()
+   so the browser keeps its inline colours (a !important override here would
+   still beat the inline style, so exclusion is the only clean fix). */
+body .form-control:not(.colourpicker-input):not(.shiny-colour-input),
+body .selectize-input,
+body .selectize-dropdown {
+  border: 1px solid var(--c-border-2) !important;
+  border-radius: var(--r-sm) !important;
+  background: var(--c-surface) !important;
+  color: var(--c-text) !important;
+  font-family: var(--font-sans);
+  font-size: 14px !important;
+  box-shadow: none !important;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+/* Colour input: keep inline swatch background/text, just refine the chrome. */
+body .form-control.colourpicker-input,
+body .form-control.shiny-colour-input {
+  border: 1px solid var(--c-border-2) !important;
+  border-radius: var(--r-sm) !important;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 13px !important;
+  text-align: center;
+  letter-spacing: 0.03em;
+  box-shadow: none !important;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+body .form-control:hover,
+body .selectize-input:hover {
+  border-color: var(--c-text-3) !important;
+}
+body .form-control:focus,
+body .selectize-input.focus {
+  border-color: var(--c-amber) !important;
+  box-shadow: 0 0 0 3px var(--c-amber-50) !important;
+  outline: none;
+}
+body .selectize-input { padding: 7px 12px !important; min-height: 34px; }
+/* The dropdown is an overlay: give BOTH the outer panel and its inner content
+   a solid white fill and a high z-index, or the options render over a
+   see-through panel (page content shows through) and clicks miss. */
+body .selectize-dropdown {
+  border-radius: var(--r-sm) !important;
+  box-shadow: var(--shadow-2) !important;
+  margin-top: 3px;
+  overflow: hidden;
+  background: var(--c-white) !important;
+  z-index: 3000 !important;
+}
+body .selectize-dropdown .selectize-dropdown-content {
+  background: var(--c-white) !important;
+}
+body .selectize-dropdown .option {
+  background: var(--c-white) !important;
+  color: var(--c-text) !important;
+  padding: 7px 12px !important;
+}
+body .selectize-dropdown .option.active,
+body .selectize-dropdown .active {
+  background: var(--c-amber-50) !important;
+  color: var(--c-amber-700) !important;
+}
+/* Single-select: the chosen value is plain text, not a chip. */
+body .selectize-control.single .selectize-input > .item {
+  background: transparent !important;
+  color: var(--c-text) !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: 14px;
+}
+/* Multi-select: each chosen value is a warm removable chip. */
+body .selectize-control.multi .selectize-input > .item {
+  background: var(--c-amber-50) !important;
+  color: var(--c-amber-700) !important;
+  border: 1px solid var(--c-amber-100) !important;
+  border-radius: var(--r-xs) !important;
+  padding: 1px 8px !important;
+  font-size: 13px;
+}
+
+body label, body .control-label {
+  color: var(--c-text) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  margin-bottom: 5px;
+}
+body .shiny-input-container > label.control-label { font-size: 14px; display: block; }
+body .material-switch label,
+body .shiny-input-checkboxgroup label,
+body .shiny-input-radiogroup label {
+  font-weight: 450 !important;
+  color: var(--c-text) !important;
+}
+
+/* Sliders — warm accent bar/handle */
+body .irs--shiny .irs-bar { background: var(--c-amber) !important; border-color: var(--c-amber) !important; }
+body .irs--shiny .irs-handle { border: 2px solid var(--c-amber) !important; background: var(--c-white) !important; box-shadow: var(--shadow-1) !important; }
+body .irs--shiny .irs-from, body .irs--shiny .irs-to, body .irs--shiny .irs-single {
+  background: var(--c-amber) !important;
+  color: var(--c-white) !important;
+  border-radius: var(--r-xs);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+}
+body .irs--shiny .irs-line { background: var(--c-surface-3) !important; }
+body .irs--shiny .irs-grid-text { color: var(--c-text-2) !important; }
+
+/* materialSwitch → soft toggle, warm ON state, no inset shadow */
+body .material-switch > label::before {
+  background: var(--c-surface-3) !important;
+  box-shadow: none !important;
+}
+body .material-switch > label::after {
+  box-shadow: var(--shadow-1) !important;
+  border: 1px solid var(--c-border-2) !important;
+}
+body .material-switch > input[type="checkbox"]:checked + label::before {
+  background: var(--c-amber) !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+body .material-switch > input[type="checkbox"]:checked + label::after {
+  background: var(--c-white) !important;
+  border: 1px solid var(--c-amber) !important;
+  box-shadow: var(--shadow-1) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Generic tabs (nav-tabs) — underline pivot, warm active
+   ------------------------------------------------------------------------- */
+body .nav-tabs { border-bottom: 1px solid var(--c-border) !important; }
+body .nav-tabs > li > a {
+  color: var(--c-text-2) !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 11px 15px !important;
+  font-size: 14px !important;
+  font-weight: 500;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+body .nav-tabs > li > a:hover {
+  color: var(--c-text) !important;
+  background: transparent !important;
+}
+body .nav-tabs > li.active > a,
+body .nav-tabs > li.active > a:focus,
+body .nav-tabs > li.active > a:hover {
+  color: var(--c-amber-700) !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid var(--c-amber) !important;
+  font-weight: 650;
+}
+
+/* -------------------------------------------------------------------------
+   DataTables — clean data grid
+   ------------------------------------------------------------------------- */
+body table.dataTable {
+  border-collapse: separate !important;
+  border-spacing: 0;
+  font-size: 13px;
+  font-family: var(--font-sans);
+}
+body table.dataTable thead th {
+  background: transparent !important;
+  color: var(--c-text-2) !important;
+  font-weight: 650;
+  font-size: 12px !important;
+  text-transform: none;
+  letter-spacing: 0;
+  border-bottom: 1px solid var(--c-border-2) !important;
+  padding: 11px 14px !important;
+}
+body table.dataTable tbody td {
+  border-top: 1px solid var(--c-border) !important;
+  padding: 10px 14px !important;
+  color: var(--c-text);
+}
+body table.dataTable.stripe tbody tr.odd,
+body table.dataTable.display tbody tr.odd,
+body table.dataTable.stripe tbody tr.even,
+body table.dataTable.display tbody tr.even { background: transparent !important; }
+body table.dataTable tbody tr:hover,
+body table.dataTable.display tbody tr:hover {
+  background: var(--c-surface-2) !important;
+}
+body .dataTables_wrapper .dataTables_filter input,
+body .dataTables_wrapper .dataTables_length select {
+  border: 1px solid var(--c-border-2) !important;
+  border-radius: var(--r-sm) !important;
+  padding: 6px 11px !important;
+  background: var(--c-surface) !important;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+body .dataTables_wrapper .dataTables_filter input:focus,
+body .dataTables_wrapper .dataTables_length select:focus {
+  border-color: var(--c-amber) !important;
+  box-shadow: 0 0 0 3px var(--c-amber-50) !important;
+  outline: none;
+}
+body .dataTables_wrapper .dataTables_paginate .paginate_button {
+  border-radius: var(--r-xs) !important;
+  border: 1px solid transparent !important;
+  color: var(--c-text) !important;
+  background: transparent !important;
+  margin: 0 1px !important;
+  transition: background var(--dur) var(--ease);
+}
+body .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+  background: var(--c-surface-2) !important;
+  color: var(--c-text) !important;
+  border-color: transparent !important;
+}
+body .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+body .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+  background: var(--c-amber) !important;
+  color: var(--c-white) !important;
+  border-color: var(--c-amber) !important;
+}
+body .dataTables_wrapper .dataTables_info { color: var(--c-text-2) !important; font-size: 12px !important; }
+
+body div.dt-buttons .dt-button {
+  background: var(--c-surface) !important;
+  border: 1px solid var(--c-border-2) !important;
+  color: var(--c-text) !important;
+  border-radius: var(--r-sm) !important;
+  padding: 6px 12px !important;
+  margin-right: 5px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  transition: background var(--dur) var(--ease);
+}
+body div.dt-buttons .dt-button:hover {
+  background: var(--c-surface-2) !important;
+  border-color: var(--c-border-2) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Modals — elevated content dialog
+   ------------------------------------------------------------------------- */
+body .modal-content {
+  border: 1px solid var(--c-border) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-4) !important;
+  background: var(--c-surface);
+}
+body .modal-header { border-bottom: 1px solid var(--c-border); padding: 18px 24px; }
+body .modal-title {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 650;
+  color: var(--c-text);
+  letter-spacing: -0.01em;
+}
+body .modal-body { padding: 22px 24px; color: var(--c-text); }
+body .modal-footer { border-top: 1px solid var(--c-border); padding: 15px 24px; }
+
+/* -------------------------------------------------------------------------
+   Loading / progress / notifications — unified to the warm accent
+   ------------------------------------------------------------------------- */
+body .recalculating { opacity: 0.55; transition: opacity var(--dur) var(--ease); }
+body .shiny-output-error { color: var(--c-error); font-family: var(--font-mono); font-size: 12.5px; }
+body .shiny-output-error-validation { color: var(--c-text-2); font-style: italic; }
+
+body #shiny-notification-panel { bottom: 24px !important; right: 24px !important; width: 340px; }
+body .shiny-notification {
+  background: var(--c-surface) !important;
+  color: var(--c-text) !important;
+  border: 1px solid var(--c-border) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--shadow-3) !important;
+  padding: 14px 16px !important;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+body .shiny-notification-message { color: var(--c-text) !important; }
+body .shiny-notification-close { color: var(--c-text-2) !important; }
+
+body .progress {
+  background: var(--c-surface-3) !important;
+  border-radius: var(--r-pill) !important;
+  box-shadow: none !important;
+  height: 5px !important;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+body .progress .progress-bar,
+body .progress-bar-striped,
+body .progress-bar.progress-bar-info,
+body .progress-bar.progress-bar-success,
+body .progress-bar.progress-bar-primary {
+  background: var(--c-amber) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--c-white) !important;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 5px;
+  transition: width .2s var(--ease);
+}
+
+body .shiny-progress-container .progress-text {
+  background: var(--c-surface) !important;
+  color: var(--c-text) !important;
+  border: 1px solid var(--c-border) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--shadow-3) !important;
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+body .shiny-progress-container .progress-message { color: var(--c-text) !important; }
+body .shiny-progress-container .progress-detail  { color: var(--c-text-2) !important; }
+
+body .js-plotly-plot .modebar-btn.active path,
+body .js-plotly-plot .modebar-btn:hover path { fill: var(--c-amber) !important; }
+
+body .shiny-bound-output.recalculating::before,
+body .loading-spinner,
+body .fa-spinner { color: var(--c-amber) !important; }
+
+/* Scrollbars — thin, quiet, rounded */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--c-border-2); border-radius: var(--r-pill); border: 2px solid var(--c-bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--c-text-3); }
+
+/* Sidebar item fade-in — gentle opacity hint only */
+.skin-blue .sidebar-menu > li { animation: console-fadeIn .22s var(--ease) forwards; }
+@keyframes console-fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* -------------------------------------------------------------------------
+   Motion — console-grade micro-interactions
+   A soft rise-and-fade when a tab's content mounts, and a subtle lift on
+   cards and primary buttons on hover. Kept short and eased so it reads as
+   polish, never as a slideshow.
+   ------------------------------------------------------------------------- */
+/* Opacity-only fade-in. We deliberately do NOT translateY here: a transform
+   on the content wrapper creates a stacking context that traps selectize
+   dropdowns behind the cards below them (they render see-through and clicks
+   miss). A gentle fade gives the same "content settled in" feel without that
+   trap. Fill-mode is `backwards` only, so nothing lingers after it runs. */
+.tab-pane.active > * { animation: console-fadeInContent .28s var(--ease) backwards; }
+@keyframes console-fadeInContent {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Primary buttons press in slightly for tactile feedback. Stat cards already
+   lift on hover (see .small-box); content/parameter boxes deliberately do NOT
+   move on hover — the page is dense with panels and constant motion would be
+   noise rather than polish. */
+body .btn-primary:active { transform: translateY(1px); }
+body .btn:active { transform: translateY(0.5px); }
+
+/* -------------------------------------------------------------------------
+   Responsive
+   ------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  body .content-wrapper, body .right-side { padding: 12px 14px; }
+  body .box-body { padding: 14px 16px; }
+}
+
+/* -------------------------------------------------------------------------
+   Accessibility: honor reduced-motion
+   ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}

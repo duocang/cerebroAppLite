@@ -67,10 +67,46 @@ output[["spatial_projection_morans_i"]] <- renderText({
     available_crb_files$selected
   )
 
-## Keep it computed while the Additional-parameters box is collapsed, so the
-## value is ready the moment the user expands it.
+## Keep it computed even when the title-bar span is momentarily hidden (e.g.
+## while switching plot type), so the value is ready as soon as it reappears.
 outputOptions(
   output,
   "spatial_projection_morans_i",
   suspendWhenHidden = FALSE
+)
+
+## Info box explaining the score, shown when pressing the "info" button next to
+## the Moran's I value in the projection title bar.
+observeEvent(input[["spatial_projection_morans_i_info"]], {
+  showModal(
+    modalDialog(
+      spatial_projection_morans_i_info[["text"]],
+      title = spatial_projection_morans_i_info[["title"]],
+      easyClose = TRUE,
+      footer = NULL,
+      size = "l"
+    )
+  )
+})
+
+spatial_projection_morans_i_info <- list(
+  title = "Spatial autocorrelation (Moran's I)",
+  text = HTML(
+    "
+    <p>Moran's I measures how spatially clustered the displayed gene's
+    expression is across the tissue — whether cells with similar expression
+    tend to sit next to each other.</p>
+    <p>The score runs from about <b>-1</b> to <b>+1</b>:</p>
+    <ul>
+      <li><b>Near +1</b>: strong spatial structure — high-expressing cells are
+      grouped together (e.g. the gene marks a region or layer).</li>
+      <li><b>Near 0</b>: expression is spread out with no spatial pattern.</li>
+      <li><b>Negative</b>: neighbouring cells tend to differ (a checkerboard-like
+      pattern; uncommon).</li>
+    </ul>
+    <p>It is computed from each cell's six nearest spatial neighbours. Large
+    slides are down-sampled to a fixed 2,000-cell subset for a responsive,
+    stable score; when that happens the count is shown next to the value.</p>
+    "
+  )
 )

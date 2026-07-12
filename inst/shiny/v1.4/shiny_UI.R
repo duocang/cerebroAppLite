@@ -199,6 +199,11 @@ ui <- dashboardPage(
   ),
   dashboardBody(
     shinyjs::useShinyjs(),
+    ## Console design language — see www/custom.css. Loaded here so the theme
+    ## overrides AdminLTE 2 / shinydashboard chrome across every tab.
+    includeCSS(
+      file.path(Cerebro.options[["cerebro_root"]], "shiny/v1.4/www/custom.css")
+    ),
     tags$script(HTML('$("body").addClass("fixed");')),
     tabItems(
       tab_load_data,

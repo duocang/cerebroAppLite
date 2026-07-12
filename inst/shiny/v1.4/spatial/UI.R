@@ -61,7 +61,6 @@ tab_spatial <- tabItem(
       align-items: center;
       gap: 4px 12px;
       background: rgba(255, 255, 255, 0.6);
-      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 5px 10px;
       margin: 0 0 6px 0;

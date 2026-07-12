@@ -98,6 +98,31 @@ output[["spatial_projection_UI"]] <- renderUI({
           )
         ),
         tagList(
+          ## Spatial autocorrelation (Moran's I) of the displayed gene, placed
+          ## right below the colour legend and above the scatter so it reads as
+          ## a property of the currently displayed gene. Only meaningful for a
+          ## single continuous feature, so shown only in ImageFeaturePlot mode.
+          ## The JS legend (#spatial_projection_legend) is inserted above this
+          ## row, so the DOM order ends up legend -> Moran's I -> plot. The
+          ## score itself is computed in out_morans_i.R.
+          conditionalPanel(
+            condition = "input.spatial_projection_plot_type == 'ImageFeaturePlot'",
+            tags$div(
+              style = paste0(
+                "font-size: 12px; color: #555; margin: 0 0 4px 2px; ",
+                "display: flex; align-items: center; gap: 4px;"
+              ),
+              tags$strong("Moran's I:"),
+              textOutput("spatial_projection_morans_i", inline = TRUE),
+              actionLink(
+                "spatial_projection_morans_i_info",
+                label = NULL,
+                icon = icon("circle-info"),
+                title = "What is Moran's I?",
+                style = "color: #999;"
+              )
+            )
+          ),
           shinycssloaders::withSpinner(
             plotly::plotlyOutput(
               "spatial_projection",
