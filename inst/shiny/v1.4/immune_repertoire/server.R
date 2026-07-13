@@ -489,6 +489,13 @@ source(
 source(
   paste0(
     Cerebro.options[["cerebro_root"]],
+    "/shiny/v1.4/immune_repertoire/help_guide.R"
+  ),
+  local = TRUE
+)
+source(
+  paste0(
+    Cerebro.options[["cerebro_root"]],
     "/shiny/v1.4/immune_repertoire/paired_scatter_helpers.R"
   ),
   local = TRUE
@@ -497,6 +504,13 @@ source(
   paste0(
     Cerebro.options[["cerebro_root"]],
     "/shiny/v1.4/immune_repertoire/length_helpers.R"
+  ),
+  local = TRUE
+)
+source(
+  paste0(
+    Cerebro.options[["cerebro_root"]],
+    "/shiny/v1.4/immune_repertoire/compare_helpers.R"
   ),
   local = TRUE
 )

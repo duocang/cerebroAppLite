@@ -162,7 +162,7 @@ output$ir_visualizations_UI <- renderUI({
         # ),
         tabPanel(
           "Compare",
-          ir_fill_plot("ir_plot_clonalCompare")
+          ir_fill_plot("ir_plot_clonalCompare", plotly = TRUE)
         ),
         # tabPanel(
         #   "Overlap",
@@ -206,16 +206,14 @@ output$ir_visualizations_UI <- renderUI({
 ## title are applied by safeRenderPlot via ir_apply_display.
 ## Expansion level is an ordinal magnitude (clone size increasing), so it gets a
 ## sequential ramp in the app's --c-blue family (matches the projection's
-## continuous colourscale) instead of the old rainbow turbo: larger (more
-## expanded) clones read as a deeper blue. Keys must match the factor levels
-## produced in data.R (IR_CLONE_LABELS).
+## continuous colourscale): larger (more expanded) clones read as a deeper blue.
+## Keys must match the factor levels produced in data.R (IR_CLONE_LABELS).
 ## Named hcl.colors palette passed to scRepertoire plotting functions and the
-## R-side diversity/compare fills. Was "inferno" — a high-saturation SEQUENTIAL
-## scale that, applied to categorical groups, produced garish black/magenta/
-## yellow. "Harmonic" is a low-saturation QUALITATIVE hcl palette (muted
-## gold/green/blue) that reads calm and in-system, and is the correct kind of
-## palette for unordered groups. scRepertoire's `palette` arg only accepts an
-## hcl.colors palette *name* (a string), so this must stay a name, not a vector.
+## R-side diversity/compare fills. "Harmonic" is a low-saturation QUALITATIVE
+## hcl palette (muted gold/green/blue) that reads calm and in-system — the right
+## kind of palette for unordered groups. scRepertoire's `palette` arg only
+## accepts an hcl.colors palette *name* (a string), so this must stay a name,
+## not a vector.
 IR_PALETTE <- "Harmonic"
 
 IR_EXPANSION_COLORS <- stats::setNames(
@@ -1191,30 +1189,63 @@ output$ir_plot_clonalAbundance <- plotly::renderPlotly({
     input$ir_p_order_by
   )
 
-output$ir_plot_clonalCompare <- renderPlot({
+## Compare -> interactive alluvial. scRepertoire's ggalluvial output does not
+## survive ggplotly(), so we take clonalCompare(exportTable = TRUE) (which still
+## does all the clone filtering / top.clones / proportion work) and redraw it as
+## native Plotly polygons via the compare_helpers.R pure functions. The `area`
+## graph mode was dropped: Compare is about tracking clones across groups, which
+## is the alluvial, and mixing a plotOutput/plotlyOutput per mode is not worth it.
+output$ir_plot_clonalCompare <- plotly::renderPlotly({
   req(has_scRepertoire())
   req_plot_space("ir_plot_clonalCompare")
-  req(
-    !is.null(input$ir_compare_samples) && length(input$ir_compare_samples) >= 2
-  )
+  samples <- input$ir_compare_samples
+  req(!is.null(samples) && length(samples) >= 2)
   data <- ir_data()
   req(!is.null(data))
   pars <- ir_params()
-  safeRenderPlot(
-    scRepertoire::clonalCompare(
-      data,
-      cloneCall = pars$cloneCall,
-      chain = pars$chain,
-      group.by = pars$groupBy,
-      order.by = ir_order_by(),
-      samples = input$ir_compare_samples,
-      top.clones = as.numeric(ir_param("ir_p_top_clones", 10)),
-      graph = ir_param("ir_p_compare_graph", "alluvial"),
-      proportion = isTRUE(ir_param("ir_p_compare_prop", TRUE)),
-      exportTable = FALSE,
-      palette = IR_PALETTE
-    ),
-    "clonalCompare"
+  proportion <- isTRUE(ir_param("ir_p_compare_prop", TRUE))
+
+  tryCatch(
+    {
+      tab <- scRepertoire::clonalCompare(
+        data,
+        cloneCall = pars$cloneCall,
+        chain = pars$chain,
+        group.by = pars$groupBy,
+        order.by = ir_order_by(),
+        samples = samples,
+        top.clones = as.numeric(ir_param("ir_p_top_clones", 10)),
+        proportion = proportion,
+        exportTable = TRUE
+      )
+      prep <- ir_prepare_compare_alluvial(tab, samples, proportion = proportion)
+      if (!isTRUE(prep$ok)) {
+        return(ir_empty_plotly(prep$message))
+      }
+      dp <- tryCatch(ir_display_params(), error = function(e) list())
+      legend_pos <- dp[["ir_d_legend_pos"]]
+      if (!is.character(legend_pos) || length(legend_pos) != 1) {
+        legend_pos <- "right"
+      }
+      ## The custom "top" bar is a shared-scatter feature; here plain Plotly has
+      ## no top-bar mode, so fold "top" into the native right legend.
+      if (identical(legend_pos, "top")) {
+        legend_pos <- "right"
+      }
+      title <- dp[["ir_d_title"]]
+      ir_compare_alluvial_plotly(
+        prep,
+        palette = IR_COMPARE_PALETTE,
+        theme = cerebro_plotly_theme(),
+        hoverlabel = cerebro_plotly_hoverlabel(),
+        legend_pos = legend_pos,
+        base_size = dp[["ir_d_base_size"]],
+        title = if (is.character(title) && nzchar(title)) title else NULL
+      )
+    },
+    error = function(e) {
+      ir_empty_plotly(paste("Compare plot error:", conditionMessage(e)))
+    }
   )
 }) %>%
   ir_bindCache(
@@ -1223,7 +1254,6 @@ output$ir_plot_clonalCompare <- renderPlot({
     input$ir_groupBy,
     input$ir_compare_samples,
     input$ir_p_top_clones,
-    input$ir_p_compare_graph,
     input$ir_p_compare_prop,
     input$ir_p_order_by
   )

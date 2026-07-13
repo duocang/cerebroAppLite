@@ -105,7 +105,10 @@ tab_immune_repertoire <- tabItem(
       class = "cerebro-viz-col",
       style = "padding: 0px;",
       cerebroBox(
-        title = boxTitle("Immune Repertoire visualizations"),
+        title = tagList(
+          boxTitle("Immune Repertoire visualizations"),
+          cerebroInfoButton("ir_visualizations_info")
+        ),
         content = tagList(
           uiOutput("ir_help_panel"),
           uiOutput("ir_visualizations_UI")

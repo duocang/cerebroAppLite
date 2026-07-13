@@ -894,3 +894,6 @@ output$ir_demo_plot <- renderPlot({
     }
   )
 })
+
+## The panel-level "info" button opens an illustrated, tabbed guide; that modal
+## and its content live in help_guide.R (sourced right after this file).
