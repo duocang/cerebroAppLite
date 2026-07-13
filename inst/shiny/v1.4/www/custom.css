@@ -1,9 +1,9 @@
 /* =========================================================================
    Cerebro theme — "Console" design language.
-   Warm, calm, card-based surfaces inspired by modern developer consoles
-   (DeepSeek / Vercel / Linear): soft neutral paper, generous rounding,
-   gentle layered shadows, a restrained slate-blue for structure and a warm
-   amber accent for data and emphasis.
+   Warm, calm, card-based surfaces inspired by modern developer consoles:
+   soft neutral paper, generous rounding, gentle layered shadows, a
+   restrained slate-blue for structure and a warm amber accent for data
+   and emphasis.
 
    All AdminLTE 2 / shinydashboard chrome is overridden with specificity +
    !important, driven entirely by the tokens in :root so the whole look can
@@ -35,7 +35,7 @@
   --c-amber-50:  #fff4ec;
   --c-amber-100: #ffe4d1;
   --c-amber-300: #ffb27a;
-  --c-amber:     #f97316;  /* signature accent (DeepSeek-warm orange) */
+  --c-amber:     #f97316;  /* signature warm-orange accent */
   --c-amber-600: #ea6a0f;
   --c-amber-700: #c85a0e;
 
@@ -138,8 +138,8 @@ code, pre {
 pre { padding: 12px; border: 1px solid var(--c-border); }
 
 /* -------------------------------------------------------------------------
-   Header (topbar) — REMOVED. DeepSeek-style: no top bar, no hamburger. The
-   brand moves into the sidebar and the content lifts up to fill the space.
+   Header (topbar) — REMOVED: no top bar, no hamburger. The brand moves into
+   the sidebar and the content lifts up to fill the space.
    ------------------------------------------------------------------------- */
 /* Collapse the whole top bar (navbar + sidebar-toggle) to zero height so it
    holds no space and cuts no seam between sidebar and content. */
@@ -173,8 +173,8 @@ body.skin-blue .main-sidebar {
   box-shadow: none !important;
 }
 body.skin-blue .sidebar { padding-top: 4px; }
-/* Brand block at the top of the sidebar — an inline SVG wordmark (DeepSeek-
-   style lowercase geometric wordmark + a dark "single cell" chip). The wordmark
+/* Brand block at the top of the sidebar — an inline SVG wordmark (a lowercase
+   geometric wordmark + a dark "single cell" chip). The wordmark
    text uses currentColor so it inherits the sidebar's text colour; the chip is a
    fixed dark pill. */
 body.skin-blue .sidebar .cerebro-brand {
@@ -205,9 +205,9 @@ body.skin-blue .sidebar-menu > li > a:hover {
   border-left: none !important;
 }
 /* Active item: a clean rounded pill fill, no left accent bar (that vertical
-   line read as clutter next to the rounded item — modern consoles like
-   DeepSeek use a plain filled block). We keep a soft warm tint + warm text so
-   the brand accent still marks the selection. */
+   line read as clutter next to the rounded item; a plain filled block is
+   cleaner). We keep a soft warm tint + warm text so the brand accent still
+   marks the selection. */
 body.skin-blue .sidebar-menu > li.active > a,
 body.skin-blue .sidebar-menu > li.active > a:hover,
 body.skin-blue .sidebar-menu > li.active > a:focus {
@@ -223,8 +223,8 @@ body.skin-blue .sidebar-menu > li > a > .ion {
   transition: color var(--dur) var(--ease);
 }
 
-/* Per-item icon colours (DeepSeek-style): each menu icon has its own hue so it
-   reads apart from the text and the items are easier to scan. Keyed by tabName
+/* Per-item icon colours: each menu icon has its own hue so it reads apart
+   from the text and the items are easier to scan. Keyed by tabName
    via the menuItem's data-value on the anchor. Target the <i> directly so it
    matches every FontAwesome variant (fas solid, far regular, ...). Text stays
    neutral; only the glyph is coloured. The active item gets the warm brand tint
@@ -348,6 +348,7 @@ body .content { padding-left: 0 !important; padding-right: 0 !important; }
     max-width: none;
   }
 }
+
 /* Sidebar rail: hold a stable, comfortable width so long menu labels
    ("Most expressed genes") never wrap; it is chrome, not content, so it does
    not stretch with the window. */

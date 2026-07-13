@@ -132,12 +132,12 @@ trajectory_projection_prepared <- debounce(
 ##----------------------------------------------------------------------------##
 ## Axis-reset state, mirroring the overview / gene-expression projections.
 ##
-## Previously reset_axes was hardcoded TRUE on every render, so any parameter
-## change (colour variable, point size, group filter) re-ran autorange and the
-## axes visibly snapped — on top of the reveal/resize settle this read as a
-## jump. Instead reset only when the *trajectory itself* changes (method/name);
-## every other re-render holds the current range. Reset back to FALSE after each
-## push so a subsequent parameter change does not autorange.
+## Resetting axes on every render would re-run autorange on any parameter change
+## (colour variable, point size, group filter) and the axes would visibly snap —
+## on top of the reveal/resize settle this reads as a jump. So reset only when
+## the *trajectory itself* changes (method/name); every other re-render holds the
+## current range. Reset back to FALSE after each push so a subsequent parameter
+## change does not autorange.
 ##----------------------------------------------------------------------------##
 trajectory_projection_parameters_other <- reactiveValues(
   reset_axes = TRUE

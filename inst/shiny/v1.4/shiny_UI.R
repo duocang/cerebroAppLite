@@ -146,9 +146,9 @@ source(
 ##----------------------------------------------------------------------------##
 ui <- dashboardPage(
   title = "Cerebro",
-  ## Header is collapsed to zero height by the Console theme (see www/custom.css);
-  ## the brand now lives at the top of the sidebar, DeepSeek-style. We keep an
-  ## empty dashboardHeader() because shinydashboard requires one for layout.
+  ## Header is collapsed to zero height by the theme (see www/custom.css); the
+  ## brand now lives at the top of the sidebar. We keep an empty
+  ## dashboardHeader() because shinydashboard requires one for layout.
   dashboardHeader(title = NULL),
   dashboardSidebar(
     tags$head(tags$style(HTML(".content-wrapper {overflow-x: scroll;}"))),
@@ -159,8 +159,8 @@ ui <- dashboardPage(
           '<svg class="cerebro-logo" xmlns="http://www.w3.org/2000/svg" ',
           'viewBox="0 0 230 34" role="img" aria-labelledby="cb-logo-title">',
           '<title id="cb-logo-title">cerebro — single cell</title>',
-          # Wordmark: rounded stroked geometric lowercase (DeepSeek feel), font-
-          # independent. Round bowls are drawn with generous, well-separated
+          # Wordmark: rounded stroked geometric lowercase, font-independent.
+          # Round bowls are drawn with generous, well-separated
           # geometry so glyphs never overlap. x-height band y=12..28, radius 7,
           # advance ~21px, stroke 4, round caps/joins.
           '<g fill="none" stroke="currentColor" stroke-width="4" ',
@@ -182,7 +182,7 @@ ui <- dashboardPage(
           '</g>',
           # Dark "single cell" chip — smaller than the wordmark so the wordmark
           # clearly reads as the primary mark, with the chip as a secondary tag.
-          # Square corners (rx=0), tight to the text, matching DeepSeek.
+          # Square corners (rx=0), tight to the text.
           '<g transform="translate(150,14)">',
           '<rect x="0" y="0" width="63" height="17" rx="0" fill="#16171a"></rect>',
           '<text x="31.5" y="12.2" text-anchor="middle" ',
