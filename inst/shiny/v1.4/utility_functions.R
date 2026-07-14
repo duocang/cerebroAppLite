@@ -29,6 +29,64 @@ cachePlot <- function(x, ...) {
 }
 
 ##----------------------------------------------------------------------------##
+## Dynamic default point size for scatter/projection plots.
+##
+## Picks a sensible default marker size from how many points are drawn and how
+## big the plot canvas is, so a dataset of 2k cells and one of 500k cells each
+## start out readable instead of both defaulting to a fixed value that is too
+## fat for the large one (a solid blob) or too thin for the small one (sparse).
+##
+##   - Point count (primary): size decreases logarithmically as points grow, so
+##     dense plots don't smear into one mass and sparse plots stay visible.
+##     Tuned so ~100 pts -> ~9, ~2.7k -> ~6, ~10k -> ~5, ~50k -> ~4, ~200k -> ~2
+##     on the reference canvas.
+##   - Canvas area (secondary): a larger plot can carry slightly larger points
+##     (fills the space), a smaller one shrinks them. Correction is clamped so
+##     it only nudges, never dominates.
+##
+## Returns a value already clamped to [min, max] and rounded to `step`. When the
+## point count is unknown/invalid it returns `fallback` so callers can keep the
+## old fixed default. Canvas dimensions are optional; omit them (NULL) to size
+## on point count alone.
+##----------------------------------------------------------------------------##
+dynamicPointSize <- function(
+  n_points,
+  plot_width_px = NULL,
+  plot_height_px = NULL,
+  min = 1,
+  max = 20,
+  step = 1,
+  fallback = 2
+) {
+  if (is.null(n_points) || !is.finite(n_points) || n_points < 1) {
+    return(fallback)
+  }
+
+  ## primary: logarithmic falloff with point count
+  base <- 13 - 2.0 * log10(n_points)
+
+  ## secondary: gentle canvas-area correction relative to a ~900x700 reference
+  scale <- 1
+  if (
+    !is.null(plot_width_px) &&
+      !is.null(plot_height_px) &&
+      is.finite(plot_width_px) &&
+      is.finite(plot_height_px) &&
+      plot_width_px > 0 &&
+      plot_height_px > 0
+  ) {
+    ref_area <- 900 * 700
+    area <- plot_width_px * plot_height_px
+    scale <- sqrt(area / ref_area)
+    scale <- max(0.75, min(1.35, scale))
+  }
+
+  sz <- base * scale
+  sz <- max(min, min(max, sz))
+  round(sz / step) * step
+}
+
+##----------------------------------------------------------------------------##
 ## Functions to find columns of specific type (for automatic formatting).
 ##----------------------------------------------------------------------------##
 findColumnsInteger <- function(df, columns_to_test) {
@@ -295,7 +353,8 @@ prettifyTable <- function(
     ) %>%
     DT::formatStyle(
       columns = c(columns_numeric, columns_p_value),
-      textAlign = 'right'
+      textAlign = 'right',
+      "white-space" = "nowrap"
     )
 
   # show cellular barcodes in monospace font
@@ -380,6 +439,17 @@ prettifyTable <- function(
   }
 
   if (color_highlighting == TRUE) {
+    ## Highlight colours pulled from the shared chart theme (mirrors the
+    ## custom.css --chart-* tokens and cerebro_plotly_theme()), so the table
+    ## heat/bars read as the same design system as the plots instead of the old
+    ## orange/red/pink mix. Magnitude ramps use the accent; magnitude bars use
+    ## the signal blue; logical up/down uses the up/down tokens.
+    chart_theme <- tryCatch(cerebro_plotly_theme(), error = function(e) NULL)
+    ramp_hi <- if (is.null(chart_theme)) "#f97316" else chart_theme$accent
+    bar_col <- if (is.null(chart_theme)) "#2f6fd6" else chart_theme$signal
+    up_col <- if (is.null(chart_theme)) "#4c9a6b" else chart_theme$up
+    down_col <- if (is.null(chart_theme)) "#c05b5b" else chart_theme$down
+
     ## integer
     if (
       !is.null(columns_integer) &&
@@ -394,7 +464,7 @@ prettifyTable <- function(
               columns = i,
               backgroundColor = DT::styleInterval(
                 seq(range[1], range[2], (range[2] - range[1]) / 100),
-                colorRampPalette(colors = c('white', '#e67e22'))(102)
+                colorRampPalette(colors = c('white', ramp_hi))(102)
               )
             )
         }
@@ -409,7 +479,7 @@ prettifyTable <- function(
       table <- table %>%
         DT::formatStyle(
           columns = columns_p_value,
-          background = DT::styleColorBar(c(1, 0), '#e74c3c'),
+          background = DT::styleColorBar(c(1, 0), bar_col),
           backgroundSize = '98% 88%',
           backgroundRepeat = 'no-repeat',
           backgroundPosition = 'center'
@@ -430,7 +500,7 @@ prettifyTable <- function(
               columns = i,
               backgroundColor = DT::styleInterval(
                 seq(range[1], range[2], (range[2] - range[1]) / 100),
-                colorRampPalette(colors = c('white', '#e67e22'))(102)
+                colorRampPalette(colors = c('white', ramp_hi))(102)
               )
             )
         }
@@ -445,7 +515,7 @@ prettifyTable <- function(
       table <- table %>%
         DT::formatStyle(
           columns = columns_percent,
-          background = DT::styleColorBar(c(0, 1), 'pink'),
+          background = DT::styleColorBar(c(0, 1), bar_col),
           backgroundSize = '98% 88%',
           backgroundRepeat = 'no-repeat',
           backgroundPosition = 'center'
@@ -466,7 +536,7 @@ prettifyTable <- function(
               columns = i,
               backgroundColor = DT::styleInterval(
                 seq(range[1], range[2], (range[2] - range[1]) / 100),
-                colorRampPalette(colors = c('white', '#e67e22'))(102)
+                colorRampPalette(colors = c('white', ramp_hi))(102)
               )
             )
         }
@@ -481,7 +551,7 @@ prettifyTable <- function(
       table <- table %>%
         DT::formatStyle(
           columns_logical,
-          color = DT::styleEqual(c(TRUE, FALSE), c('#27ae60', '#e74c3c')),
+          color = DT::styleEqual(c(TRUE, FALSE), c(up_col, down_col)),
           fontWeight = DT::styleEqual(c(TRUE, FALSE), c('bold', 'normal'))
         )
     }
@@ -696,7 +766,7 @@ assignColorsToGroups <- function(table, grouping_variable) {
     if (is.factor(table[[grouping_variable]])) {
       ## get factor levels and assign colors
       colors_for_groups <- setNames(
-        default_colorset[seq_along(levels(table[[grouping_variable]]))],
+        cerebro_group_colors(length(levels(table[[grouping_variable]]))),
         levels(table[[grouping_variable]])
       )
 
@@ -704,7 +774,7 @@ assignColorsToGroups <- function(table, grouping_variable) {
     } else if (is.character(table[[grouping_variable]])) {
       ## get unique values and assign colors
       colors_for_groups <- setNames(
-        default_colorset[seq_along(unique(table[[grouping_variable]]))],
+        cerebro_group_colors(length(unique(table[[grouping_variable]]))),
         unique(table[[grouping_variable]])
       )
     }
@@ -1507,4 +1577,89 @@ serverSideGeneSelector <- function(
     later::later(send_update, delay = 0.3)
     later::later(send_update, delay = 1.0)
   })
+}
+
+##----------------------------------------------------------------------------##
+## Filter a projection selection down to cells in still-visible groups.
+##
+## The custom legend lets the user hide a group (Plotly.restyle on the client);
+## the shared JS pushes the currently-hidden group names to Shiny under
+## <plot_id>_hidden_groups. Selected cells belonging to a hidden group should
+## stop counting, so the count and the selected-cells panels reflect only what
+## is visible. Shared across the projection tabs (overview / spatial /
+## trajectory); each tab builds the identifier->group `metadata` from its own
+## coordinate source and passes it in. Pure data transform, no Shiny state.
+##
+## selection: data.frame of selected cells with an `identifier` column, or NULL.
+## metadata:  data.frame with the same `identifier` column plus grouping columns.
+## color_variable: name of the column the legend groups by (current "Color by").
+## hidden_groups: character vector of group names currently hidden (may be NULL).
+##
+## Returns the selection with hidden-group cells removed. NULL stays NULL; an
+## empty / absent hidden set, or a color_variable not in the metadata, returns
+## the selection unchanged.
+##----------------------------------------------------------------------------##
+filterSelectionByHiddenGroups <- function(
+  selection,
+  metadata,
+  color_variable,
+  hidden_groups
+) {
+  if (is.null(selection)) {
+    return(NULL)
+  }
+  if (length(hidden_groups) == 0) {
+    return(selection)
+  }
+  if (
+    is.null(color_variable) ||
+      !color_variable %in% colnames(metadata) ||
+      !"identifier" %in% colnames(metadata) ||
+      !"identifier" %in% colnames(selection)
+  ) {
+    return(selection)
+  }
+
+  ## Map each selected identifier to its group, then keep only the cells whose
+  ## group is not hidden. match() on identifier avoids a join dependency and
+  ## keeps selection row order intact.
+  group_by_identifier <- metadata[[color_variable]][
+    match(selection[["identifier"]], metadata[["identifier"]])
+  ]
+  keep <- !(group_by_identifier %in% hidden_groups)
+  selection[keep, , drop = FALSE]
+}
+
+##----------------------------------------------------------------------------##
+## Is the selected trajectory method/name valid for the CURRENT dataset?
+##
+## On a dataset switch the Shiny inputs trajectory_selected_method /
+## trajectory_selected_name keep their previous values until the selectors
+## round-trip. A bare req() on those strings passes even when the new dataset has
+## no such method, so getTrajectory() throws "Method `X` is not available." This
+## predicate is req()-ed at every getTrajectory() call site so the output bails
+## out cleanly instead of erroring while the stale value lingers.
+##
+## method / name: the currently selected method and trajectory name (may be NULL).
+## available_methods: methods present in the current dataset
+##   (getMethodsForTrajectories()).
+## names_for_method: trajectory names for `method` in the current dataset
+##   (getNamesOfTrajectories(method)); pass character(0) when method is absent.
+##----------------------------------------------------------------------------##
+trajectorySelectionValid <- function(
+  method,
+  name,
+  available_methods,
+  names_for_method
+) {
+  if (is.null(method) || is.null(name)) {
+    return(FALSE)
+  }
+  if (length(method) != 1 || length(name) != 1 || method == "" || name == "") {
+    return(FALSE)
+  }
+  if (!method %in% available_methods) {
+    return(FALSE)
+  }
+  name %in% names_for_method
 }

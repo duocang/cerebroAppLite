@@ -774,6 +774,9 @@ ir_build_definition_plot <- function(data, chain, group_by = NULL) {
       vjust = -0.3,
       size = 3
     ) +
+    ggplot2::scale_fill_manual(
+      values = cerebro_group_colors(length(unique(df$definition)))
+    ) +
     ggplot2::scale_y_continuous(
       expand = ggplot2::expansion(mult = c(0, 0.15)),
       labels = scales::comma
@@ -882,12 +885,19 @@ ir_build_sharing_plot <- function(data, chain, unit_col, group_by = NULL) {
       vjust = 0,
       size = 3.2
     ) +
+    ggplot2::scale_fill_manual(
+      values = cerebro_group_colors(length(unique(counts$display)))
+    ) +
     ggplot2::scale_y_continuous(
       expand = ggplot2::expansion(mult = c(0, 0.2))
     ) +
     ggplot2::labs(
       x = NULL,
       y = "Number of clonotypes",
+      # Clear the fill legend title only (keep the legend itself): ggplotly
+      # ignores the static legend.position = "none" and shows the legend, and
+      # without this its title falls back to the raw fill column name ("display").
+      fill = NULL,
       title = "Clonotype sharing",
       subtitle = subtitle
     ) +

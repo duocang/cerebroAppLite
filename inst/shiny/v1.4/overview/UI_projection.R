@@ -3,10 +3,12 @@
 ##----------------------------------------------------------------------------##
 output[["overview_projection_UI"]] <- renderUI({
   fluidRow(
+    class = "cerebro-viz-row",
     ## selections and parameters
     column(
       width = 3,
       offset = 0,
+      class = "cerebro-param-col",
       style = "padding: 0px;",
       cerebroBox(
         title = tagList(
@@ -57,54 +59,85 @@ output[["overview_projection_UI"]] <- renderUI({
     column(
       width = 9,
       offset = 0,
+      class = "cerebro-viz-col",
       style = "padding: 0px;",
-      cerebroBox(
-        title = tagList(
-          boxTitle("Dimensional reduction"),
-          actionButton(
-            inputId = "overview_projection_info",
-            label = "info",
-            title = "Show additional information for this panel.",
-            icon = NULL,
-            class = "btn-xs",
-            style = "margin-right: 3px"
-          ),
-          #shinyFiles::shinySaveButton(
-          # "overview_projection_export",
-          #label = "export to PDF",
-          #title = "Export dimensional reduction to PDF file.",
-          #filetype = "pdf",
-          #viewtype = "icon",
-          #class = "btn-xs",
-          #style = "margin-right: 3px"
-          #),
-          shinyWidgets::dropdownButton(
-            inputId = "overview_projection_settings_dropdown",
-            tags$div(
-              style = "color: black !important;",
-              uiOutput("overview_projection_show_group_label_UI"),
-              uiOutput("overview_projection_point_border_UI"),
-              uiOutput("overview_projection_scales_UI")
+      shiny::tagAppendAttributes(
+        cerebroBox(
+          title = tagList(
+            boxTitle("Dimensional reduction"),
+            actionButton(
+              inputId = "overview_projection_info",
+              label = "info",
+              title = "Show additional information for this panel.",
+              icon = NULL,
+              class = "btn-xs",
+              style = "margin-right: 3px"
             ),
-            circle = FALSE,
-            icon = icon("cog"),
-            inline = TRUE,
-            size = "xs"
+            #shinyFiles::shinySaveButton(
+            # "overview_projection_export",
+            #label = "export to PDF",
+            #title = "Export dimensional reduction to PDF file.",
+            #filetype = "pdf",
+            #viewtype = "icon",
+            #class = "btn-xs",
+            #style = "margin-right: 3px"
+            #),
+            shinyWidgets::dropdownButton(
+              inputId = "overview_projection_settings_dropdown",
+              tags$div(
+                style = "color: black !important;",
+                uiOutput("overview_projection_show_group_label_UI"),
+                uiOutput("overview_projection_point_border_UI"),
+                uiOutput("overview_projection_scales_UI")
+              ),
+              circle = FALSE,
+              icon = icon("cog"),
+              inline = TRUE,
+              size = "xs"
+            )
+          ),
+          tagList(
+            shinycssloaders::withSpinner(
+              plotly::plotlyOutput(
+                "overview_projection",
+                width = "auto",
+                height = "60vh"
+              ),
+              type = 8,
+              hide.ui = FALSE
+            ),
+            tags$br(),
+            fluidRow(
+              column(
+                width = 8,
+                htmlOutput("overview_number_of_selected_cells")
+              ),
+              column(
+                width = 4,
+                tags$div(
+                  class = "cerebro-selection-actions",
+                  shinyjs::hidden(
+                    actionButton(
+                      inputId = "overview_projection_zoom_to_selection",
+                      label = "Zoom to selection",
+                      icon = icon("magnifying-glass-plus"),
+                      class = "btn-xs btn-default"
+                    )
+                  ),
+                  shinyjs::hidden(
+                    actionButton(
+                      inputId = "overview_projection_clear_selection",
+                      label = "Clear selection",
+                      icon = icon("eraser"),
+                      class = "btn-xs btn-default btn-breathing"
+                    )
+                  )
+                )
+              )
+            ),
           )
         ),
-        tagList(
-          shinycssloaders::withSpinner(
-            plotly::plotlyOutput(
-              "overview_projection",
-              width = "auto",
-              height = "85vh"
-            ),
-            type = 8,
-            hide.ui = FALSE
-          ),
-          tags$br(),
-          htmlOutput("overview_number_of_selected_cells"),
-        )
+        class = "cerebro-projection-gate"
       )
     )
   )

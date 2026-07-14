@@ -9,10 +9,7 @@
 ##----------------------------------------------------------------------------##
 
 output[["trajectory_nGene_by_state_UI"]] <- renderUI({
-  req(
-    input[["trajectory_selected_method"]],
-    input[["trajectory_selected_name"]]
-  )
+  req(trajectory_selection_ok())
 
   fluidRow(
     cerebroBox(
@@ -31,10 +28,7 @@ output[["trajectory_nGene_by_state_UI"]] <- renderUI({
 
 output[["states_nGene_plot"]] <- plotly::renderPlotly({
   ##
-  req(
-    input[["trajectory_selected_method"]],
-    input[["trajectory_selected_name"]]
-  )
+  req(trajectory_selection_ok())
 
   ## collect trajectory data
   trajectory_data <- getTrajectory(
@@ -44,7 +38,7 @@ output[["states_nGene_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data[["meta"]]$state))],
+    cerebro_group_colors(length(levels(trajectory_data[["meta"]]$state))),
     levels(trajectory_data[["meta"]]$state)
   )
 
@@ -72,17 +66,15 @@ output[["states_nGene_plot"]] <- plotly::renderPlotly({
     ) %>%
     plotly::layout(
       title = "",
-      xaxis = list(
-        title = "",
-        mirror = TRUE,
-        showline = TRUE
-      ),
-      yaxis = list(
+      xaxis = cerebro_plotly_axis(title = "", mirror = FALSE),
+      yaxis = cerebro_plotly_axis(
         title = "Number of expressed genes",
-        hoverformat = ".0f",
-        mirror = TRUE,
-        showline = TRUE
+        mirror = FALSE,
+        hoverformat = ".0f"
       ),
+      hoverlabel = cerebro_plotly_hoverlabel(),
+      plot_bgcolor = cerebro_plotly_theme()$transparent,
+      paper_bgcolor = cerebro_plotly_theme()$transparent,
       dragmode = "select",
       hovermode = "compare"
     )

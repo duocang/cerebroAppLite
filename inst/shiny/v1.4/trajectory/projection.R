@@ -9,16 +9,27 @@
 ##----------------------------------------------------------------------------##
 
 output[["trajectory_projection_UI"]] <- renderUI({
-  req(
-    input[["trajectory_selected_method"]],
-    input[["trajectory_selected_name"]]
-  )
+  available_methods <- getMethodsForTrajectories()
+  available_methods <- available_methods[available_methods %in% c("monocle2")]
+
+  if (length(available_methods) == 0) {
+    return(
+      fluidRow(
+        cerebroBox(
+          title = "Trajectory",
+          textOutput("trajectory_missing")
+        )
+      )
+    )
+  }
 
   tagList(
     fluidRow(
+      class = "cerebro-viz-row",
       column(
         width = 3,
         offset = 0,
+        class = "cerebro-param-col",
         style = "padding: 0px;",
         cerebroBox(
           title = tagList(
@@ -32,7 +43,10 @@ output[["trajectory_projection_UI"]] <- renderUI({
               style = "margin-left: 5px"
             )
           ),
-          uiOutput("trajectory_projection_main_parameters_UI")
+          tagList(
+            uiOutput("trajectory_select_method_and_name_UI"),
+            uiOutput("trajectory_projection_main_parameters_UI")
+          )
         ),
         cerebroBox(
           title = tagList(
@@ -68,36 +82,67 @@ output[["trajectory_projection_UI"]] <- renderUI({
       column(
         width = 9,
         offset = 0,
+        class = "cerebro-viz-col",
         style = "padding: 0px;",
-        cerebroBox(
-          title = tagList(
-            boxTitle("Trajectory"),
-            actionButton(
-              inputId = "trajectory_projection_info",
-              label = "info",
-              icon = NULL,
-              class = "btn-xs",
-              title = "Show additional information for this panel.",
-              style = "margin-right: 3px"
+        shiny::tagAppendAttributes(
+          cerebroBox(
+            title = tagList(
+              boxTitle("Trajectory"),
+              actionButton(
+                inputId = "trajectory_projection_info",
+                label = "info",
+                icon = NULL,
+                class = "btn-xs",
+                title = "Show additional information for this panel.",
+                style = "margin-right: 3px"
+              ),
+              shinyFiles::shinySaveButton(
+                "trajectory_projection_export",
+                label = "export to PDF",
+                title = "Export trajectory to PDF file.",
+                filetype = "pdf",
+                viewtype = "icon",
+                class = "btn-xs"
+              )
             ),
-            shinyFiles::shinySaveButton(
-              "trajectory_projection_export",
-              label = "export to PDF",
-              title = "Export trajectory to PDF file.",
-              filetype = "pdf",
-              viewtype = "icon",
-              class = "btn-xs"
+            tagList(
+              plotly::plotlyOutput(
+                "trajectory_projection",
+                width = "auto",
+                height = "60vh"
+              ),
+              tags$br(),
+              fluidRow(
+                column(
+                  width = 8,
+                  htmlOutput("trajectory_number_of_selected_cells")
+                ),
+                column(
+                  width = 4,
+                  tags$div(
+                    class = "cerebro-selection-actions",
+                    shinyjs::hidden(
+                      actionButton(
+                        inputId = "trajectory_projection_zoom_to_selection",
+                        label = "Zoom to selection",
+                        icon = icon("magnifying-glass-plus"),
+                        class = "btn-xs btn-default"
+                      )
+                    ),
+                    shinyjs::hidden(
+                      actionButton(
+                        inputId = "trajectory_projection_clear_selection",
+                        label = "Clear selection",
+                        icon = icon("eraser"),
+                        class = "btn-xs btn-default btn-breathing"
+                      )
+                    )
+                  )
+                )
+              )
             )
           ),
-          tagList(
-            plotly::plotlyOutput(
-              "trajectory_projection",
-              width = "auto",
-              height = "85vh"
-            ),
-            tags$br(),
-            htmlOutput("trajectory_number_of_selected_cells")
-          )
+          class = "cerebro-projection-gate"
         )
       )
     )
@@ -166,6 +211,8 @@ trajectory_projection_main_parameters_info <- list(
     "
     The elements in this panel allow you to control what and how results are displayed across the whole tab.
     <ul>
+      <li><b>Choose a method:</b> Select the trajectory-inference method.</li>
+      <li><b>Choose a trajectory:</b> Select the trajectory to display.</li>
       <li><b>Color cells by:</b> Select which variable, categorical or continuous, from the meta data should be used to color the cells.</li>
     </ul>
     "
@@ -177,9 +224,27 @@ trajectory_projection_main_parameters_info <- list(
 ##----------------------------------------------------------------------------##
 
 output[["trajectory_projection_additional_parameters_UI"]] <- renderUI({
-  default_point_size <- preferences[["gene_expression_plot_point_size"]][[
-    "default"
-  ]]
+  ## Start from a dynamic default sized to the cell count + canvas, falling back
+  ## to the fixed default if that can't be computed. A configured preset (below)
+  ## still takes precedence over this when one is set.
+  default_point_size <- tryCatch(
+    dynamicPointSize(
+      n_points = nrow(getMetaData()),
+      plot_width_px = session$clientData[[
+        "output_trajectory_projection_width"
+      ]],
+      plot_height_px = session$clientData[[
+        "output_trajectory_projection_height"
+      ]],
+      min = preferences[["gene_expression_plot_point_size"]][["min"]],
+      max = preferences[["gene_expression_plot_point_size"]][["max"]],
+      step = preferences[["gene_expression_plot_point_size"]][["step"]],
+      fallback = preferences[["gene_expression_plot_point_size"]][["default"]]
+    ),
+    error = function(e) {
+      preferences[["gene_expression_plot_point_size"]][["default"]]
+    }
+  )
 
   if (
     exists("Cerebro.options") &&

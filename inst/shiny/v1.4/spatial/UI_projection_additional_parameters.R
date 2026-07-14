@@ -2,9 +2,28 @@
 ## UI elements to set additional parameters for the projection.
 ##----------------------------------------------------------------------------##
 output[["spatial_projection_additional_parameters_UI"]] <- renderUI({
-  default_point_size <- preferences[["gene_expression_plot_point_size"]][[
-    "default"
-  ]]
+  ## Start from a dynamic default sized to the spot count + canvas, falling back
+  ## to the fixed default if that can't be computed. A dataset-specific preset
+  ## (below) still takes precedence over this when one is configured.
+  default_point_size <- tryCatch(
+    dynamicPointSize(
+      n_points = tryCatch(
+        nrow(
+          getSpatialData(input[["spatial_projection_to_display"]])$coordinates
+        ),
+        error = function(e) nrow(getMetaData())
+      ),
+      plot_width_px = session$clientData[["output_spatial_projection_width"]],
+      plot_height_px = session$clientData[["output_spatial_projection_height"]],
+      min = preferences[["gene_expression_plot_point_size"]][["min"]],
+      max = preferences[["gene_expression_plot_point_size"]][["max"]],
+      step = preferences[["gene_expression_plot_point_size"]][["step"]],
+      fallback = preferences[["gene_expression_plot_point_size"]][["default"]]
+    ),
+    error = function(e) {
+      preferences[["gene_expression_plot_point_size"]][["default"]]
+    }
+  )
 
   if (
     exists("Cerebro.options") &&
@@ -47,15 +66,20 @@ output[["spatial_projection_additional_parameters_UI"]] <- renderUI({
   offset_step <- 50
   tryCatch(
     {
+      req(
+        !is.null(input[["spatial_projection_to_display"]]),
+        input[["spatial_projection_to_display"]] %in% availableSpatial()
+      )
       sp <- getSpatialData(input[["spatial_projection_to_display"]])
       co <- sp$coordinates
-      span <- max(
-        diff(range(co$x, na.rm = TRUE)),
-        diff(range(co$y, na.rm = TRUE))
-      )
-      if (is.finite(span) && span > 0) {
-        offset_limit <- ceiling(span / 100) * 100
-        offset_step <- max(50, round(span / 400))
+      x <- co[[1]][is.finite(co[[1]])]
+      y <- co[[2]][is.finite(co[[2]])]
+      if (length(x) > 0 && length(y) > 0) {
+        span <- max(diff(range(x)), diff(range(y)))
+        if (is.finite(span) && span > 0) {
+          offset_limit <- ceiling(span / 100) * 100
+          offset_step <- max(50, round(span / 400))
+        }
       }
     },
     error = function(e) NULL
@@ -136,19 +160,6 @@ output[["spatial_projection_additional_parameters_UI"]] <- renderUI({
       ## where down-sampling barely changes the picture, spatial resolution is
       ## the whole point here — dropping cells visibly degrades the tissue map.
       value = 100
-    ),
-    ## Spatial autocorrelation (Moran's I) of the displayed gene — how spatially
-    ## clustered its expression is. Only meaningful for a single continuous
-    ## feature, so shown only in ImageFeaturePlot mode.
-    conditionalPanel(
-      condition = "input.spatial_projection_plot_type == 'ImageFeaturePlot'",
-      tags$hr(style = "margin: 14px 0 8px; border-top: 1px solid #e0e0e0;"),
-      tags$div(
-        style = "font-size: 12px; color: #555;",
-        tags$strong("Spatial autocorrelation "),
-        "(Moran's I): ",
-        textOutput("spatial_projection_morans_i", inline = TRUE)
-      )
     ),
     ## Background-image adjustments. Shown only when an image is selected. Every
     ## control here is DECOUPLED from the scatter plot: it re-styles the image

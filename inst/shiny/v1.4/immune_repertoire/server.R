@@ -253,16 +253,22 @@ bcr_isotype_plot <- function(combined, group_col = "sample") {
     levels = unique(iso[[group_col]])
   )
 
-  pal <- c(
-    IGHM = "#E41A1C",
-    IGHD = "#FF7F00",
-    IGHG1 = "#377EB8",
-    IGHG2 = "#4DAF4A",
-    IGHG3 = "#984EA3",
-    IGHG4 = "#A65628",
-    IGHA1 = "#F781BF",
-    IGHA2 = "#999999",
-    IGHE = "#FFFF33"
+  ## Low-saturation isotype palette (was high-saturation Set1). Same low-sat
+  ## family used app-wide via cerebro_group_colors(); named per isotype so the
+  ## mapping is stable across plots.
+  pal <- setNames(
+    cerebro_group_colors(9),
+    c(
+      "IGHM",
+      "IGHD",
+      "IGHG1",
+      "IGHG2",
+      "IGHG3",
+      "IGHG4",
+      "IGHA1",
+      "IGHA2",
+      "IGHE"
+    )
   )
 
   ggplot2::ggplot(iso, ggplot2::aes(x = .data[[group_col]], fill = isotype)) +
@@ -338,7 +344,7 @@ bcr_shm_proxy_plot <- function(
     diversity,
     ggplot2::aes(x = .data[[group_col]], y = n_unique_cdr3nt)
   ) +
-    ggplot2::geom_boxplot(outlier.size = 0.4, fill = "#9DC8E2", alpha = 0.7) +
+    ggplot2::geom_boxplot(outlier.size = 0.4, fill = "#4c72a6", alpha = 0.55) +
     ggplot2::scale_y_continuous(
       trans = "log1p",
       breaks = c(1, 2, 3, 5, 10, 20, 50, 100)
@@ -483,6 +489,13 @@ source(
 source(
   paste0(
     Cerebro.options[["cerebro_root"]],
+    "/shiny/v1.4/immune_repertoire/help_guide.R"
+  ),
+  local = TRUE
+)
+source(
+  paste0(
+    Cerebro.options[["cerebro_root"]],
     "/shiny/v1.4/immune_repertoire/paired_scatter_helpers.R"
   ),
   local = TRUE
@@ -491,6 +504,13 @@ source(
   paste0(
     Cerebro.options[["cerebro_root"]],
     "/shiny/v1.4/immune_repertoire/length_helpers.R"
+  ),
+  local = TRUE
+)
+source(
+  paste0(
+    Cerebro.options[["cerebro_root"]],
+    "/shiny/v1.4/immune_repertoire/compare_helpers.R"
   ),
   local = TRUE
 )

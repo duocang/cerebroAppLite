@@ -308,13 +308,6 @@ IR_PARAM_SPEC <- list(
   ),
   "Compare" = list(
     list(
-      id = "ir_p_compare_graph",
-      label = "Graph:",
-      type = "select",
-      choices = c("alluvial", "area"),
-      value = "alluvial"
-    ),
-    list(
       id = "ir_p_compare_prop",
       label = "Proportion (vs counts):",
       type = "checkbox",
@@ -466,12 +459,12 @@ IR_DISPLAY_BASE <- list(
     min = 6,
     max = 30,
     step = 1
-  ),
-  list(
-    id = "ir_d_title",
-    label = "Title:",
-    type = "text",
-    value = ""
+    # ),
+    # list(
+    #   id = "ir_d_title",
+    #   label = "Title:",
+    #   type = "text",
+    #   value = ""
   )
 )
 
@@ -529,7 +522,7 @@ IR_DISPLAY_LEGEND <- list(
       "Left" = "left",
       "Hidden" = "none"
     ),
-    value = "right"
+    value = "top"
   )
 )
 
@@ -647,7 +640,6 @@ IR_PARAM_DESC <- list(
   ir_p_sd_threshold = "Minimum clone size considered when fitting the distribution.",
 
   ## ---- Compare ----
-  ir_p_compare_graph = "alluvial (ribbons tracking clones between groups) or area (stacked bands).",
   ir_p_compare_prop = "Plot each clone's proportion instead of raw counts, so groups of different sizes are comparable.",
   ir_p_top_clones = "How many of the largest clones to track across the groups.",
 

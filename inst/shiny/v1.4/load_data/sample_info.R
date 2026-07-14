@@ -9,10 +9,19 @@
 output[["load_data_sample_info_UI"]] <- renderUI({
   tagList(
     h3("Sample information"),
+    ## Three stat cards laid out in one row (4/4/4 of the 12-col grid); each
+    ## valueBoxOutput's own width is cleared so the enclosing column controls it.
+    ## Columns stack automatically on narrow screens.
     fluidRow(
-      column(width = 10, valueBoxOutput("load_data_number_of_cells")),
-      column(width = 10, valueBoxOutput("load_data_organism")),
-      column(width = 10, valueBoxOutput("load_data_date_of_export"))
+      column(
+        width = 4,
+        valueBoxOutput("load_data_number_of_cells", width = NULL)
+      ),
+      column(width = 4, valueBoxOutput("load_data_organism", width = NULL)),
+      column(
+        width = 4,
+        valueBoxOutput("load_data_date_of_export", width = NULL)
+      )
     )
   )
 })

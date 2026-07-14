@@ -37,8 +37,8 @@ output[["expression_by_group"]] <- plotly::renderPlotly({
     expression_projection_expression_levels(),
     input[["expression_by_group_selected_group"]]
   )
-  ## check if user requested to show expression in separate panels
-  ## ... separate panels requested and "gene" column present (which means
+  ## check whether expression should be shown in separate panels
+  ## ... separate panels enabled and "gene" column present (which means
   ##     expression was actually split by gene)
   ##     don't plot anything because data is not present
   ##     even if I merged all meta data in the data frame, it wouldn't be correct

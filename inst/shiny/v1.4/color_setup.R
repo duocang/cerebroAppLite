@@ -1,7 +1,14 @@
 ##----------------------------------------------------------------------------##
 ## Color management.
 ##----------------------------------------------------------------------------##
-# Dutch palette from flatuicolors.com
+# Qualitative palette for categorical groups (clusters, samples, ...) when the
+# user has NOT picked colours in the Color management tab. These are the vibrant
+# flatuicolors sets (Dutch + Spanish), used so distinct clusters stay easy to
+# tell apart. cerebro_group_colors() below keeps the overflow-safe interpolation
+# so many-cluster data sets still get valid colours instead of NAs.
+#
+# Users can still override any group colour with the colour picker; this is only
+# the default fallback (see reactive_colors() below).
 colorset_dutch <- c(
   "#FFC312",
   "#C4E538",
@@ -24,8 +31,6 @@ colorset_dutch <- c(
   "#5758BB",
   "#6F1E51"
 )
-
-# Spanish palette from flatuicolors.com
 colorset_spanish <- c(
   "#40407a",
   "#706fd3",
@@ -48,9 +53,30 @@ colorset_spanish <- c(
   "#cc8e35",
   "#ccae62"
 )
+default_colorset_base <- c(colorset_dutch, colorset_spanish)
 
-default_colorset <- c(colorset_dutch, colorset_spanish)
+## Build n visually distinct qualitative colours from the base palette. For
+## n <= length(base) we take the first n base hues (hand-tuned, best contrast).
+## For n > length(base) we interpolate across the whole base ring with
+## colorRampPalette so a data set with many clusters still gets n *valid*
+## colours instead of NAs — the old `default_colorset[seq_along(...)]` slicing
+## silently returned NA past 40 groups.
+cerebro_group_colors <- function(n) {
+  n <- max(0L, as.integer(n))
+  if (n == 0L) {
+    return(character(0))
+  }
+  if (n <= length(default_colorset_base)) {
+    return(default_colorset_base[seq_len(n)])
+  }
+  grDevices::colorRampPalette(default_colorset_base)(n)
+}
 
+# Kept for backward compatibility: any code that still indexes a flat vector gets
+# the full 40-colour flatuicolors set (Dutch + Spanish).
+default_colorset <- cerebro_group_colors(40)
+
+# Cell-cycle phases: the original vibrant four-colour set.
 cell_cycle_colorset <- setNames(
   c("#45aaf2", "#f1c40f", "#e74c3c", "#7f8c8d"),
   c("G1", "S", "G2M", "-")
@@ -87,9 +113,9 @@ reactive_colors <- reactive({
         )]]
       }
     } else {
-      colors[[group_name]] <- default_colorset[seq_along(getGroupLevels(
-        group_name
-      ))]
+      colors[[group_name]] <- cerebro_group_colors(
+        length(getGroupLevels(group_name))
+      )
       names(colors[[group_name]]) <- getGroupLevels(group_name)
       if ('N/A' %in% getGroupLevels(group_name)) {
         colors[[group_name]][which(

@@ -15,10 +15,7 @@
 
 output[["trajectory_expression_metrics_UI"]] <- renderUI({
   ##
-  req(
-    input[["trajectory_selected_method"]],
-    input[["trajectory_selected_name"]]
-  )
+  req(trajectory_selection_ok())
 
   ## build list of tab panels dynamically based on available data
   tab_panels <- list()
@@ -97,10 +94,7 @@ output[["trajectory_states_nUMI_text"]] <- renderText({
 
 output[["trajectory_states_nUMI_plot"]] <- plotly::renderPlotly({
   ##
-  req(
-    input[["trajectory_selected_method"]],
-    input[["trajectory_selected_name"]]
-  )
+  req(trajectory_selection_ok())
 
   ## collect trajectory data
   trajectory_data <- getTrajectory(
@@ -111,7 +105,7 @@ output[["trajectory_states_nUMI_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 
@@ -150,10 +144,7 @@ output[["trajectory_states_nGene_text"]] <- renderText({
 
 output[["trajectory_states_nGene_plot"]] <- plotly::renderPlotly({
   ##
-  req(
-    input[["trajectory_selected_method"]],
-    input[["trajectory_selected_name"]]
-  )
+  req(trajectory_selection_ok())
 
   ## collect trajectory data
   trajectory_data <- getTrajectory(
@@ -164,7 +155,7 @@ output[["trajectory_states_nGene_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 
@@ -203,10 +194,7 @@ output[["trajectory_states_percent_mt_text"]] <- renderText({
 
 output[["trajectory_states_percent_mt_plot"]] <- plotly::renderPlotly({
   ##
-  req(
-    input[["trajectory_selected_method"]],
-    input[["trajectory_selected_name"]]
-  )
+  req(trajectory_selection_ok())
 
   mito_col <- getMitoColumn()
   req(mito_col)
@@ -220,7 +208,7 @@ output[["trajectory_states_percent_mt_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 
@@ -259,10 +247,7 @@ output[["trajectory_states_percent_ribo_text"]] <- renderText({
 
 output[["trajectory_states_percent_ribo_plot"]] <- plotly::renderPlotly({
   ##
-  req(
-    input[["trajectory_selected_method"]],
-    input[["trajectory_selected_name"]]
-  )
+  req(trajectory_selection_ok())
 
   ribo_col <- getRiboColumn()
   req(ribo_col)
@@ -276,7 +261,7 @@ output[["trajectory_states_percent_ribo_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 
@@ -315,10 +300,7 @@ output[["trajectory_states_percent_ery_text"]] <- renderText({
 
 output[["trajectory_states_percent_ery_plot"]] <- plotly::renderPlotly({
   ##
-  req(
-    input[["trajectory_selected_method"]],
-    input[["trajectory_selected_name"]]
-  )
+  req(trajectory_selection_ok())
 
   ery_col <- getEryColumn()
   req(ery_col)
@@ -332,7 +314,7 @@ output[["trajectory_states_percent_ery_plot"]] <- plotly::renderPlotly({
 
   ##
   state_colors <- setNames(
-    default_colorset[seq_along(levels(trajectory_data$state))],
+    cerebro_group_colors(length(levels(trajectory_data$state))),
     levels(trajectory_data$state)
   )
 

@@ -4,18 +4,24 @@
 
 ##
 output[["about"]] <- renderText({
+  ## Version is set by hand here: the app can run from this inst/ folder without
+  ## the package installed, and any installed copy may be a different version, so
+  ## reading packageVersion() would be unreliable. Update this string on release.
+  version <- "2.1.0"
   paste0(
     '<b>Version of cerebroAppLite</b><br>
-    v1.7.2<br>
+    v',
+    version,
+    '<br>
     <br>
     <b>Authors</b><br>
     Roman Hillje<br>
-   Michael Heming<br>
-   Xuesong Wang<br>
+    Michael Heming<br>
+    Xuesong Wang<br>
     <br>
     <b>Links</b><br>
     <ul>
-      <li><a href=https://github.com/mihem/cerebroAppLite title="Lightweight contination of cerebroApp (Michael Heming)" target="_blank"><b> Lightweight continuation of cerebroApp. (Michael Heming)</b></a></li>
+      <li><a href=https://github.com/mihem/cerebroAppLite title="Continuation and extension of cerebroApp (Michael Heming)" target="_blank"><b>Continuation and extension of cerebroApp (Michael Heming)</b></a></li>
       <li><a href=https://github.com/romanhaa/Cerebro title="Discontinued Cerebro repository on GitHub (Roman Hillje)" target="_blank"><b>Discontinued Cerebro repository on GitHub (Roman Hillje)</b></a></li>
     </ul>
     <br>
@@ -29,7 +35,7 @@ output[["about"]] <- renderText({
     <br>
     <b>Credit where credit is due</b><br>
     <ul>
-      <li>Color palettes were built using colors from <a href="https://flatuicolors.com/" title="Flat UI Colors 2" target="_blank">https://flatuicolors.com/</a></li>
+      <li>The default plot palettes are a custom low-saturation set; several colours draw on <a href="https://flatuicolors.com/" title="Flat UI Colors 2" target="_blank">Flat UI Colors 2</a>.</li>
     </ul>
     <br>'
   )

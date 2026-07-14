@@ -85,9 +85,11 @@ test_that("Group by is visible on plots whose grouping it drives", {
   # Global controls are now rendered server-side per tab (no conditionalPanel),
   # so visibility = the control element exists and is laid out.
   groupby_visible <- function() {
-    app$get_js(
-      "(function(){var e=document.querySelector('#ir_groupBy');return e!==null && e.offsetParent!==null;})();"
+    app$wait_for_js(
+      "(function(){var e=document.querySelector('#ir_groupBy');return !!e && e.offsetParent!==null;})()",
+      timeout = 15000
     )
+    TRUE
   }
   n_options <- function(id) {
     app$get_js(sprintf(
@@ -113,6 +115,10 @@ test_that("Group by is visible on plots whose grouping it drives", {
     ),
     ""
   )
+  app$wait_for_js(
+    "(function(){var x=document.querySelector('#ir_pair_x_group'),y=document.querySelector('#ir_pair_y_group');return !!x && !!y && x.querySelectorAll('option').length>=2 && y.querySelectorAll('option').length>=2;})()",
+    timeout = 15000
+  )
   expect_true(isTRUE(app$get_js(
     "(function(){return document.querySelector('#ir_pair_x_group') !== null && document.querySelector('#ir_pair_y_group') !== null;})();"
   )))
@@ -128,6 +134,10 @@ test_that("Group by is visible on plots whose grouping it drives", {
       "(function(){var e=document.querySelector('#ir_groupBy');return e?e.value:null;})();"
     ),
     "cell_type"
+  )
+  app$wait_for_js(
+    "(function(){var x=document.querySelector('#ir_pair_x_group'),y=document.querySelector('#ir_pair_y_group');return !!x && !!y && x.querySelectorAll('option').length>=2 && y.querySelectorAll('option').length>=2;})()",
+    timeout = 15000
   )
   expect_gte(as.numeric(n_options("ir_pair_x_group")), 2)
   expect_gte(as.numeric(n_options("ir_pair_y_group")), 2)
@@ -151,9 +161,11 @@ test_that("Chain is visible on plots whose scRepertoire API accepts it", {
   app$wait_for_idle(timeout = 20000)
 
   chain_visible <- function() {
-    app$get_js(
-      "(function(){var e=document.querySelector('#ir_chain');return e!==null && e.offsetParent!==null;})();"
+    app$wait_for_js(
+      "(function(){var e=document.querySelector('#ir_chain');return !!e && e.offsetParent!==null;})()",
+      timeout = 15000
     )
+    TRUE
   }
 
   app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
@@ -223,6 +235,13 @@ test_that("settings dropdowns render all their options (not just selected)", {
   app$wait_for_idle(timeout = 20000)
 
   n_options <- function(id) {
+    app$wait_for_js(
+      sprintf(
+        "(function(){var e=document.querySelector('#%s');return !!e && e.querySelectorAll('option').length>0;})()",
+        id
+      ),
+      timeout = 15000
+    )
     app$get_js(sprintf(
       "(function(){var e=document.querySelector('#%s');return e?e.querySelectorAll('option').length:0;})();",
       id
@@ -264,6 +283,10 @@ test_that("immune_repertoire tab can be opened and renders settings", {
   # Chain is hidden on the default Clonal UMAP tab; move to one that shows it.
   app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
   app$wait_for_idle(timeout = 15000)
+  app$wait_for_js(
+    'document.querySelector("#ir_chain") !== null',
+    timeout = 15000
+  )
 
   # the chain selector (a core settings control) should be populated
   chain_present <- app$get_js(
@@ -324,6 +347,13 @@ test_that("Clonal UMAP tab renders with receptor + projection selectors", {
   app$wait_for_idle(timeout = 20000)
 
   n_options <- function(id) {
+    app$wait_for_js(
+      sprintf(
+        "(function(){var e=document.querySelector('#%s');return !!e && e.querySelectorAll('option').length>0;})()",
+        id
+      ),
+      timeout = 15000
+    )
     app$get_js(sprintf(
       "(function(){var e=document.querySelector('#%s');return e?e.querySelectorAll('option').length:0;})();",
       id
@@ -333,8 +363,14 @@ test_that("Clonal UMAP tab renders with receptor + projection selectors", {
   expect_gte(as.numeric(n_options("ir_p_umap_projection")), 1)
 
   # The interactive plotly UMAP should render a plotly canvas (not an R error).
+  # Non-faceted Clonal UMAP now renders through the shared projection engine, so
+  # the plotly host is #ir_clonalUMAP_projection (not the old #ir_plot_clonalUMAP).
+  app$wait_for_js(
+    "document.querySelector('#ir_clonalUMAP_projection .plotly') !== null",
+    timeout = 20000
+  )
   has_plotly <- app$get_js(
-    "document.querySelector('#ir_plot_clonalUMAP .plotly') !== null;"
+    "document.querySelector('#ir_clonalUMAP_projection .plotly') !== null;"
   )
   expect_true(isTRUE(has_plotly))
 
@@ -366,12 +402,20 @@ test_that("Display options panel exposes scatter params on scatter-type tabs", {
   # Abundance (non-scatter): base display params present, scatter ones absent.
   app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
   app$wait_for_idle(timeout = 15000)
+  app$wait_for_js(
+    "document.querySelector('#ir_d_base_size') !== null && document.querySelector('#ir_d_point_size') === null",
+    timeout = 15000
+  )
   expect_true(isTRUE(control_exists("ir_d_base_size")))
   expect_false(isTRUE(control_exists("ir_d_point_size")))
 
   # Clonal UMAP (scatter-type): point size + opacity also present.
   app$set_inputs(ir_tabs = "Clonal UMAP", wait_ = FALSE)
   app$wait_for_idle(timeout = 15000)
+  app$wait_for_js(
+    "document.querySelector('#ir_d_point_size') !== null && document.querySelector('#ir_d_alpha') !== null",
+    timeout = 15000
+  )
   expect_true(isTRUE(control_exists("ir_d_point_size")))
   expect_true(isTRUE(control_exists("ir_d_alpha")))
 
@@ -434,8 +478,13 @@ test_that("Clonal UMAP has Show-all toggle and group filters", {
   expect_true(isTRUE(has_group_filter))
 
   # The interactive plotly UMAP should render a plotly canvas (not an R error).
+  # Non-faceted host is the shared projection engine's #ir_clonalUMAP_projection.
+  app$wait_for_js(
+    "document.querySelector('#ir_clonalUMAP_projection .plotly') !== null",
+    timeout = 20000
+  )
   has_plotly <- app$get_js(
-    "document.querySelector('#ir_plot_clonalUMAP .plotly') !== null;"
+    "document.querySelector('#ir_clonalUMAP_projection .plotly') !== null;"
   )
   expect_true(isTRUE(has_plotly))
 
@@ -461,14 +510,20 @@ test_that("Clonal UMAP switches to static facets only when grouped", {
     app$get_js(sprintf("document.querySelector('%s') !== null;", sel))
   }
 
+  # Ungrouped: the non-faceted host renders through the shared projection engine
+  # (#ir_clonalUMAP_projection); grouping swaps in the static faceted ggplot.
+  app$wait_for_js(
+    "document.querySelector('#ir_clonalUMAP_projection .plotly') !== null",
+    timeout = 20000
+  )
   expect_true(isTRUE(exists_el("#ir_p_umap_group_by")))
-  expect_true(isTRUE(exists_el("#ir_plot_clonalUMAP .plotly")))
+  expect_true(isTRUE(exists_el("#ir_clonalUMAP_projection .plotly")))
   expect_false(isTRUE(exists_el("#ir_plot_clonalUMAP_static img")))
 
   app$set_inputs(ir_p_umap_group_by = "sample", wait_ = FALSE)
   app$wait_for_idle(timeout = 20000)
 
-  expect_false(isTRUE(exists_el("#ir_plot_clonalUMAP .plotly")))
+  expect_false(isTRUE(exists_el("#ir_clonalUMAP_projection .plotly")))
   expect_true(isTRUE(exists_el("#ir_plot_clonalUMAP_static img")))
   plot_value <- app$get_value(output = "ir_plot_clonalUMAP_static")
   panel_rows <- vapply(
@@ -522,6 +577,10 @@ test_that("Clone call is hidden on the Clonal UMAP tab", {
   # On Abundance it should be back.
   app$set_inputs(ir_tabs = "Abundance", wait_ = FALSE)
   app$wait_for_idle(timeout = 15000)
+  app$wait_for_js(
+    "document.querySelector('#ir_cloneCall') !== null",
+    timeout = 15000
+  )
   expect_true(isTRUE(exists_el("#ir_cloneCall")))
 
   app$stop()
@@ -547,6 +606,10 @@ test_that("Main parameters info button opens a help dialog", {
   app$wait_for_idle(timeout = 15000)
   app$run_js("document.querySelector('#ir_main_parameters_info').click();")
   app$wait_for_idle(timeout = 10000)
+  app$wait_for_js(
+    "(function(){var m=document.querySelector('.modal-body');return !!m && /ir-help-card/.test(m.innerHTML);})()",
+    timeout = 15000
+  )
 
   # A modal with help cards should appear, containing the param help text.
   modal_html <- app$get_js(

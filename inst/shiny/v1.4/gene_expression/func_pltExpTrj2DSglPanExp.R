@@ -45,7 +45,7 @@ pltExpTrj2DSglPanExp <- function(
       linetype = "solid",
       na.rm = TRUE
     ) +
-    theme_bw()
+    cerebro_export_theme()
   ## check if selected color scale
   ## ... selected color scale is "Viridis"
   if (tolower(color_scale) == 'viridis') {
