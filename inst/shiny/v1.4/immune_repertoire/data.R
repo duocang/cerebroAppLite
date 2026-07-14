@@ -894,6 +894,10 @@ ir_build_sharing_plot <- function(data, chain, unit_col, group_by = NULL) {
     ggplot2::labs(
       x = NULL,
       y = "Number of clonotypes",
+      # Clear the fill legend title only (keep the legend itself): ggplotly
+      # ignores the static legend.position = "none" and shows the legend, and
+      # without this its title falls back to the raw fill column name ("display").
+      fill = NULL,
       title = "Clonotype sharing",
       subtitle = subtitle
     ) +

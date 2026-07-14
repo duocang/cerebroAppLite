@@ -284,11 +284,14 @@ ir_render_ggplotly <- function(expr, plot_name, tooltip = NULL) {
       # `tooltip` restricts the hover to a specific aes (e.g. "text"): without
       # it ggplotly derives the tooltip from every mapped aes, which repeats the
       # fill variable and exposes raw column names (display, Freq).
-      if (is.null(tooltip)) {
+      fig <- if (is.null(tooltip)) {
         plotly::ggplotly(p)
       } else {
         plotly::ggplotly(p, tooltip = tooltip)
       }
+      # Match the projection tabs' modebar (theme "a"): no Plotly logo, curated
+      # tools. Clonal UMAP already gets this via the shared scatter engine.
+      ir_apply_theme_a_modebar(fig)
     },
     error = function(e) {
       ir_empty_plotly(paste("Plot conversion error:", conditionMessage(e)))
@@ -1022,7 +1025,8 @@ ir_paired_scatter_panel <- function(
   pars,
   x_axis,
   y_axis,
-  title
+  title,
+  show_title = TRUE
 ) {
   p <- scRepertoire::clonalScatter(
     data,
@@ -1035,7 +1039,21 @@ ir_paired_scatter_panel <- function(
     exportTable = FALSE,
     palette = IR_PALETTE
   )
-  p + ggplot2::ggtitle(title)
+  # clonalScatter draws two legends (fill = clone class, size = "Total n").
+  # ggplotly cannot lay them out side by side and merges the titles into one
+  # unreadable "classTotal n" block. Drop the size legend (the dot area still
+  # encodes total n) and keep a single, clearly named clone-class legend.
+  p <- p +
+    ggplot2::guides(size = "none") +
+    ggplot2::labs(fill = "Clone class")
+  # The title only labels the faceted patchwork panels. On the single-panel
+  # interactive plotly the x/y axes already name the two groups, and ggplotly
+  # crams the title into the legend area where it overlaps the entries, so the
+  # interactive caller passes show_title = FALSE.
+  if (show_title) {
+    p <- p + ggplot2::ggtitle(title)
+  }
+  p
 }
 
 ## Single-panel paired scatter -> interactive plotly. The default ggplotly hover
@@ -1061,7 +1079,14 @@ output$ir_plot_pairedScatter <- plotly::renderPlotly({
           need(y %in% groups, "Select a Y group."),
           need(x != y, "Select two different groups.")
         )
-        ir_paired_scatter_panel(data, pars, x, y, paste(x, "vs", y))
+        ir_paired_scatter_panel(
+          data,
+          pars,
+          x,
+          y,
+          paste(x, "vs", y),
+          show_title = FALSE
+        )
       } else {
         req(!is.null(meta))
         compare_col <- pair_mode
@@ -1074,7 +1099,8 @@ output$ir_plot_pairedScatter <- plotly::renderPlotly({
           pars,
           s_a,
           s_b,
-          paste(lvls[1], "vs", lvls[2])
+          paste(lvls[1], "vs", lvls[2]),
+          show_title = FALSE
         )
       }
     },
@@ -1738,15 +1764,21 @@ output$ir_plot_clonalSizeDistribution <- plotly::renderPlotly({
     threshold <- 1
   }
   ir_render_ggplotly(
-    scRepertoire::clonalSizeDistribution(
-      data,
-      cloneCall = "strict",
-      chain = pars$chain,
-      group.by = pars$groupBy,
-      method = ir_param("ir_p_sd_method", "ward.D2"),
-      threshold = threshold,
-      exportTable = FALSE
-    ),
+    {
+      p <- scRepertoire::clonalSizeDistribution(
+        data,
+        cloneCall = "strict",
+        chain = pars$chain,
+        group.by = pars$groupBy,
+        method = ir_param("ir_p_sd_method", "ward.D2"),
+        threshold = threshold,
+        exportTable = FALSE
+      )
+      # clonalSizeDistribution maps color = as.factor(label) internally, so the
+      # colour legend title comes through as the raw "as.factor(label)". Rename
+      # it to what it actually is (the grouping variable).
+      p + ggplot2::labs(colour = "Group")
+    },
     "clonalSizeDistribution"
   )
 }) %>%
