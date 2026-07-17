@@ -242,9 +242,14 @@ server <- function(input, output, session) {
     }
     ## assign path to example file if none of the above apply
     if (length(path_to_load) == 0 || all(path_to_load == '')) {
-      path_to_load <- system.file(
-        "extdata/v1.4/example.crb",
-        package = "cerebroAppLite"
+      ## Resolve relative to cerebro_root, never via the package: the exported
+      ## bundle, inst/app.R and the installed launcher all point cerebro_root at
+      ## a directory that carries extdata/, so this fallback stays self-contained
+      ## even when the app runs without cerebroAppLite installed (a package
+      ## lookup would then resolve to "" and silently break the fallback).
+      path_to_load <- file.path(
+        Cerebro.options[["cerebro_root"]],
+        "extdata/v1.4/example.crb"
       )
     }
     ## set reactive value to selected file path
