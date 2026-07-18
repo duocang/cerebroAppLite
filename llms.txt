@@ -152,11 +152,10 @@ Picking one:
   one-shot scripts.
 
 For reference, before the 1.7.0 lazy h5 refactor, h5 attach was eager
-([`rhdf5::h5read`](https://huber-group-embl.github.io/rhdf5/reference/h5_read.html) +
-full `dgCMatrix` reconstruction), giving ~33 s open-URL time, ~11 GB
-RSS, and ~0.45 s queries — i.e. lazy-h5 is the same backend with attach
-**~263× faster, RAM ~10× smaller, queries ~45× faster, web load ~4×
-faster**.
+([`rhdf5::h5read`](https://rdrr.io/pkg/rhdf5/man/h5_read.html) + full
+`dgCMatrix` reconstruction), giving ~33 s open-URL time, ~11 GB RSS, and
+~0.45 s queries — i.e. lazy-h5 is the same backend with attach **~263×
+faster, RAM ~10× smaller, queries ~45× faster, web load ~4× faster**.
 
 [`createShinyApp()`](https://mihem.github.io/cerebroAppLite/reference/createShinyApp.md)
 already knows about both `<stem>.bpcells/` and `<stem>.h5` and copies
