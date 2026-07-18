@@ -56,6 +56,212 @@ test_that("projection height is calculated from measured viewport geometry", {
   expect_equal(output, "[692,642,240,792]")
 })
 
+test_that("generic fill sizing skips elements outside layout", {
+  testthat::skip_if(Sys.which("node") == "", "node not on PATH")
+  js_path <- repo_file(
+    "inst",
+    "shiny",
+    "v1.4",
+    "www",
+    "fill_height.js"
+  )
+  runner <- tempfile(fileext = ".js")
+  on.exit(unlink(runner), add = TRUE)
+  writeLines(
+    c(
+      "const fs = require('fs');",
+      "global.window = { addEventListener: function () {}, requestAnimationFrame: function () {} };",
+      "global.document = {",
+      "  addEventListener: function () {},",
+      "  getElementsByClassName: function () { return []; },",
+      "  body: null",
+      "};",
+      sprintf(
+        "eval(fs.readFileSync(%s, 'utf8'));",
+        encodeString(js_path, quote = "\"")
+      ),
+      "const visible = window.cerebroFill._isVisible;",
+      "console.log(JSON.stringify([",
+      "  visible({ getClientRects: () => [] }),",
+      "  visible({ getClientRects: () => [{ width: 10, height: 10 }] })",
+      "]));"
+    ),
+    runner
+  )
+
+  output <- system2("node", runner, stdout = TRUE, stderr = TRUE)
+
+  expect_equal(attr(output, "status"), NULL)
+  expect_equal(output, "[false,true]")
+})
+
+test_that("generic fill observes only its content ancestry", {
+  testthat::skip_if(Sys.which("node") == "", "node not on PATH")
+  js_path <- repo_file(
+    "inst",
+    "shiny",
+    "v1.4",
+    "www",
+    "fill_height.js"
+  )
+  runner <- tempfile(fileext = ".js")
+  on.exit(unlink(runner), add = TRUE)
+  writeLines(
+    c(
+      "const fs = require('fs');",
+      "global.window = { addEventListener: function () {}, requestAnimationFrame: function () {} };",
+      "global.document = {",
+      "  addEventListener: function () {},",
+      "  getElementsByClassName: function () { return []; },",
+      "  body: { name: 'body' },",
+      "  documentElement: { name: 'html' }",
+      "};",
+      sprintf(
+        "eval(fs.readFileSync(%s, 'utf8'));",
+        encodeString(js_path, quote = "\"")
+      ),
+      "const content = { name: 'content', classList: { contains: x => x === 'content' }, parentElement: document.body };",
+      "const parent = { name: 'parent', classList: { contains: () => false }, parentElement: content };",
+      "const fill = { name: 'fill', classList: { contains: () => false }, parentElement: parent };",
+      "console.log(JSON.stringify(window.cerebroFill._layoutTargets(fill).map(x => x.name)));"
+    ),
+    runner
+  )
+
+  output <- system2("node", runner, stdout = TRUE, stderr = TRUE)
+
+  expect_equal(attr(output, "status"), NULL)
+  expect_equal(output, '["fill","parent","content"]')
+
+  source <- paste(readLines(js_path, warn = FALSE), collapse = "\n")
+  expect_false(grepl("observe(document.body)", source, fixed = TRUE))
+})
+
+test_that("content below is stable when the fill itself changes height", {
+  testthat::skip_if(Sys.which("node") == "", "node not on PATH")
+  js_path <- repo_file(
+    "inst",
+    "shiny",
+    "v1.4",
+    "www",
+    "fill_height.js"
+  )
+  runner <- tempfile(fileext = ".js")
+  on.exit(unlink(runner), add = TRUE)
+  writeLines(
+    c(
+      "const fs = require('fs');",
+      "global.window = {",
+      "  addEventListener: function () {},",
+      "  requestAnimationFrame: function () {},",
+      "  getComputedStyle: node => ({ paddingBottom: node.paddingBottom || '0px' })",
+      "};",
+      "global.document = {",
+      "  addEventListener: function () {},",
+      "  getElementsByClassName: function () { return []; },",
+      "  body: null,",
+      "  documentElement: null",
+      "};",
+      sprintf(
+        "eval(fs.readFileSync(%s, 'utf8'));",
+        encodeString(js_path, quote = "\"")
+      ),
+      "const wrapper = { classList: { contains: x => x === 'content-wrapper' }, paddingBottom: '18px', parentElement: null };",
+      "const content = { classList: { contains: x => x === 'content' }, scrollHeight: 760, scrollTop: 0, parentElement: wrapper, getBoundingClientRect: () => ({ top: 20 }) };",
+      "let bottom = 700;",
+      "const fill = { classList: { contains: () => false }, parentElement: content, getBoundingClientRect: () => ({ bottom }) };",
+      "const below = window.cerebroFill._contentBelow;",
+      "const first = below(fill);",
+      "bottom = 800; content.scrollHeight = 860;",
+      "const second = below(fill);",
+      "console.log(JSON.stringify([first, second]));"
+    ),
+    runner
+  )
+
+  output <- system2("node", runner, stdout = TRUE, stderr = TRUE)
+
+  expect_equal(attr(output, "status"), NULL)
+  expect_equal(output, "[98,98]")
+})
+
+test_that("generic fill reveals only after the height settles across two frames", {
+  testthat::skip_if(Sys.which("node") == "", "node not on PATH")
+  js_path <- repo_file(
+    "inst",
+    "shiny",
+    "v1.4",
+    "www",
+    "fill_height.js"
+  )
+  runner <- tempfile(fileext = ".js")
+  on.exit(unlink(runner), add = TRUE)
+  writeLines(
+    c(
+      "const fs = require('fs');",
+      "global.window = { addEventListener: function () {}, requestAnimationFrame: function () {} };",
+      "global.document = {",
+      "  addEventListener: function () {},",
+      "  getElementsByClassName: function () { return []; },",
+      "  body: null",
+      "};",
+      sprintf(
+        "eval(fs.readFileSync(%s, 'utf8'));",
+        encodeString(js_path, quote = "\"")
+      ),
+      "const should = window.cerebroFill._shouldReveal;",
+      "console.log(JSON.stringify([",
+      "  should(undefined, 754),", # first measurement -> wait
+      "  should(775, 754),", # height changed (775->754) -> wait
+      "  should(754, 754)", # two equal frames -> reveal
+      "]));"
+    ),
+    runner
+  )
+
+  output <- system2("node", runner, stdout = TRUE, stderr = TRUE)
+
+  expect_equal(attr(output, "status"), NULL)
+  expect_equal(output, "[false,false,true]")
+})
+
+test_that("generic fill never animates height, only opacity", {
+  css <- paste(
+    readLines(repo_file("inst", "shiny", "v1.4", "www", "custom.css")),
+    collapse = "\n"
+  )
+
+  # The height-grow flash fix: the is-filled reveal fades opacity only; the
+  # height is applied in one frame (settled before reveal), never tweened. Assert
+  # the opacity-only declaration exists and the old height tween is gone.
+  expect_match(css, "transition: opacity 0.12s ease;", fixed = TRUE)
+  expect_false(grepl("height 0.2s ease", css, fixed = TRUE))
+})
+
+test_that("content wrapper prefers dynamic viewport units with a fallback", {
+  css <- paste(
+    readLines(repo_file("inst", "shiny", "v1.4", "www", "custom.css")),
+    collapse = "\n"
+  )
+
+  expect_match(css, "height: 100vh;", fixed = TRUE)
+  expect_match(css, "height: 100dvh;", fixed = TRUE)
+})
+
+test_that("generic fill wrappers do not clip widget controls", {
+  css <- paste(
+    readLines(repo_file("inst", "shiny", "v1.4", "www", "custom.css")),
+    collapse = "\n"
+  )
+  fill_rule <- regmatches(
+    css,
+    regexpr("\\.cerebro-fill \\{[^}]+\\}", css, perl = TRUE)
+  )
+
+  expect_length(fill_rule, 1L)
+  expect_false(grepl("overflow: hidden", fill_rule, fixed = TRUE))
+})
+
 test_that("all projection tabs delegate live height to the shared controller", {
   ui_paths <- c(
     repo_file("inst", "shiny", "v1.4", "overview", "UI_projection.R"),

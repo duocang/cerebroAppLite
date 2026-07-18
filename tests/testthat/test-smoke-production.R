@@ -83,6 +83,10 @@ test_that("multi-crb config lists both datasets by name", {
   app <- build_smoke_app()
   cfg <- readRDS(file.path(app$app_dir, "cerebro_config.rds"))
 
+  expect_identical(
+    cfg[["cerebro_version"]],
+    as.character(utils::packageVersion("cerebroAppLite"))
+  )
   expect_setequal(
     names(cfg[["crb_file_to_load"]]),
     c("Dataset A", "Dataset B")
@@ -174,6 +178,57 @@ test_that("createShinyApp bundles real spatial demos with mixed image paths", {
   expect_true(any(grepl("xenium", bundled, ignore.case = TRUE)))
 })
 
+test_that("the generated app remains self-contained at runtime", {
+  app <- build_real_app()
+  skip_if(is.null(app), "bundled real spatial demos not available")
+
+  app_source <- paste(
+    readLines(file.path(app$app_dir, "app.R"), warn = FALSE),
+    collapse = "\n"
+  )
+  bundled_source <- paste(
+    unlist(lapply(
+      list.files(
+        file.path(app$app_dir, "shiny"),
+        pattern = "\\.[Rr]$",
+        recursive = TRUE,
+        full.names = TRUE
+      ),
+      readLines,
+      warn = FALSE
+    )),
+    collapse = "\n"
+  )
+
+  ## createShinyApp() copies the complete UI/server implementation. The bundle
+  ## must therefore boot without resolving the package that created it.
+  expect_false(grepl(
+    'requireNamespace("cerebroAppLite"',
+    app_source,
+    fixed = TRUE
+  ))
+  expect_false(grepl("cerebroAppLite::", bundled_source, fixed = TRUE))
+  expect_false(grepl(
+    "asNamespace(\"cerebroAppLite\"",
+    bundled_source,
+    fixed = TRUE
+  ))
+  expect_false(grepl(
+    'packageVersion("cerebroAppLite")',
+    bundled_source,
+    fixed = TRUE
+  ))
+  ## system.file(package = "cerebroAppLite") resolves to "" once the package is
+  ## gone, silently breaking whatever resource it points at. The bundle must
+  ## locate its own resources relative to cerebro_root, never via the package.
+  expect_false(grepl(
+    'package = "cerebroAppLite"',
+    bundled_source,
+    fixed = TRUE
+  ))
+  expect_false(grepl("library(cerebroAppLite", bundled_source, fixed = TRUE))
+})
+
 test_that("the generated real-data app boots with the Spatial tab", {
   skip_if_not_installed("shinytest2")
   skip_on_cran()
@@ -240,4 +295,67 @@ test_that("the generated multi-crb app boots and switches datasets", {
     "document.querySelector('a[href=\"#shiny-tab-spatial\"]') !== null;"
   )
   expect_true(isTRUE(spatial_tab_b))
+})
+
+## The static self-contained test above proves the BUNDLE SOURCE never names the
+## package. This one proves the harder half: the .crb data itself. A .crb is an
+## R6 object whose class lives in R/ (not in the copied bundle), so if any of its
+## methods reached into the cerebroAppLite namespace, readRDS would carry a
+## namespace reference and fail once the package is gone. Load it in a child
+## process whose library path genuinely lacks cerebroAppLite and use it.
+test_that("a bundled dataset deserializes and works without cerebroAppLite", {
+  skip_if_not_installed("callr")
+  skip_on_cran()
+  skip_on_os("windows") # the hermetic library is built with symlinks
+
+  app <- build_smoke_app()
+  cfg <- readRDS(file.path(app$app_dir, "cerebro_config.rds"))
+  first_crb <- file.path(app$app_dir, cfg[["crb_file_to_load"]][[1]])
+  expect_true(file.exists(first_crb))
+
+  ## Mirror the current library MINUS cerebroAppLite, so the child cannot resolve
+  ## the package that generated the app even if it tried to.
+  hermetic_lib <- withr::local_tempdir()
+  linked_any <- FALSE
+  for (lib in .libPaths()) {
+    for (pkg in list.dirs(lib, recursive = FALSE, full.names = FALSE)) {
+      if (identical(pkg, "cerebroAppLite")) {
+        next
+      }
+      dest <- file.path(hermetic_lib, pkg)
+      if (!file.exists(dest)) {
+        ok <- tryCatch(
+          file.symlink(file.path(lib, pkg), dest),
+          error = function(e) FALSE
+        )
+        linked_any <- linked_any || isTRUE(ok)
+      }
+    }
+  }
+  skip_if_not(linked_any, "could not build a hermetic library via symlinks")
+
+  result <- callr::r(
+    function(crb) {
+      ## Prove the package really is unreachable before we rely on the result.
+      if (requireNamespace("cerebroAppLite", quietly = TRUE)) {
+        stop("cerebroAppLite is reachable; the library is not hermetic")
+      }
+      obj <- readRDS(crb)
+      list(
+        classes = class(obj),
+        version = as.character(obj$getVersion()),
+        n_cells = length(obj$getCellNames()),
+        n_genes = length(obj$getGeneNames()),
+        n_projections = length(obj$availableProjections())
+      )
+    },
+    args = list(crb = first_crb),
+    libpath = hermetic_lib
+  )
+
+  expect_true("Cerebro_v1.3" %in% result$classes)
+  expect_true(nzchar(result$version))
+  expect_gt(result$n_cells, 0)
+  expect_gt(result$n_genes, 0)
+  expect_gt(result$n_projections, 0)
 })
