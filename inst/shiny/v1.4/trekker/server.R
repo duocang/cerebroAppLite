@@ -359,10 +359,12 @@ observeEvent(input[["trekker_group_filters_info"]], {
     HTML(
       "Choose which cells are shown, by the group(s) they belong to. For each
       grouping variable (cell type, cluster) you can activate or deactivate
-      levels; only nuclei that pass every filter are drawn in both panes, counted
-      in the selection, and inspected. This isolates a population without having
-      to colour by it. Use the box's <i>Select all / Deselect all</i> actions to
-      toggle a whole variable at once."
+      levels; only nuclei that pass every filter are drawn in both panes and
+      counted in the selection. This isolates a population without having to
+      colour by it. The Cell inspector's physical-neighbour counts deliberately
+      use the whole tissue — a nucleus's real neighbours don't change when you
+      hide some from view. Use the box's <i>Select all / Deselect all</i> actions
+      to toggle a whole variable at once."
     )
   ))
 })

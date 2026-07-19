@@ -55,12 +55,7 @@ tab_trekker <- tabItem(
       cerebroBox(
         title = tagList(
           "Physical space and transcriptome space",
-          cerebroInfoButton("trekker_viz_info"),
-          tags$span(
-            class = "tk-note",
-            id = "tk-vnote",
-            "same nuclei · two coordinate systems"
-          )
+          cerebroInfoButton("trekker_viz_info")
         ),
         content = div(
           class = "trekker-page",

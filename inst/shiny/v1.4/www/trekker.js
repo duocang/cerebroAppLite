@@ -300,10 +300,14 @@
     return best;
   }
   // Zoom a pane around a screen point (mx,my) by factor f, keeping it fixed.
+  // The scale is clamped to the same 0.2–20 bounds as zoom-to-selection, so
+  // repeated wheel/button zooming can't drive the viewport somewhere unrecoverable.
   function zoomPaneAt(p, mx, my, f) {
-    p.k *= f;
-    p.tx = mx - (mx - p.tx) * f;
-    p.ty = my - (my - p.ty) * f;
+    var nk = Math.max(0.2, Math.min(20, p.k * f));
+    var af = nk / p.k; // actual factor after clamping (keeps the focal point fixed)
+    p.tx = mx - (mx - p.tx) * af;
+    p.ty = my - (my - p.ty) * af;
+    p.k = nk;
     applyTransform(p); draw(p);
   }
   function clickInspect(p, e) {
@@ -346,7 +350,7 @@
       // this stays cheap (both panes redraw at most once per nucleus crossing).
       if (i !== hover) { hover = i; drawAll(); }
       if (i < 0) { p.tip.style.opacity = 0; return; }
-      var h = "<b>" + esc(CT[i]) + "</b> · cluster " + D.clusters[i];
+      var h = "<b>" + esc(CT[i]) + "</b> · cluster " + esc(D.clusters[i]);
       h += p.kind === "sp"
         ? "<br>x " + SRC[src].x[i].toFixed(0) + " · y " + SRC[src].y[i].toFixed(0) + " µm"
         : "<br>UMAP " + D.ux[i].toFixed(1) + " , " + D.uy[i].toFixed(1);
@@ -399,6 +403,9 @@
     });
   }
 
+  function nVisible() {
+    var v = 0; for (var i = 0; i < N; i++) if (visible(i)) v++; return v;
+  }
   function renderSel() {
     var bar = $("tk-selbar");
     if (!sel) { bar.style.display = "none"; return; }
@@ -406,7 +413,9 @@
     var cnt = {}; sel.forEach(function (i) { cnt[CT[i]] = (cnt[CT[i]] || 0) + 1; });
     var top = Object.entries(cnt).sort(function (a, b) { return b[1] - a[1]; })
       .slice(0, 4).map(function (e) { return esc(e[0]) + " " + e[1]; }).join(" · ");
-    $("tk-seltext").innerHTML = "Selected <b>" + sel.size + "</b> / " + fmt(N) +
+    // Denominator is the currently-visible pool (equals N when no filter is set),
+    // so a selection reads against what's actually shown rather than the whole set.
+    $("tk-seltext").innerHTML = "Selected <b>" + sel.size + "</b> / " + fmt(nVisible()) +
       " nuclei &nbsp;—&nbsp; " + top +
       "&nbsp;&nbsp;<span class=\"tk-muted\">(both panes highlight in sync)</span>";
   }
@@ -456,16 +465,17 @@
     el.innerHTML = "<div class=\"tk-insp\"><div>" +
       "<h4 class=\"tk-sub-h\">Identity</h4>" +
       "<dl class=\"tk-kv\"><dt>Cell type</dt><dd style=\"color:" + (CT_COL[CT[i]] || "#666") + "\">" + esc(CT[i]) + "</dd>" +
-      "<dt>Cluster</dt><dd>" + D.clusters[i] + "</dd>" +
+      "<dt>Cluster</dt><dd>" + esc(D.clusters[i]) + "</dd>" +
       "<dt>x</dt><dd>" + D.x[i].toFixed(0) + " µm</dd>" +
       "<dt>y</dt><dd>" + D.y[i].toFixed(0) + " µm</dd>" +
       "<dt>UMAP</dt><dd>" + D.ux[i].toFixed(1) + ", " + D.uy[i].toFixed(1) + "</dd>" + g + confRows + "</dl>" +
       "<div class=\"tk-hint\" style=\"word-break:break-all\">" + (ev ? esc(ev.bc) : "") + "</div></div>" +
       "<div><h4 class=\"tk-sub-h\">Physical neighbourhood " +
-      "<span class=\"tk-muted\">r = " + nr + " µm · n = " + n + "</span></h4>" +
+      "<span class=\"tk-muted\">r = " + nr + " µm · n = " + n + " · full tissue</span></h4>" +
       "<div class=\"tk-bars\">" + bars + "</div>" +
-      "<div class=\"tk-hint\"><b>Real cell counts, not a deconvolution estimate.</b> Visium cannot do " +
-      "this — a spot is internally mixed.</div></div>" +
+      "<div class=\"tk-hint\"><b>Real cell counts, not a deconvolution estimate.</b> Counted over " +
+      "the whole tissue (group filters change the view, not a nucleus's real neighbours). " +
+      "Visium cannot do this — a spot is internally mixed.</div></div>" +
       "<div><h4 class=\"tk-sub-h\">Positioning evidence</h4>" + evHtml + "</div></div>";
     drawAll();
   }
@@ -477,7 +487,7 @@
     var el = $("tk-fieldsummary"); if (!el) return;
     var f = mode === "gene" ? null : curField();
     if (!f) { el.innerHTML = ""; return; }
-    var html = f.desc ? "<div class=\"tk-hint\" style=\"margin-top:8px\">" + f.desc + "</div>" : "";
+    var html = f.desc ? "<div class=\"tk-hint\" style=\"margin-top:8px\">" + esc(f.desc) + "</div>" : "";
     if (f.by_type && f.by_type.length) {
       var mx = Math.max.apply(null, f.by_type.map(function (b) { return b.median; })) || 1;
       var rows = f.by_type.slice().sort(function (a, b) { return b.median - a.median; })
@@ -676,7 +686,6 @@
     $("tk-subline").innerHTML = "<code>" + esc(q.sample_id) + "</code> · " + fmt(m.n_cells) +
       " nuclei (down-sampled from " + fmt(m.n_cells_full) + " confidently positioned) · " +
       fmt(m.n_genes_obj) + " genes (whole transcriptome, not a panel) · coordinate unit " + esc(m.unit);
-    var vn = $("tk-vnote"); if (vn) vn.textContent = fmt(m.n_cells) + " nuclei · two coordinate systems";
 
     var pass2p = q.pct_2plus < 20;
     $("tk-stats").innerHTML = [
