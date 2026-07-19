@@ -761,10 +761,33 @@
     Object.values(P).forEach(function (p) { p.k = 1; p.tx = 0; p.ty = 0; });
     buildToolbar();
     setTool(tool);
+    hookMorphSlider();
+    setTimeout(hookMorphSlider, 300);
+    setTimeout(hookMorphSlider, 1200);
     renderStatic();
     renderLegend();
     renderInspector();
     resize();
+  }
+
+  // Shiny debounces slider input (~250ms) and doesn't use ion.rangeSlider's own
+  // onChange, so by default the Transition only redraws once you stop dragging.
+  // The morph is purely client-side, so hook ion's onChange (which fires
+  // continuously during the drag) to animate the canvas in real time. Idempotent
+  // per ion instance; re-applied on data load / when entering the Transition view
+  // (a re-rendered slider is a fresh instance without the flag).
+  function hookMorphSlider() {
+    if (!window.jQuery) return;
+    var irs = window.jQuery("#trekker_morph").data("ionRangeSlider");
+    if (!irs || irs._tkHooked) return;
+    irs._tkHooked = true;
+    irs.update({
+      onChange: function (data) {
+        morphT = +data.from;
+        if (view === "morph" && P) { project(P.sp); draw(P.sp); }
+        updateSpUnitLabel();
+      }
+    });
   }
 
   // In the Transition view the single pane interpolates between UMAP (morph = 0)
@@ -784,6 +807,7 @@
     switch (name) {
       case "trekker_view":
         view = value;
+        if (view === "morph") hookMorphSlider();
         // pair = both panes; sp / morph = spatial pane only; um = UMAP pane only.
         $("tk-panes").classList.toggle("single", view !== "pair");
         $("tk-pane-sp").style.display = view === "um" ? "none" : "";
