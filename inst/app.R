@@ -18,7 +18,7 @@ Cerebro.options <<- list(
   ## Keep the source demo runnable directly from inst/ without requiring an
   ## installed cerebroAppLite package. Exported apps receive this value in
   ## cerebro_config.rds when createShinyApp() builds them.
-  "cerebro_version" = "2.2.0",
+  "cerebro_version" = "2.3.0",
   ## This bundled app ships several distinct demo data sets so the sidebar
   ## "Select dataset:" switcher is visible out of the box: switching changes
   ## the UMAP, the cell-type composition, and the conditional tabs (Immune
@@ -53,7 +53,23 @@ Cerebro.options <<- list(
     ## `trekker` slot (three coordinate orientations, positioning QC, upstream
     ## Moran's I, embedded per-nucleus positioning-evidence images).
     ## Rebuild with data-raw/build_trekker_demo.R (see data-raw/trekker.md).
-    "Mouse brain (Trekker)" = "extdata/v1.4/demo_trekker.crb"
+    "Mouse brain (Trekker)" = "extdata/v1.4/demo_trekker.crb",
+    ## A FULLY FABRICATED fixture: simulated expression, projection, cell types,
+    ## CDR3 sequences and donor HLA genotypes. It exists because real unselected
+    ## repertoires are sparse in CDR3 space and render a near-empty motif network
+    ## (the real-sequence predecessor gave 4 nodes), so the motif families and
+    ## their HLA associations are designed in. 30 donors x 167 cells; declares
+    ## technical_info$tcr_selection = "synthetic", the page's hardest disclosure.
+    ## Use it to see the page work, never to read biology off it.
+    ## Rebuild with data-raw/build_hla_tcr_demo.R.
+    "Synthetic cohort - HLA & TCR motifs (fixture)" = "extdata/v1.4/demo_hla_tcr.crb",
+    ## The real-HLA counterpart: real public TCRb chains, real donor-to-TCR
+    ## occurrence, and each donor's REAL HLA genotype (Emerson 2017 cohort).
+    ## Bulk, so it has no cells, no expression and no projection: each row is a
+    ## (donor, clonotype) analysis unit, and the lineage MHC context is Unknown
+    ## by design. Use it for HLA Associations on genuine genotypes.
+    ## Rebuild with data-raw/build_hla_tcr_bulk_demo.R.
+    "TCRb cohort - real donor HLA (bulk)" = "extdata/v1.4/demo_hla_tcr_bulk.crb"
   ),
   "crb_pick_smallest_file" = FALSE,
   ## Visium loads its real H&E background from an EXTERNAL image file (rather than

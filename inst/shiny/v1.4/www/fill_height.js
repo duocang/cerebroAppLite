@@ -108,15 +108,28 @@
      so the result stays stable. The wrapper's bottom padding lives outside the
      section.content scroll height and is therefore added once. */
   function contentBelow(el) {
+    /* Measure within the fill's OWN plot column (.cerebro-viz-col) when it has
+       one, so a TALLER sibling column — a long parameter / legend / evidence
+       panel beside the plot — cannot inflate `remaining` and squeeze the fill to
+       its minimum. `content.scrollHeight` is the height of the tallest column, so
+       using it lets a tall left column shrink the plot on the right. Fall back to
+       section.content for any fill that is not inside a plot column (behaviour
+       unchanged there). For a well-behaved page whose plot column is the tallest,
+       both frames give the same result. */
     var content = ancestorWithClass(el, "content");
-    if (!content || typeof content.getBoundingClientRect !== "function") {
+    var frame = el.closest && el.closest(".cerebro-viz-col");
+    if (!frame) {
+      frame = content;
+    }
+    if (!frame || typeof frame.getBoundingClientRect !== "function") {
       return 0;
     }
-    var wrapper = ancestorWithClass(content.parentElement, "content-wrapper");
-    var contentRect = content.getBoundingClientRect();
+    var wrapper = content ?
+      ancestorWithClass(content.parentElement, "content-wrapper") : null;
+    var frameRect = frame.getBoundingClientRect();
     var fillRect = el.getBoundingClientRect();
-    var fillBottom = fillRect.bottom - contentRect.top + (content.scrollTop || 0);
-    var remaining = Math.max(0, (content.scrollHeight || 0) - fillBottom);
+    var fillBottom = fillRect.bottom - frameRect.top + (frame.scrollTop || 0);
+    var remaining = Math.max(0, (frame.scrollHeight || 0) - fillBottom);
     var wrapperPadding = wrapper ?
       px(window.getComputedStyle(wrapper).paddingBottom) : 0;
     return remaining + wrapperPadding;

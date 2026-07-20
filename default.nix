@@ -102,7 +102,9 @@ let
       tibble
       tidyr
       tidyselect
-      viridis;
+      viridis
+      stringdist
+      visNetwork;
   };
  
     BPCells-src = pkgs.fetchgit {
