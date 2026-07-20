@@ -6,6 +6,24 @@
 ## and never labels co-occurrence as restriction.
 ##----------------------------------------------------------------------------##
 
+## A small info marker for a control label: a one-line, plain-language hover hint
+## (native title tooltip, no modal). The "info" panel buttons open a dialog; a
+## couple of controls just need a short "what is this?" instead.
+hla_label_hint <- function(label, hint) {
+  tagList(
+    label,
+    tags$span(
+      icon("info-circle"),
+      class = "text-muted",
+      title = hint,
+      style = paste(
+        "cursor: help; margin-left: 5px;",
+        "font-size: 11px; font-weight: normal;"
+      )
+    )
+  )
+}
+
 ## Deliberately hla_global_motif_graph(), never the drawn hla_motif_graph():
 ## under the allele scope the drawn graph is built from one allele's carriers,
 ## and a feature nominated by the exposure cannot then be tested against it.
@@ -72,7 +90,14 @@ output$hla_feature_selector_ui <- renderUI({
     labels <- sprintf("%s (%d CDR3)", groups, as.integer(sizes[groups]))
     choices <- stats::setNames(groups, labels)
   }
-  selectInput("hla_feature_id", "Locked feature:", choices = choices)
+  selectInput(
+    "hla_feature_id",
+    hla_label_hint(
+      "Locked feature:",
+      "The specific motif or CDR3 the comparison below is run on."
+    ),
+    choices = choices
+  )
 })
 
 hla_overlap_table <- reactive({
@@ -204,7 +229,10 @@ output$hla_associations_ui <- renderUI({
         # edge at any width.
         radioButtons(
           "hla_feature_type",
-          "Feature type:",
+          hla_label_hint(
+            "Feature type:",
+            "Test HLA links against a whole motif family, or a single CDR3."
+          ),
           choices = c("Motif component" = "motif", "CDR3 node" = "node"),
           selected = "motif",
           inline = FALSE
