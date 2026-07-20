@@ -473,6 +473,61 @@ hla_node_meta_cols <- reactive({
   unique(intersect(c(base, extra), hla_available_cols()))
 })
 
+## ---- Colour-by choices (scope-aware) ---------------------------------- ##
+## What the network can be coloured by depends on the DATA (which meta columns
+## exist, whether a lineage column is present, how many samples) and on the
+## current scope. Held as ONE reactive so the picker is rendered once from an
+## isolate() of it and then kept current in place by an observer -- building
+## these choices inside the picker's own renderUI made every scope change tear
+## the whole parameter panel down (finding #8).
+hla_color_by_choices <- reactive({
+  meta_cols <- hla_usable_color_cols()
+  choices <- c(
+    "Motif cluster" = "",
+    stats::setNames(meta_cols, meta_cols)
+  )
+  # In the pair scope every node already carries its candidate allele, and that
+  # IS the lineage split — so "MHC context" would be the same picture under a
+  # vaguer name. Offer the pair class instead.
+  if (identical(hla_scope_mode(), "pair")) {
+    choices <- c(
+      choices,
+      "Pair class|which allele, or both" = "pair_allele"
+    )
+  } else if (!is.na(hla_celltype_col())) {
+    # "MHC context" is a derived node attribute (CD8->Class I / CD4->Class II /
+    # Unknown), offered only when a lineage column exists to derive it from.
+    choices <- c(
+      choices,
+      "MHC context|CD8 -> Class I, CD4 -> Class II" = "mhc_context"
+    )
+  }
+  # Carrier status of ONE allele is the colouring this page exists for: it is
+  # what connects the network to the HLA context. Deliberately named for what it
+  # shows (who carries the allele), never as if the allele restricted the TCR.
+  #
+  # Gated on an allele this page can actually put on screen, not merely on the
+  # typing table being non-empty: with typing that matches no sample, or only
+  # DQ/DP, this control used to appear and then have nothing to offer.
+  if (hla_has_analyzable_allele()) {
+    choices <- c(
+      choices,
+      "HLA carrier status|pick the allele below" = "hla_carrier"
+    )
+  }
+  # Sample of origin, with every CDR3 seen in >1 sample collapsed to "Shared".
+  # Distinct from colouring by the plain `sample` column, which shows the node's
+  # MODAL sample and so hides the cross-sample recurrence an HLA screen looks
+  # for. Offered only when the repertoire actually has more than one sample.
+  if (length(names(getImmuneRepertoire())) > 1) {
+    choices <- c(
+      choices,
+      "Sample of origin|seen in more than one = black" = "sample_origin"
+    )
+  }
+  choices
+})
+
 ## ---- Network scope ----------------------------------------------------- ##
 ## "all"    -> one graph over every cell; an allele only re-colours it.
 ## "allele" -> the graph is REBUILT on the cells that could bear on the page's

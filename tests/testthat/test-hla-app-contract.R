@@ -890,6 +890,61 @@ test_that("the parameter gate stays OUTSIDE the cached graph reactives", {
   )
 })
 
+test_that("the parameter panel renders once, then updates in place", {
+  # Finding #8: output$hla_parameters_ui both CREATED its controls and READ its
+  # own inputs to seed them, so every scope / colour / checkbox change tore the
+  # whole panel down and rebuilt it (transient NULLs, lost selectize state). The
+  # panel must render once from the DATA and update controls in place -- the
+  # discipline the allele pickers already follow.
+  settings_src <- paste(
+    readLines(
+      hla_inst_file("shiny/v1.4/hla_tcr_motifs/settings.R"),
+      warn = FALSE
+    ),
+    collapse = "\n"
+  )
+  data_src <- paste(
+    readLines(hla_inst_file("shiny/v1.4/hla_tcr_motifs/data.R"), warn = FALSE),
+    collapse = "\n"
+  )
+
+  # The colour-by choices are a shared reactive, not rebuilt inline inside the
+  # picker's own renderUI.
+  expect_match(data_src, "hla_color_by_choices <- reactive\\(", perl = TRUE)
+
+  # The panel seeds its own inputs under isolate(), so setting them does not
+  # invalidate the renderUI that owns them.
+  expect_match(
+    settings_src,
+    "selected = isolate\\(hla_param\\(\"hla_scope\"",
+    perl = TRUE
+  )
+  expect_match(
+    settings_src,
+    "selected = isolate\\(hla_param\\(\"hla_color_by\"",
+    perl = TRUE
+  )
+  expect_match(
+    settings_src,
+    "value = isolate\\([\\s\\S]{0,20}hla_param\\(\"hla_by_v\"",
+    perl = TRUE
+  )
+
+  # The one real cross-control coupling (scope decides whether "MHC context" or
+  # "Pair class" is offered) moved to an observer that updates the picker in
+  # place instead of rebuilding the panel.
+  expect_match(
+    settings_src,
+    "observeEvent\\([\\s\\S]{0,20}hla_color_by_choices\\(\\)",
+    perl = TRUE
+  )
+  expect_match(
+    settings_src,
+    "updateSelectizeInput\\([\\s\\S]{0,40}\"hla_color_by\"",
+    perl = TRUE
+  )
+})
+
 test_that("the page's allele lives outside both pickers", {
   # There is ONE allele for the whole page, and it must not be stored in either
   # picker's input. The network's picker sits in a conditionalPanel, so Shiny

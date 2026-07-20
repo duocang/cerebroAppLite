@@ -36,57 +36,18 @@ HLA_TWO_LINE_RENDER <- I(
 ## ---- Left-column parameters ------------------------------------------- ##
 output$hla_parameters_ui <- renderUI({
   chains <- hla_tcr_chains()
-  meta_cols <- hla_usable_color_cols()
-  color_choices <- c(
-    "Motif cluster" = "",
-    stats::setNames(meta_cols, meta_cols)
-  )
-  # In the pair scope every node already carries its candidate allele, and that
-  # IS the lineage split — so "MHC context" would be the same picture under a
-  # vaguer name. Offer the pair class instead.
-  if (identical(hla_scope_mode(), "pair")) {
-    color_choices <- c(
-      color_choices,
-      "Pair class|which allele, or both" = "pair_allele"
-    )
-  } else if (!is.na(hla_celltype_col())) {
-    # "MHC context" is a derived node attribute (CD8->Class I / CD4->Class II /
-    # Unknown), offered only when a lineage column exists to derive it from.
-    color_choices <- c(
-      color_choices,
-      "MHC context|CD8 -> Class I, CD4 -> Class II" = "mhc_context"
-    )
-  }
-  # Carrier status of ONE allele is the colouring this page exists for: it is
-  # what connects the network to the HLA context. Deliberately named for what it
-  # shows (who carries the allele), never as if the allele restricted the TCR.
-  #
-  # Gated on an allele this page can actually put on screen, not merely on the
-  # typing table being non-empty: with typing that matches no sample, or only
-  # DQ/DP, this control used to appear and then have nothing to offer.
-  if (hla_has_analyzable_allele()) {
-    color_choices <- c(
-      color_choices,
-      "HLA carrier status|pick the allele below" = "hla_carrier"
-    )
-  }
-  # Sample of origin, with every CDR3 seen in >1 sample collapsed to "Shared".
-  # Distinct from colouring by the plain `sample` column, which shows the node's
-  # MODAL sample and so hides the cross-sample recurrence an HLA screen looks
-  # for. Offered only when the repertoire actually has more than one sample.
-  if (length(names(getImmuneRepertoire())) > 1) {
-    color_choices <- c(
-      color_choices,
-      "Sample of origin|seen in more than one = black" = "sample_origin"
-    )
-  }
+  # The panel is rebuilt only when the DATA changes (which controls exist), so
+  # its own inputs are read under isolate() below: reading them live made every
+  # scope / colour / checkbox change tear the whole panel down (finding #8). The
+  # colour-by choices come from the shared hla_color_by_choices() reactive and
+  # are kept current in place by the observer under this renderUI.
   tagList(
     if (length(chains) > 1) {
       selectInput(
         "hla_chain",
         "Chain:",
         choices = chains,
-        selected = hla_active_chain()
+        selected = isolate(hla_active_chain())
       )
     } else {
       tags$p(
@@ -120,7 +81,7 @@ output$hla_parameters_ui <- renderUI({
         "hla_scope",
         "Network scope:",
         choices = scope_choices,
-        selected = hla_param("hla_scope", "all"),
+        selected = isolate(hla_param("hla_scope", "all")),
         options = list(render = HLA_TWO_LINE_RENDER)
       )
     },
@@ -130,8 +91,8 @@ output$hla_parameters_ui <- renderUI({
     selectizeInput(
       "hla_color_by",
       "Colour nodes by:",
-      choices = color_choices,
-      selected = hla_param("hla_color_by", ""),
+      choices = isolate(hla_color_by_choices()),
+      selected = isolate(hla_param("hla_color_by", "")),
       options = list(render = HLA_TWO_LINE_RENDER)
     ),
     # The page's single allele. It drives the carrier colouring AND the allele
@@ -163,12 +124,12 @@ output$hla_parameters_ui <- renderUI({
     checkboxInput(
       "hla_by_v",
       "Split motifs by V gene",
-      value = isTRUE(hla_param("hla_by_v", hla_by_v_default()))
+      value = isolate(isTRUE(hla_param("hla_by_v", hla_by_v_default())))
     ),
     checkboxInput(
       "hla_show_isolated",
       "Show unconnected CDR3s",
-      value = isTRUE(hla_param("hla_show_isolated", FALSE))
+      value = isolate(isTRUE(hla_param("hla_show_isolated", FALSE)))
     ),
     # A declared grouping that is missing from the list above looks like a bug
     # or like bad data. It is neither: it has too many levels to read as colour.
@@ -193,6 +154,35 @@ output$hla_parameters_ui <- renderUI({
     )
   )
 })
+
+## Keep the colour-by picker's options current WITHOUT rebuilding the panel.
+## The choices depend on scope (pair scope swaps "MHC context" for "Pair class")
+## and on the data; the picker is rendered once from isolate(hla_color_by_choices())
+## above, then updated in place here -- the discipline the allele pickers use.
+## Fires on scope AND dataset change; ignoreInit because the render already
+## seeded the current choices.
+observeEvent(
+  hla_color_by_choices(),
+  {
+    choices <- hla_color_by_choices()
+    # Keep the current pick if the new scope still offers it, else fall back to
+    # "Motif cluster" (""). Downstream tolerates a stale value, but the picker must
+    # not display one it no longer lists. isolate(): reading the pick must not make
+    # this observer depend on it, or every colour change would re-push the choices.
+    sel <- isolate(hla_param("hla_color_by", ""))
+    if (!(sel %in% unname(choices))) {
+      sel <- ""
+    }
+    updateSelectizeInput(
+      session,
+      "hla_color_by",
+      choices = choices,
+      selected = sel,
+      options = list(render = HLA_TWO_LINE_RENDER)
+    )
+  },
+  ignoreInit = TRUE
+)
 
 ## ---- Additional parameters (collapsed by default) --------------------- ##
 ## Display-only controls: nothing here rebuilds the graph.
