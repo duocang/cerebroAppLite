@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cerebroAppLite</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,9 @@
     <li><a class="dropdown-item" href="../articles/trajectory_analysis.html">Trajectory Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/spatial_analysis.html">Spatial Transcriptomics Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/trekker_spatial_mapping.html">Trekker single-cell spatial mapping: from a vendor bundle to an interactive app</a></li>
+    <li><a class="dropdown-item" href="../articles/hla_tcr_motifs.html">HLA &amp; TCR Motifs: from synthetic data to an interactive app</a></li>
+    <li><a class="dropdown-item" href="../articles/hla_bulk_tcr_associations.html">HLA Associations on bulk TCRβ with real donor HLA</a></li>
+    <li><a class="dropdown-item" href="../articles/hla_tcr_antigen_selected.html">A real antigen-selected single-cell TCR demo, end to end</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -66,7 +69,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Export Seurat object to Cerebro.</h1>
-      <small class="dont-index">Source: <a href="https://github.com/mihem/cerebroAppLite/blob/master/R/exportFromSeurat.R" class="external-link"><code>R/exportFromSeurat.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/mihem/cerebroAppLite/blob/ci/hla-one-dataset/R/exportFromSeurat.R" class="external-link"><code>R/exportFromSeurat.R</code></a></small>
       <div class="d-none name"><code>exportFromSeurat.Rd</code></div>
     </div>
 
@@ -217,6 +220,19 @@ CTnt, CTaa, CTstrict), it will be automatically exported into the Cerebro
 object via <code>addImmuneRepertoire()</code>.  Legacy <code>bcr_data</code> /
 <code>tcr_data</code> slots are also supported as a fallback.</p>
     </div>
+    <div class="section level2">
+    <h2 id="hla-typing">HLA typing<a class="anchor" aria-label="anchor" href="#hla-typing"></a></h2>
+
+
+<p>If <code>object@misc$hla_typing</code> holds an HLA genotype table – a canonical
+long <code>data.frame</code>, a wide <code>sample</code> + <code>HLA-*_1/_2</code>
+<code>data.frame</code>, or a named list (sample -&gt; allele vector) – it is
+exported via <code>addHLATyping()</code>, parallel to the immune repertoire. The
+provenance in <code>object@misc$hla_typing_source_type</code> (one of
+<code>"genotyped"</code>, <code>"imputed"</code>, <code>"synthetic"</code>, <code>"unknown"</code>;
+default <code>"unknown"</code>) is carried through, so a predicted or fabricated
+genotype is never mistaken for a directly typed one.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -233,22 +249,22 @@ object via <code>addImmuneRepertoire()</code>.  Legacy <code>bcr_data</code> /
 <span class="r-in"><span>  use_delayed_array <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Initializing Cerebro object...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Adding expression data (embedded)...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Collecting available meta data...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Extracting all meta data columns...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Extracting dimensional reductions...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Will export the following dimensional reductions: umap</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Extracting marker genes table...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] No trajectories to extract...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Checking for spatial data...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Overview of Cerebro object:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Initializing Cerebro object...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Adding expression data (embedded)...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Collecting available meta data...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Extracting all meta data columns...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Extracting dimensional reductions...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Will export the following dimensional reductions: umap</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Extracting marker genes table...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] No trajectories to extract...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Checking for spatial data...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Overview of Cerebro object:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> class: Cerebro_v1.3</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> cerebroApp version: 2.2.0</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> cerebroApp version: 2.3.0</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> experiment name: PBMC</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> organism: hg</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> date of analysis: </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> date of export: 2026-07-19</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> date of export: 2026-07-21</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> number of cells: 80</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> number of genes: 230</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> grouping variables (2): sample, seurat_clusters</span>
@@ -262,9 +278,10 @@ object via <code>addImmuneRepertoire()</code>.  Legacy <code>bcr_data</code> /
 <span class="r-msg co"><span class="r-pr">#&gt;</span> trajectories:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> extra material:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Immune repertoire:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> HLA typing: none</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Spatial data:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Saving Cerebro object to: /tmp/nix-shell-4302-1568289921/Rtmph59lPi/pbmc_Seurat.crb</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> [19:38:39] Done!</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Saving Cerebro object to: /tmp/nix-shell-4089-2736644920/RtmpSJ1QkO/pbmc_Seurat.crb</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> [14:29:18] Done!</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

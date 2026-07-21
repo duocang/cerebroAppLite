@@ -1,0 +1,392 @@
+# A real antigen-selected single-cell TCR demo, end to end
+
+## What this guide does
+
+It records, step by step, how `demo_hla_tcr_dextramer.crb` is built from
+public 10x Genomics data: what is downloaded, what each processing step
+changes, and what the object finally declares. Every code chunk is the
+real pipeline, taken from `data-raw/build_hla_tcr_dextramer_demo.R`; the
+chunks are not evaluated when the vignette builds, because the raw
+inputs are ~1.6 GB.
+
+The emphasis is on the two parts that decide whether the HLA & TCR
+Motifs page says anything true: **how the TCR is transformed**, and
+**where the HLA comes from**.
+
+### Why this demo
+
+One HLA demo ships, and everything in it is measured:
+
+|  | `demo_hla_tcr_dextramer.crb` |
+|----|----|
+| cells | **real** — 12,000 sequenced CD8+ T cells |
+| TCR | **real** — paired αβ contigs, V gene + CDR3 |
+| HLA | **real** — the donors’ published genotypes (table S1), measured independently of these cells |
+
+Earlier iterations shipped two others — a fully fabricated fixture and a
+real bulk TCRβ cohort. Both are gone: cerebroAppLite is a single-cell
+application, and a demo that is neither real nor single-cell earns its
+place only if nothing better exists. This one is both, so it replaces
+them. Their build pipelines remain in `data-raw/` (see
+`data-raw/hla.md`) if you want to reproduce them, and the bulk workflow
+now lives in its own guide as *bring your own cohort*.
+
+Replacing them required answering a fair objection first: *if the motif
+network is only legible on synthetic data, what is the feature for?*
+
+### The answer, as a measurement
+
+A CDR3 Hamming-1 network needs an **antigen-selected** repertoire. An
+unselected polyclonal repertoire is sparse in CDR3 space: neighbours at
+distance 1 are rare, and adding cells does not fix it. A selected
+repertoire converges — different donors independently arrive at
+near-identical CDR3s against the same epitope (public / convergent
+recombination), which is exactly what the network draws.
+
+Measured on this source with the package’s own motif core:
+
+| subset of the same donor | unique CDR3β | result |
+|----|----|----|
+| all cells, unselected | 26,449 | trips the size guard — nothing to draw |
+| dextramer-binding cells | 2,910 | **308 nodes in 75 motifs** |
+| one epitope: Flu-MP `GILGFVFTL` | 267 | **121 nodes in 7 motifs** |
+
+The last row is the point: against one immunodominant influenza epitope,
+45% of the observed CDR3s collapse into **seven** families. That is
+measured convergence in real data, not a designed fixture.
+
+## The source
+
+10x Genomics, *CD8+ T cells of Healthy Donor 1–4* (2019) — the dextramer
+/ Immune Map experiment published as Zhang *et al.*, **Sci Adv**
+7:eabf5835 (2021). CD8+ T cells from four HLA-haplotyped healthy donors
+were stained with a pooled dCODE dextramer panel, sorted, and run on 10x
+5′ immune profiling: paired αβ TCR **and** transcriptome **and** surface
+protein **and** per-cell dextramer counts. Licence: **CC BY 4.0**.
+
+Three files per donor are used:
+
+| file | ~size | what it carries |
+|----|----|----|
+| `..._all_contig_annotations.csv` | 34 MB | TCR contigs: barcode, chain, V/J gene, CDR3 |
+| `..._binarized_matrix.csv` | 19–53 MB | per-cell dextramer calls, surface protein, donor |
+| `..._filtered_feature_bc_matrix.tar.gz` | 296 MB | the gene-expression matrix |
+
+## Download
+
+``` r
+# All four donors; the build script does this on demand and caches in
+# data-raw/vdj_10x_dextramer/ (gitignored). Manually:
+base <- "https://cf.10xgenomics.com/samples/cell-vdj/3.0.2"
+dir.create("data-raw/vdj_10x", recursive = TRUE, showWarnings = FALSE)
+
+for (d in 1:4) {
+  stem <- sprintf("vdj_v1_hs_aggregated_donor%d", d)
+  for (suffix in c(
+    "_all_contig_annotations.csv",
+    "_binarized_matrix.csv",
+    "_filtered_feature_bc_matrix.tar.gz"
+  )) {
+    download.file(
+      sprintf("%s/%s/%s%s", base, stem, stem, suffix),
+      file.path("data-raw/vdj_10x", paste0(stem, suffix)),
+      mode = "wb"
+    )
+  }
+}
+```
+
+Or in one line:
+
+``` bash
+Rscript data-raw/build_hla_tcr_dextramer_demo.R
+```
+
+## The TCR, step by step
+
+This is the half that decides what the network draws.
+
+### What arrives
+
+`all_contig_annotations.csv` is **one row per contig**, not per cell. A
+cell with a paired receptor appears at least twice — once for TRA, once
+for TRB:
+
+    barcode              is_cell  chain  v_gene      j_gene     cdr3            productive
+    AAACCTGAGAAACCTA-1   True     TRA    TRAV12-2    TRAJ33     CAVNVAGKSTF     True
+    AAACCTGAGAAACCTA-1   True     TRB    TRBV19      TRBJ2-7    CASSIRSSYEQYF   True
+
+### Step 1 — keep only productive αβ contigs
+
+A non-productive contig carries a CDR3 that was never expressed; keeping
+it would put a sequence in the network that the cell does not display.
+
+``` r
+contigs <- read.csv(f$contigs, stringsAsFactors = FALSE)
+contigs <- contigs[
+  contigs$productive %in% c("True", "TRUE", TRUE) &
+    contigs$chain %in% c("TRA", "TRB"),
+  ,
+  drop = FALSE
+]
+```
+
+### Step 2 — contigs → one clonotype per cell
+
+[`scRepertoire::combineTCR()`](https://www.borch.dev/uploads/scRepertoire/reference/combineTCR.html)
+collapses the contigs of a barcode into the single row per cell that the
+app’s parser expects. This is the **shape change** that matters:
+
+``` r
+out <- scRepertoire::combineTCR(
+  list(contigs),
+  samples = sprintf("donor%d", d),
+  filterMulti = TRUE
+)[[1]]
+```
+
+After it, one cell is one row and the chains live in underscore-joined
+strings:
+
+    barcode                      CTgene                                              CTaa
+    donor1_AAACCTGAGAAACCTA-1    TRAV12-2.TRAJ33.TRAC_TRBV19.TRBJ2-7.TRBC2           CAVNVAGKSTF_CASSIRSSYEQYF
+
+`filterMulti = TRUE` keeps the dominant chain when a barcode reports
+more than one — an ambiguous cell would otherwise contribute a CDR3 it
+may not carry.
+
+### Why this exact shape
+
+The app reads receptors through
+[`hla_parse_ir_segments()`](https://mihem.github.io/cerebroAppLite/reference/hla_parse_ir_segments.md),
+whose contract is `barcode` + `CTgene` + `CTaa`. For the requested chain
+it takes the matching underscore slot, pulls the `TRBV…` / `TRBJ…`
+tokens out of `CTgene`, and the CDR3 out of the same slot of `CTaa`.
+
+**The V gene is required.** That is why the pipeline starts from the
+contigs and not from the binarized matrix: the binarized matrix has the
+CDR3 amino acids but no V/J gene at all, and this source identifies a
+receptor by *(V gene, CDR3)* — declared as
+`receptor_key = "v_gene+cdr3"`, which makes split-by-V the app’s default
+so a node means what the source means.
+
+## The HLA, step by step
+
+This is the half that decides what the page may claim.
+
+### What is genuinely real here
+
+Each dextramer column is named `<allele>_<peptide>_<antigen>_binder`:
+
+    A0201_GILGFVFTL_Flu-MP_Influenza_binder
+    A0301_KLGGALQAK_IE-1_CMV_binder
+    A1101_AVFDRKSDAK_EBNA-3B_EBV_binder
+
+The allele prefix is the **reagent’s own HLA restriction** — a published
+property of the dextramer, independent of these cells. So for every
+antigen-specific cell the pipeline recovers a real triple: *peptide,
+antigen, and the HLA allele that presents it*.
+
+``` r
+allele_of <- function(col) {
+  paste0("HLA-", sub("^([ABC])([0-9]{2})([0-9]{2})_.*", "\\1*\\2:\\3", col))
+}
+# A0201_GILGFVFTL_Flu-MP_Influenza_binder -> "HLA-A*02:01"
+```
+
+### Step 3 — one specificity per cell, or none
+
+10x’s binarized calls mark each cell against each dextramer. Cells
+binding several are **dropped, not guessed at**: an ambiguous
+specificity would place a cell in the wrong HLA context, which is the
+one error this page must not make. Columns containing `NR(` are the
+negative controls and are never evidence.
+
+``` r
+hits <- as.matrix(b[, dex, drop = FALSE]) == "True"
+hits[is.na(hits)] <- FALSE
+keep <- rowSums(hits) == 1L                 # exactly one specificity
+idx <- max.col(hits, ties.method = "first")
+```
+
+### Step 4 — donor genotype, from the published table
+
+The donors’ HLA haplotypes are published in **table S1** of the paper’s
+supplementary material. The link printed inside the paper is dead (the
+`advances.sciencemag.org` domain was retired), but the file is served
+from science.org:
+
+    https://www.science.org/doi/suppl/10.1126/sciadv.abf5835/suppl_file/abf5835_sm.pdf
+
+Open it in a browser — science.org is behind Cloudflare and refuses
+command-line clients. Nothing depends on that, though: the table is
+transcribed inline in the build script, so it is self-contained — 14
+rows, and a separate file would only be one more thing to keep in step:
+
+``` r
+DONOR_HLA <- read.csv(text = "donor,copy,allele
+donor1,1,HLA-A*02:01
+donor1,2,HLA-A*11:01
+donor1,1,HLA-B*35:01
+donor2,1,HLA-A*02:01
+donor2,2,HLA-A*01:01
+donor2,1,HLA-B*08:01
+donor3,1,HLA-A*24:02
+donor3,2,HLA-A*29:02
+donor3,1,HLA-B*35:02
+donor3,2,HLA-B*44:03
+donor4,1,HLA-A*03:01
+donor4,2,HLA-A*03:01
+donor4,1,HLA-B*07:02
+donor4,2,HLA-B*57:01", stringsAsFactors = FALSE)
+```
+
+| donor   | HLA-A              | HLA-B              |
+|---------|--------------------|--------------------|
+| Donor 1 | A\*02:01, A\*11:01 | B\*35:01           |
+| Donor 2 | A\*02:01, A\*01:01 | B\*08:01           |
+| Donor 3 | A\*24:02, A\*29:02 | B\*35:02, B\*44:03 |
+| Donor 4 | A\*03:01, A\*03:01 | B\*07:02, B\*57:01 |
+
+Because these were measured independently of the cells in this data set,
+a carrier / non-carrier contrast on this demo is a real comparison.
+
+### Why the genotypes are not inferred from binding
+
+It is tempting to read the genotype off the data: a cell can only bind a
+dextramer restricted by an allele its donor carries, so the binding
+profile should reveal the haplotype. An earlier version of this build
+did exactly that, requiring an allele to account for at least 200 cells
+**and** 10 % of a donor’s antigen-specific cells.
+
+It was wrong. Against table S1:
+
+| donor | inferred from binding | published                                    |
+|-------|-----------------------|----------------------------------------------|
+| 3     | A\*03:01              | A\*24:02, A\*29:02 — **carries no A\*03:01** |
+
+Donor 3 has **25,674 cells, 92.8 % of its antigen-specific cells**,
+binding A\*03:01-restricted dextramers while carrying no A\*03:01 at
+all. Cross-reactivity at that scale is not something a threshold
+separates, and the inference would also have been circular: a donor
+would be a carrier *because* their cells bound that allele’s reagent,
+and the motifs come from those same cells.
+
+What the object still declares is the **selection**, not the genotype:
+
+``` r
+crb$technical_info$tcr_selection <- "antigen-selected"
+# "... which receptors are present was decided by the panel. The donor HLA
+#  genotypes are the published ones (table S1), measured independently of these
+#  cells, so they are not circular with the selection."
+crb$addHLATyping(donor_typing, source_type = "genotyped", ...)
+```
+
+## Cell selection — the step that makes the network legible
+
+Only cells that (a) carry a productive clonotype and (b) bound **exactly
+one** dextramer are kept. This is not a convenience; it *is* the data
+set’s defining property, and the reason the network draws at all (see
+the table in §1).
+
+``` r
+sel <- merge(tcr_all, dex_all[dex_all$specific, ],
+             by = c("barcode_raw", "donor"))
+sel <- sel[!is.na(sel$CTaa) & nzchar(sel$CTaa), ]
+# then a deterministic per-donor subsample, so the shipped file stays small
+```
+
+## Expression and projection
+
+Real measured transcriptomes, for exactly the cells that survived
+selection. The matrix is subset **first**, so nothing is computed on
+cells that are thrown away, and only the variable genes are shipped.
+
+``` r
+m <- Seurat::Read10X(gex_dir)[["Gene Expression"]]
+m <- m[, intersect(colnames(m), kept_barcodes), drop = FALSE]
+
+so <- Seurat::CreateSeuratObject(counts = expr)
+so <- Seurat::NormalizeData(so)
+so <- Seurat::FindVariableFeatures(so, nfeatures = 2000)
+so <- Seurat::ScaleData(so)
+so <- Seurat::RunPCA(so, npcs = 30)
+so <- Seurat::RunUMAP(so, dims = 1:30)
+```
+
+## Assembling the `.crb`
+
+``` r
+crb <- Cerebro_v1.3$new()
+crb$expression <- expression
+crb$setMetaData(meta)          # cell_barcode, sample, cell_type, antigen,
+                               # peptide, restricting_allele
+crb$projections <- list(umap = umap)
+crb$immune_repertoire <- immune_repertoire   # split by donor
+crb$technical_info <- list(
+  observation_unit = "cell",
+  receptor_key = "v_gene+cdr3",
+  tcr_selection = "antigen-selected",
+  tcr_selection_detail = "...",
+  lineage_column = "cell_type"   # declared, so the app never has to guess
+)
+crb$addHLATyping(donor_typing, source_type = "genotyped", ...)
+saveRDS(crb, "inst/extdata/v1.4/demo_hla_tcr_dextramer.crb", compress = "xz")
+```
+
+### The declared contracts, and why each one
+
+| contract | value | why |
+|----|----|----|
+| `observation_unit` | `cell` | these really are sequenced cells, unlike the bulk demo |
+| `receptor_key` | `v_gene+cdr3` | the source identifies a receptor by V **and** CDR3 |
+| `tcr_selection` | `antigen-selected` | the repertoire was sorted for binding; the page must say so |
+| `tcr_selection_detail` | see §6 | spells out the inferred-genotype circularity |
+| `lineage_column` | `cell_type` | **declared**, so the app never infers it — every cell here is a sorted CD8 T cell |
+
+Declaring `lineage_column` matters beyond tidiness: when it is absent
+the app must guess which column holds the CD4/CD8 label, and a guess can
+land on a treatment or study-arm column. Declaring it removes the guess.
+
+## Verification: measured, never assumed
+
+The build script ends by re-reading the file it just wrote and
+re-deriving the network with the package’s own core, so the numbers
+reported are what the shipped object actually produces:
+
+``` r
+check <- readRDS(OUT)
+ir <- check$getImmuneRepertoire()
+for (ch in c("TRB", "TRA")) {
+  seg <- cerebroAppLite:::hla_parse_ir_segments(ir, ch)
+  g <- cerebroAppLite:::hla_build_motif_graph(seg, by_v = TRUE, min_nodes = 2L)
+  # -> unique CDR3, nodes, motifs
+}
+```
+
+A build that silently loses the motif structure therefore reports it,
+instead of shipping a data set whose network is empty. On the shipped
+object it prints:
+
+       chains: TRA, TRB
+       TRB: 3350 unique CDR3 -> 157 nodes in 31 motifs
+       TRA: 3067 unique CDR3 -> 367 nodes in 130 motifs
+       HLA: 4 donors, 12 alleles, source_type=genotyped
+
+12,000 antigen-selected cells (3,000 per donor), 2,000 variable genes,
+7.8 MB.
+
+## What you see in the app
+
+Open the data set and go to **HLA & TCR Motifs**:
+
+- **Motif Network** — families of real CDR3β sequences at Hamming
+  distance 1. Colour by *Sample of origin* to see the same motif reached
+  independently by more than one donor: that is convergence, and it is
+  the whole argument.
+- **Network data** — the rows behind the picture, including each node’s
+  antigen and the HLA allele that presents it.
+- **HLA Associations** — real donor genotypes, so the carrier contrasts
+  are real; read the note above the tables for what the antigen
+  selection means.
+- **Data & QC** — the inferred genotypes and their coverage.
