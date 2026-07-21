@@ -256,7 +256,34 @@ Built by `data-raw/build_ir_demos.R` (see [`immune_repertoire.md`](immune_repert
 - **build**: `data-raw/build_hla_tcr_bulk_demo.R` (caches the 11M-line occurrence scan to `data-raw/pubtcrs/tcr_donors_cache.rds`)
 - **output**: `inst/extdata/v1.4/demo_hla_tcr_bulk.crb`
 
-> The two HLA demos are complementary and neither is sufficient alone: `demo_hla_tcr.crb` has real single cells but synthetic HLA + synthetic receptor linkage; `demo_hla_tcr_bulk.crb` has real HLA and real donor↔TCR linkage but no cells. A data set with real paired single-cell VDJ **and** real donor HLA would supersede both; none is currently public (the pan-disease scTCR reference's HLA is in controlled-access sub-studies).
+### demo_hla_tcr_10x.crb
+- **type**: immune_repertoire
+- **technology**: 10x Genomics 5′ Single Cell Immune Profiling — paired αβ V(D)J + 3′ gene expression + TotalSeq-C surface protein + dCODE pMHC dextramers. **Real single cells.**
+- **dropdown label**: `CD8 dextramer cohort - real antigen-selected cells`
+- **organism / tissue**: human (hg) / peripheral blood CD8+ T cells, four healthy donors
+- **source**: 10x Genomics, *CD8+ T cells of Healthy Donor 1–4* (2019), published as Zhang W *et al.*, **Sci Adv** 7(20):eabf5835 (2021), doi:10.1126/sciadv.abf5835.
+- **acquire**: the build script downloads on demand (~1.6 GB, cached in `data-raw/vdj_10x/`, gitignored); or manually, per donor `d` in 1..4:
+  ```bash
+  base=https://cf.10xgenomics.com/samples/cell-vdj/3.0.2
+  stem=vdj_v1_hs_aggregated_donor${d}
+  curl -fL -O ${base}/${stem}/${stem}_all_contig_annotations.csv
+  curl -fL -O ${base}/${stem}/${stem}_binarized_matrix.csv
+  curl -fL -O ${base}/${stem}/${stem}_filtered_feature_bc_matrix.tar.gz
+  ```
+- **object type**: `Cerebro_v1.3` built from scratch (Seurat used only for normalisation/PCA/UMAP).
+- **sampling**: **everything is real measured data.** Cells are kept only if they carry a productive αβ clonotype **and** bound exactly **one** dextramer (multi-binders are dropped, not guessed at). Deterministically subsampled to **3,000 cells per donor = 12,000 cells**, `set.seed(20260721)`; matrix cut to the 2,000 most variable genes. Measured with the package's own motif core on the shipped object: **TRB 3,350 unique CDR3 → 157 nodes in 31 motifs; TRA 3,067 → 367 nodes in 130 motifs**.
+- **why this data set exists**: it answers the fair objection that the motif network is only legible on synthetic data. A CDR3 Hamming-1 network needs an **antigen-selected** repertoire; an unselected one is sparse in CDR3 space and no amount of cells fixes it. Measured on this same source: all cells unselected = 26,449 unique CDR3 → trips the size guard; dextramer-binding cells = 2,910 → 308 nodes in 75 motifs; the single Flu-MP `GILGFVFTL` epitope = 267 → **121 nodes in 7 motifs**, i.e. 45 % of the CDR3s against one immunodominant epitope collapse into seven families. That is measured convergence, not a designed fixture.
+- **cell-type field**: `cell_type` (single level, `CD8 T` — the cells were sorted CD8+). Declared via `technical_info$lineage_column`, so the app never has to infer it.
+- **embedded image**: none (n/a for immune repertoire)
+- **HLA typing**: ⚠️ **inferred, `source_type = "imputed"`.** The published haplotypes are in table S1, served from `advances.sciencemag.org` — a domain retired when Science migrated to science.org, so the supplement is no longer retrievable. Each donor's alleles are therefore inferred from which dextramers their cells bound: an allele counts when it accounts for ≥ 200 **and** ≥ 10 % of that donor's single-specificity cells. The relative cut matters — donor2 has 814 cells against A\*11:01, which clears any sensible count threshold and is still only 2 % of its specific cells (cross-reactivity, not a genotype). The result reproduces the per-donor allele profile of the paper's own quality-controlled call set (data file S1) exactly: d1 A\*02:01/A\*03:01/A\*11:01 · d2 A\*02:01/A\*03:01/B\*08:01 · d3 A\*03:01 · d4 A\*03:01/A\*11:01.
+- **⚠️ circular by construction (NOT independent evidence)**: a donor is called a carrier of HLA-X *because their cells bound an X-restricted dextramer*, and the motif families are built from those same cells. Any carrier / non-carrier contrast this data set shows is therefore guaranteed and is not evidence of an HLA association. Declared in `technical_info$tcr_selection = "antigen-selected"` with the detail spelled out, which the app prints above the Associations tables. **Use `demo_hla_tcr_bulk.crb` for association work on genuine genotypes.**
+- **declared contracts**: `observation_unit = "cell"`, `receptor_key = "v_gene+cdr3"`, `tcr_selection = "antigen-selected"`, `lineage_column = "cell_type"`.
+- **license**: CC BY 4.0 (10x Genomics datasets)
+- **build**: `data-raw/build_hla_tcr_10x_demo.R` (self-verifying: re-reads the written file and re-derives the network with the package's own motif core, so the reported numbers are what the shipped object produces)
+- **output**: `inst/extdata/v1.4/demo_hla_tcr_10x.crb` (~7.8 MB)
+- **walkthrough**: `vignettes/hla_tcr_10x_antigen_selected.Rmd` records the download, every processing step, and what changes at each one — with the TCR and HLA transformations spelled out.
+
+> The three HLA demos are complementary and none is sufficient alone. `demo_hla_tcr.crb`: dense motif network and clean HLA associations, but everything is fabricated. `demo_hla_tcr_bulk.crb`: real receptors and **real genotypes**, but bulk — no cells, no transcriptome, no lineage. `demo_hla_tcr_10x.crb`: **real single cells with real paired TCR** and a network that is legible because the repertoire is antigen-selected, but its genotypes are inferred from that same selection and so cannot carry an association claim. A data set with real paired single-cell VDJ **and** independently measured donor HLA would supersede all three; none is currently public (the pan-disease scTCR reference's HLA is in controlled-access sub-studies).
 
 ---
 

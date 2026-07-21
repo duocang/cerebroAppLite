@@ -69,7 +69,17 @@ Cerebro.options <<- list(
     ## (donor, clonotype) analysis unit, and the lineage MHC context is Unknown
     ## by design. Use it for HLA Associations on genuine genotypes.
     ## Rebuild with data-raw/build_hla_tcr_bulk_demo.R.
-    "TCRb cohort - real donor HLA (bulk)" = "extdata/v1.4/demo_hla_tcr_bulk.crb"
+    "TCRb cohort - real donor HLA (bulk)" = "extdata/v1.4/demo_hla_tcr_bulk.crb",
+    ## The third corner, and the one that answers "does this work on real data?":
+    ## REAL single cells with REAL paired TCR, from 10x's dextramer cohort. The
+    ## repertoire is ANTIGEN-SELECTED (cells were sorted for binding a pMHC
+    ## dextramer), which is precisely why its motif network is legible where an
+    ## unselected repertoire's is not -- 12,000 cells give 157 TRB nodes in 31
+    ## motifs on measured sequences. Donor genotypes are INFERRED from which
+    ## dextramers each donor bound, so its HLA Associations are circular by
+    ## construction and say so; use the bulk demo above for association work.
+    ## Rebuild with data-raw/build_hla_tcr_10x_demo.R.
+    "CD8 dextramer cohort - real antigen-selected cells" = "extdata/v1.4/demo_hla_tcr_10x.crb"
   ),
   "crb_pick_smallest_file" = FALSE,
   ## Visium loads its real H&E background from an EXTERNAL image file (rather than
