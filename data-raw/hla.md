@@ -3,13 +3,13 @@
 Provenance, citations and licences live in [`DATASETS.md`](DATASETS.md).
 This file carries the design reasoning, the exact acquisition steps, and the known problems of each demo.
 
-Three demos ship. None of them is sufficient alone, and that is deliberate: the page needs real receptors, real genotypes, and a legible network, and no public data set currently supplies all three.
+Three demos ship. Each answers a different question; the newest one is the only place where real receptors, real genotypes and a legible network meet, and it gets there by using an antigen-selected repertoire.
 
 | demo | cells | TCR | HLA genotype | what it is for | build script |
 |---|---|---|---|---|---|
 | `demo_hla_tcr_synthetic.crb` | synthetic | synthetic | synthetic | shows the page working on a dense network; proves nothing about real data | `build_hla_tcr_demo.R` |
 | `demo_hla_tcr_bulk.crb` | none (bulk) | **real** | **real, independently measured** | HLA Associations on genuine genotypes | `build_hla_tcr_bulk_demo.R` |
-| `demo_hla_tcr_dextramer.crb` | **real** | **real** | inferred (see below) | the motif network on measured sequences | `build_hla_tcr_dextramer_demo.R` |
+| `demo_hla_tcr_dextramer.crb` | **real** | **real** | **real, published (table S1)** | the motif network on measured sequences | `build_hla_tcr_dextramer_demo.R` |
 
 ---
 
@@ -163,39 +163,47 @@ Declared contracts:
 
 Recorded here so nobody has to rediscover them.
 
-## 3.1 The donor genotypes could not be obtained
+## 3.1 The genotypes are published — and inferring them instead was wrong
 
-The published haplotypes are in **table S1**, and the paper points to `http://advances.sciencemag.org/cgi/content/full/7/20/eabf5835/DC1` — a domain **retired when Science migrated to science.org**, so the supplement is no longer retrievable.
-The current article page offers only `abf5835_data_file_s1.csv` (a data table, not table S1); no supplementary PDF is served.
-The publisher's direct supplement URL returns HTTP 403.
-The paper's own code repositories (`regeneron-mpds/ICON`, `regeneron-mpds/TCRAI`) carry no donor metadata either.
+The donors' HLA haplotypes are in **table S1** of the paper's supplementary PDF.
+The link printed in the paper (`advances.sciencemag.org/.../DC1`) is dead — that domain was retired when Science migrated — but the file is served from science.org:
 
-Genotypes are therefore **inferred** from which dextramers each donor's cells bound.
+```
+https://www.science.org/doi/suppl/10.1126/sciadv.abf5835/suppl_file/abf5835_sm.pdf
+```
 
-A count threshold alone is not enough: donor2 has 814 cells against A\*11:01, which clears any sensible count and is still only **2 %** of that donor's antigen-specific cells — cross-reactivity, not a genotype.
-The cut is therefore relative: an allele counts when it accounts for **≥ 200 cells and ≥ 10 %** of that donor's single-specificity cells.
+The table is transcribed into [`donor_hla_haplotypes.csv`](donor_hla_haplotypes.csv), which the build reads. The PDF itself is not committed (this repository never commits third-party raw sources); a local copy lives in the gitignored cache as `vdj_10x_dextramer/paper_supplement_table_S1_donor_HLA.pdf`.
 
-| donor | inferred alleles | share of that donor's specific cells |
+| donor | HLA-A | HLA-B |
 |---|---|---|
-| donor1 | A\*02:01, A\*03:01, A\*11:01 | 22.2 %, 27.8 %, 47.8 % |
-| donor2 | A\*02:01, A\*03:01, B\*08:01 | 24.6 %, 14.3 %, 59.0 % |
-| donor3 | A\*03:01 | 92.8 % |
-| donor4 | A\*03:01, A\*11:01 | 23.5 %, 75.3 % |
+| Donor 1 | A\*02:01, A\*11:01 | B\*35:01 |
+| Donor 2 | A\*02:01, A\*01:01 | B\*08:01 |
+| Donor 3 | A\*24:02, A\*29:02 | B\*35:02, B\*44:03 |
+| Donor 4 | A\*03:01, A\*03:01 | B\*07:02, B\*57:01 |
+| Donor V | A\*02:01, A\*29:02 | B\*35:01, B\*57:01 |
 
-This reproduces the per-donor allele profile of the paper's **own quality-controlled call set** (`abf5835_data_file_s1.csv`, 53,062 cells) exactly — which is the closest thing to an independent check that is actually available.
-The resulting contrasts: A\*02:01 is 2 carriers vs 2 non-carriers, A\*11:01 is 2 vs 2, B\*08:01 is 1 vs 3, A\*03:01 is carried by all four (no contrast).
+**Worth recording: an earlier version of this build inferred the genotypes from dextramer binding, and the inference was badly wrong.**
+It required an allele to account for ≥ 200 cells and ≥ 10 % of a donor's antigen-specific cells — a cut that looked careful and reproduced the per-donor profile of the paper's own quality-controlled call set.
+Against table S1 it still fails:
 
-## 3.2 ⚠️ The HLA associations on this data set are circular
+| donor | inferred from binding | published (table S1) |
+|---|---|---|
+| 1 | A\*02:01, A\*03:01, A\*11:01 | A\*02:01, A\*11:01, B\*35:01 — **no A\*03:01** |
+| 2 | A\*02:01, A\*03:01, B\*08:01 | A\*02:01, **A\*01:01**, B\*08:01 — **no A\*03:01** |
+| 3 | A\*03:01 | A\*24:02, A\*29:02, B\*35:02, B\*44:03 — **carries no A\*03:01 at all** |
+| 4 | A\*03:01, A\*11:01 | A\*03:01 (homozygous), B\*07:02, B\*57:01 — **no A\*11:01** |
 
-This is the important one.
+Donor 3 is the one that settles it: **25,674 of its cells — 92.8 % of its antigen-specific cells — bound A\*03:01-restricted dextramers, and the donor carries no A\*03:01.**
+Cross-reactivity at that scale is not something a threshold can separate, so binding simply cannot stand in for a genotype.
+The lesson is worth keeping even though the problem is now solved: an inference that looks well-calibrated against one derived data set can still be wrong about the thing it claims to measure.
 
-A donor is called a carrier of HLA-X **because their cells bound an X-restricted dextramer**, and the motif families are built from those same cells.
-So any carrier / non-carrier contrast this data set shows is **guaranteed by construction and is not independent evidence** of an HLA association.
+## 3.2 What is still declared: the selection, not the genotypes
 
-It is declared through `technical_info$tcr_selection = "antigen-selected"` with the detail spelled out, which the app prints above the Associations tables, and the HLA table is stored with `source_type = "imputed"`.
-**Use `demo_hla_tcr_bulk.crb` for association work on genuine genotypes.**
+With published genotypes the earlier circularity is gone — a donor's alleles were measured independently of these cells, so a carrier / non-carrier contrast here is a real comparison.
 
-If table S1 ever becomes available again: swap the inferred table for the published one, set `source_type = "genotyped"`, and drop the circularity clause. Nothing else in the pipeline changes.
+What remains true, and is declared, is that the **repertoire is antigen-selected**: cells were sorted for dextramer binding, so which receptors are present was decided by the panel, and this is not an unbiased sample of the donors' repertoires.
+That is stated in `technical_info$tcr_selection = "antigen-selected"` with the detail in `tcr_selection_detail`, and the app prints it above the Associations tables.
+It is a statement about how the cells were chosen, not about the genotypes.
 
 ## 3.3 The paper's curated table cannot be joined to the expression matrices
 

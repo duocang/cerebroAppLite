@@ -36,11 +36,12 @@ Only the scripts and the `.md` files are tracked. Every sub-directory that holds
 | path | tracked? | owned by | what is in it |
 |------|----------|----------|---------------|
 | `*.R` | yes | — | the build scripts, one per data family |
+| `donor_hla_haplotypes.csv` | yes | `build_hla_tcr_dextramer_demo.R` | the published donor HLA typing (table S1 of the source paper), transcribed by hand; its header carries the citation and the working supplement URL |
 | `DATASETS.md` | yes | — | the provenance registry: source, citation, licence, acquire command, sampling — one entry per shipped `.crb` |
 | `*.md` (`spatial`, `immune_repertoire`, `trajectory`, `hla`, `trekker`) | yes | — | per-family design and rebuild notes; they link back to `DATASETS.md` rather than repeat it |
 | `design/` | yes | — | dated design/plan documents kept for the record of a past restructuring (currently the 2026-07-07 trajectory-demo consolidation). Historical, not part of any build. |
 | `vdj_10x/` | **no** (cache) | `build_ir_demos.R` | 10x PBMC VDJ contig CSVs (`pbmc3_t_contig.csv`, `pbmc3_b_contig.csv`) for the immune-repertoire demos |
-| `vdj_10x_dextramer/` | **no** (cache, ~2.7 GB) | `build_hla_tcr_dextramer_demo.R` | the 10x dextramer cohort: per-donor contig annotations, binarized dextramer matrices, and the expression matrices |
+| `vdj_10x_dextramer/` | **no** (cache, ~2.7 GB) | `build_hla_tcr_dextramer_demo.R` | the 10x dextramer cohort: per-donor contig annotations, binarized dextramer matrices, expression matrices, plus a local copy of the paper's supplementary PDF (the publisher's file is never committed) |
 | `pubtcrs/` | **no** (cache, ~349 MB) | `build_hla_tcr_bulk_demo.R` | the Emerson/DeWitt cohort archive from Zenodo, plus a cached occurrence scan |
 | `slidetags/` | **no** (cache, ~75 MB) | — | `slidetags_cortex.h5ad`, left over from Slide-tags exploration. **No build script reads it**; it ships nothing and can be deleted. |
 | `xenium/` | **no** (cache) | `build_spatial_demos.R` | the Xenium outs bundle (large; auto-downloaded on first run) |

@@ -75,9 +75,10 @@ Cerebro.options <<- list(
     ## repertoire is ANTIGEN-SELECTED (cells were sorted for binding a pMHC
     ## dextramer), which is precisely why its motif network is legible where an
     ## unselected repertoire's is not -- 12,000 cells give 157 TRB nodes in 31
-    ## motifs on measured sequences. Donor genotypes are INFERRED from which
-    ## dextramers each donor bound, so its HLA Associations are circular by
-    ## construction and say so; use the bulk demo above for association work.
+    ## motifs on measured sequences. Donor genotypes are the PUBLISHED ones
+    ## (table S1 of the source paper), measured independently of these cells, so
+    ## the carrier contrasts are real; the repertoire is still antigen-selected
+    ## and says so, since the reagent panel decided which receptors are present.
     ## Rebuild with data-raw/build_hla_tcr_dextramer_demo.R.
     "HLA & TCR - real single cells, antigen-selected" = "extdata/v1.4/demo_hla_tcr_dextramer.crb"
   ),

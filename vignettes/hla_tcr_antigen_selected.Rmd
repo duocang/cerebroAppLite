@@ -42,7 +42,7 @@ The package ships three HLA demos because no single one answers everything:
 |---|---|---|---|---|
 | `demo_hla_tcr_synthetic.crb` | synthetic | synthetic | synthetic | shows a dense motif network; proves nothing about real data |
 | `demo_hla_tcr_bulk.crb` | none (bulk) | **real** | **real genotypes** | HLA Associations on genuine typing |
-| **`demo_hla_tcr_dextramer.crb`** | **real** | **real** | inferred (see §6) | the motif network on measured sequences |
+| **`demo_hla_tcr_dextramer.crb`** | **real** | **real** | **real, published** | the motif network on measured sequences |
 
 The gap the third one fills is a fair objection: *if the motif network is only
 legible on synthetic data, what is the feature for?*
@@ -222,67 +222,65 @@ keep <- rowSums(hits) == 1L                 # exactly one specificity
 idx <- max.col(hits, ties.method = "first")
 ```
 
-## Step 4 — donor genotype, and the honest caveat
+## Step 4 — donor genotype, from the published table
 
-The published haplotypes are in table S1, served from
-`advances.sciencemag.org` — a domain retired when Science migrated to
-science.org, so the supplement is no longer retrievable. The build therefore
-**infers** each donor's alleles from which dextramers their cells bound.
+The donors' HLA haplotypes are published in **table S1** of the paper's
+supplementary material. The link printed inside the paper is dead (the
+`advances.sciencemag.org` domain was retired), but the file is served from
+science.org:
 
-A count threshold alone is not enough. Donor 2 has 814 cells against
-HLA-A\*11:01, which clears any sensible count, and that is still only **2 %** of
-that donor's antigen-specific cells — cross-reactivity, not a genotype. The cut
-is therefore relative:
-
-```{r hla-genotype}
-CARRIER_MIN_CELLS <- 200L    # absolute floor
-CARRIER_MIN_SHARE <- 0.10    # ... and a real share of the donor's specific cells
-counts <- tab[donor, ]
-share <- counts / sum(counts)
-alleles <- names(counts)[counts >= CARRIER_MIN_CELLS & share >= CARRIER_MIN_SHARE]
+```
+https://www.science.org/doi/suppl/10.1126/sciadv.abf5835/suppl_file/abf5835_sm.pdf
 ```
 
-That reproduces the per-donor allele profile of the paper's own
-quality-controlled call set (data file S1) exactly, and it leaves the four
-donors **not** identical — which is what makes a carrier / non-carrier split
-exist at all:
+The table is transcribed into `data-raw/donor_hla_haplotypes.csv`, which the
+build reads directly:
 
-| allele | donor1 | donor2 | donor3 | donor4 | contrast |
-|---|---|---|---|---|---|
-| HLA-A*02:01 | ✓ | ✓ | · | · | 2 vs 2 |
-| HLA-A*03:01 | ✓ | ✓ | ✓ | ✓ | none |
-| HLA-A*11:01 | ✓ | · | · | ✓ | 2 vs 2 |
-| HLA-B*08:01 | · | ✓ | · | · | 1 vs 3 |
+```{r hla-genotype}
+tab <- read.csv("data-raw/donor_hla_haplotypes.csv", comment.char = "#")
+tab$sample <- tolower(gsub(" ", "", tab$donor))   # "Donor 1" -> "donor1"
+```
 
-## ⚠️ The circularity, stated plainly
+| donor | HLA-A | HLA-B |
+|---|---|---|
+| Donor 1 | A\*02:01, A\*11:01 | B\*35:01 |
+| Donor 2 | A\*02:01, A\*01:01 | B\*08:01 |
+| Donor 3 | A\*24:02, A\*29:02 | B\*35:02, B\*44:03 |
+| Donor 4 | A\*03:01, A\*03:01 | B\*07:02, B\*57:01 |
 
-A donor is called a carrier of HLA-X **because their cells bound an
-X-restricted dextramer** — and the motif families are built from those same
-cells. So any carrier / non-carrier contrast this data set shows is **guaranteed
-by construction and is not independent evidence** of an HLA association.
+Because these were measured independently of the cells in this data set, a
+carrier / non-carrier contrast on this demo is a real comparison.
 
-The object says so itself, through the contract the app reads:
+## Why the genotypes are not inferred from binding
+
+It is tempting to read the genotype off the data: a cell can only bind a
+dextramer restricted by an allele its donor carries, so the binding profile
+should reveal the haplotype. An earlier version of this build did exactly that,
+requiring an allele to account for at least 200 cells **and** 10 % of a donor's
+antigen-specific cells.
+
+It was wrong. Against table S1:
+
+| donor | inferred from binding | published |
+|---|---|---|
+| 3 | A\*03:01 | A\*24:02, A\*29:02 — **carries no A\*03:01** |
+
+Donor 3 has **25,674 cells, 92.8 % of its antigen-specific cells**, binding
+A\*03:01-restricted dextramers while carrying no A\*03:01 at all.
+Cross-reactivity at that scale is not something a threshold separates, and the
+inference would also have been circular: a donor would be a carrier *because*
+their cells bound that allele's reagent, and the motifs come from those same
+cells.
+
+What the object still declares is the **selection**, not the genotype:
 
 ```{r hla-disclosure}
 crb$technical_info$tcr_selection <- "antigen-selected"
-crb$technical_info$tcr_selection_detail <- paste(
-  "... the donor genotypes shipped here are INFERRED from which dextramers",
-  "each donor's cells bound ... any carrier / non-carrier contrast on this",
-  "data set is circular and is NOT independent evidence."
-)
-crb$addHLATyping(
-  donor_typing,
-  source_type = "imputed",
-  typing_method = "inferred from dCODE dextramer binding (not a genotyping assay)"
-)
+# "... which receptors are present was decided by the panel. The donor HLA
+#  genotypes are the published ones (table S1), measured independently of these
+#  cells, so they are not circular with the selection."
+crb$addHLATyping(donor_typing, source_type = "genotyped", ...)
 ```
-
-The app prints that detail above the Associations tables. For association work
-on genuine, independently measured genotypes, use `demo_hla_tcr_bulk.crb`.
-
-If table S1 ever becomes available again, swapping in the published table and
-setting `source_type = "genotyped"` is the only change needed — and the
-circularity note above can then be dropped.
 
 # Cell selection — the step that makes the network legible
 
@@ -331,7 +329,7 @@ crb$technical_info <- list(
   tcr_selection_detail = "...",
   lineage_column = "cell_type"   # declared, so the app never has to guess
 )
-crb$addHLATyping(donor_typing, source_type = "imputed", ...)
+crb$addHLATyping(donor_typing, source_type = "genotyped", ...)
 saveRDS(crb, "inst/extdata/v1.4/demo_hla_tcr_dextramer.crb", compress = "xz")
 ```
 
@@ -372,7 +370,7 @@ shipping a data set whose network is empty. On the shipped object it prints:
    chains: TRA, TRB
    TRB: 3350 unique CDR3 -> 157 nodes in 31 motifs
    TRA: 3067 unique CDR3 -> 367 nodes in 130 motifs
-   HLA: 4 donors, 4 alleles, source_type=imputed
+   HLA: 4 donors, 12 alleles, source_type=genotyped
 ```
 
 12,000 antigen-selected cells (3,000 per donor), 2,000 variable genes, 7.8 MB.
@@ -386,6 +384,6 @@ Open the data set and go to **HLA & TCR Motifs**:
   more than one donor: that is convergence, and it is the whole argument.
 * **Network data** — the rows behind the picture, including each node's antigen
   and the HLA allele that presents it.
-* **HLA Associations** — works, but read the disclosure above the tables first:
-  on this data set the contrast is circular by construction.
+* **HLA Associations** — real donor genotypes, so the carrier contrasts are
+  real; read the note above the tables for what the antigen selection means.
 * **Data & QC** — the inferred genotypes and their coverage.

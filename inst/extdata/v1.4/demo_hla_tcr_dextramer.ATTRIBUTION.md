@@ -22,12 +22,11 @@ Distributed by 10x Genomics under the **Creative Commons Attribution 4.0
 International (CC-BY 4.0)** license
 (<https://creativecommons.org/licenses/by/4.0/>).
 
-**Note on the HLA typing in this file.** The donor genotypes shipped here are
-NOT from the publication: they are inferred from which dextramers each donor's
-cells bound, because the published haplotypes (table S1) are served from a
-retired domain and are no longer retrievable. They are stored with
-`source_type = "imputed"`, and any HLA carrier / non-carrier contrast on this
-data set is circular by construction — see `technical_info$tcr_selection`.
+**Note on the HLA typing in this file.** The donor genotypes are the ones
+published in table S1 of the supplementary material of the paper cited above,
+stored with `source_type = "genotyped"`. The repertoire itself is
+antigen-selected (cells were sorted for dextramer binding), which the object
+declares in `technical_info$tcr_selection`.
 
 This file accompanies the installed demo so the CC-BY 4.0 attribution travels
 with the data (the full provenance and build steps live in `data-raw/DATASETS.md`

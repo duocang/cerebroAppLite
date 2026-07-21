@@ -6,13 +6,14 @@
 # This is the third HLA demo. It ADDS to the other two, it does not replace
 # them -- each answers a different question and none of them answers all three:
 #
-#   demo_hla_tcr_synthetic.crb       fully synthetic single cells
-#                          -> shows what a dense motif network looks like, but
-#                             proves nothing about real data
-#   demo_hla_tcr_bulk.crb  real bulk TCRb + REAL donor genotypes (Emerson 2017)
-#                          -> HLA Associations on genuine HLA typing, no cells
-#   demo_hla_tcr_dextramer.crb   REAL single cells + REAL TCR + antigen selection
-#     (this file)          -> the motif network on measured sequences
+#   demo_hla_tcr_synthetic.crb   fully synthetic single cells
+#       -> shows what a dense motif network looks like, but proves nothing
+#          about real data
+#   demo_hla_tcr_bulk.crb        real bulk TCRb + REAL genotypes (Emerson 2017)
+#       -> HLA Associations on genuine HLA typing, but no cells
+#   demo_hla_tcr_dextramer.crb   REAL single cells + REAL TCR + REAL genotypes,
+#     (this file)                antigen-selected
+#       -> the motif network on measured sequences
 #
 # WHY THIS DATA SET EXISTS
 # ------------------------
@@ -53,31 +54,34 @@
 #     * the HLA restriction of each dextramer: it is a property of the reagent,
 #       stated in the reagent's name (A0201_GILGFVFTL_Flu-MP -> HLA-A*02:01)
 #
-#   DERIVED here, and therefore declared as such in the object:
-#     * the donor GENOTYPE. The published haplotypes are in table S1, served
-#       from advances.sciencemag.org -- a domain retired when Science migrated
-#       to science.org, so the supplement is no longer retrievable. This script
-#       therefore infers each donor's alleles from which dextramers their cells
-#       bound. The inference reproduces the per-donor allele profile of the
-#       paper's own quality-controlled call set (data file S1) exactly.
+#     * the donors' HLA GENOTYPES, transcribed from table S1 of the paper's
+#       supplementary PDF (see data-raw/donor_hla_haplotypes.csv for citation
+#       and URL). They were measured independently of these cells, so they can
+#       carry an association claim.
 #
-# >>> THE CIRCULARITY THIS CREATES, STATED PLAINLY <<<
-# A donor is called a carrier of HLA-X because their cells bound an X-restricted
-# dextramer; the motif families are built from those same cells. So a
-# carrier/non-carrier contrast on this data set is guaranteed by construction
-# and is NOT independent evidence of an HLA association. The object declares
-# this through `technical_info$tcr_selection`, which makes the app print it
-# above the Associations tables. Use `demo_hla_tcr_bulk.crb` for association
-# work on genuine, independently measured genotypes.
+# WHY THE GENOTYPES ARE NOT INFERRED FROM BINDING
+# -----------------------------------------------
+# An earlier version of this script derived each donor's alleles from which
+# dextramers their cells bound. That was circular AND wrong. Circular, because a
+# donor would be a carrier of HLA-X precisely because their cells bound an
+# X-restricted reagent, and the motifs come from those same cells. Wrong,
+# because binding is simply not genotype: donor3 has 25,674 cells -- 92.8% of
+# its antigen-specific cells -- binding A*03:01-restricted dextramers, and
+# table S1 shows it carries no A*03:01 at all (it is A*24:02 / A*29:02). No
+# threshold separates cross-reactivity at that scale. The published table is
+# used instead, and the demo can therefore ship real genotypes.
 #
-# If table S1 ever becomes available again, swap `hla_donor_typing()` for the
-# published table and change `source_type` to "genotyped"; nothing else here
-# changes, and the circularity note below can then be dropped.
+# WHAT REMAINS DECLARED
+# ---------------------
+# The repertoire is still ANTIGEN-SELECTED: cells were sorted for dextramer
+# binding, so this is not an unbiased repertoire and the page says so through
+# `technical_info$tcr_selection`. That is a statement about how the cells were
+# chosen, not about the genotypes, which are independent.
 #
 # USAGE
 #   Rscript data-raw/build_hla_tcr_dextramer_demo.R
-# Raw downloads are cached in data-raw/vdj_10x_dextramer/ (gitignored, ~1.6 GB). Only the
-# built .crb ships.
+# Raw downloads are cached in data-raw/vdj_10x_dextramer/ (gitignored, ~1.6 GB);
+# only the built .crb ships.
 # ============================================================================
 
 suppressPackageStartupMessages({
@@ -95,18 +99,17 @@ CACHE <- "data-raw/vdj_10x_dextramer"
 OUT <- "inst/extdata/v1.4/demo_hla_tcr_dextramer.crb"
 BASE <- "https://cf.10xgenomics.com/samples/cell-vdj/3.0.2"
 
-## A donor is called a carrier of an allele only if a real SHARE of their
-## antigen-specific cells bound a dextramer restricted by it. An absolute count
-## is not enough: donor2 has 814 cells against A*11:01, which clears any
-## sensible count threshold and is still only 2% of that donor's specific cells
-## -- cross-reactivity and background, not a genotype. A relative cut separates
-## them cleanly, and it reproduces exactly the per-donor allele profile of the
-## paper's own quality-controlled call set (data file S1), which is the closest
-## thing to a published genotype that is actually obtainable: the supplementary
-## PDF holding table S1 is served from advances.sciencemag.org, a domain retired
-## when Science migrated, so the haplotypes themselves cannot be retrieved.
-CARRIER_MIN_SHARE <- 0.10
-CARRIER_MIN_CELLS <- 200L
+## The donors' REAL genotypes, transcribed from table S1 of the paper's
+## supplementary PDF. See data-raw/donor_hla_haplotypes.csv for the citation and
+## the working URL (the link printed in the paper itself is dead).
+##
+## This matters more than it looks. An earlier version of this script inferred
+## the genotypes from which dextramers each donor's cells bound, and that
+## inference was WRONG: donor3 has 25,674 cells (92.8% of its specific cells)
+## binding A*03:01-restricted dextramers and is not an A*03:01 carrier at all --
+## it is A*24:02 / A*29:02. Binding is not genotype, and cross-reactivity is far
+## larger than a threshold can separate. The published table is used instead.
+HLA_TABLE <- "data-raw/donor_hla_haplotypes.csv"
 
 ## Shipped size. The demo must stay a few MB, so the antigen-selected cells are
 ## subsampled per donor and the matrix is cut to informative genes.
@@ -293,39 +296,25 @@ cat(sprintf(
 ))
 
 ## Donor genotype, INFERRED from binding (see the header's circularity note).
-hla_donor_typing <- function(dex_all) {
-  tab <- table(
-    dex_all$donor[dex_all$specific],
-    dex_all$restricting_allele[dex_all$specific]
+hla_donor_typing <- function(donors) {
+  tab <- utils::read.csv(
+    HLA_TABLE,
+    comment.char = "#",
+    stringsAsFactors = FALSE
   )
-  out <- do.call(
-    rbind,
-    lapply(rownames(tab), function(dn) {
-      counts <- tab[dn, ]
-      share <- counts / max(sum(counts), 1L)
-      al <- colnames(tab)[
-        counts >= CARRIER_MIN_CELLS & share >= CARRIER_MIN_SHARE
-      ]
-      if (length(al) == 0) {
-        return(NULL)
-      }
-      data.frame(
-        sample = dn,
-        donor_id = dn,
-        allele = al,
-        copy = 1L,
-        stringsAsFactors = FALSE
-      )
-    })
+  # "Donor 1" in the paper is "donor1" here; keep only the donors we ship.
+  tab$sample <- tolower(gsub(" ", "", tab$donor))
+  tab <- tab[tab$sample %in% donors, , drop = FALSE]
+  data.frame(
+    sample = tab$sample,
+    donor_id = tab$sample,
+    allele = tab$allele,
+    copy = as.integer(tab$copy),
+    stringsAsFactors = FALSE
   )
-  out
 }
-donor_typing <- hla_donor_typing(dex_all)
-cat(sprintf(
-  "   inferred genotypes (>=%d cells AND >=%.0f%% of the donor's specific cells):\n",
-  CARRIER_MIN_CELLS,
-  100 * CARRIER_MIN_SHARE
-))
+donor_typing <- hla_donor_typing(sprintf("donor%d", DONORS))
+cat("   published genotypes (table S1):\n")
 for (dn in unique(donor_typing$sample)) {
   cat(sprintf(
     "     %s: %s\n",
@@ -481,22 +470,19 @@ crb$technical_info <- list(
   tcr_selection_detail = paste(
     "Cells were sorted for binding to a pooled dCODE dextramer panel, so this",
     "repertoire is antigen-SELECTED -- which is exactly why its motif network",
-    "is legible where an unselected repertoire's is not. The donor genotypes",
-    "shipped here are INFERRED from which dextramers each donor's cells bound,",
-    "because the published haplotypes (table S1) are paywalled. A donor is",
-    "therefore a carrier of an allele because their cells bound a dextramer",
-    "restricted by it, and the motifs are built from those same cells: any",
-    "carrier / non-carrier contrast on this data set is circular and is NOT",
-    "independent evidence. Use demo_hla_tcr_bulk.crb for association work on",
-    "genuine genotypes."
+    "is legible where an unselected repertoire's is not. It is therefore not an",
+    "unbiased sample of the donors' repertoires: which receptors are present",
+    "was decided by the panel. The donor HLA genotypes are the published ones",
+    "(table S1 of the source paper), measured independently of these cells, so",
+    "they are not circular with the selection."
   ),
   # Declared, so the app never has to guess which column holds the lineage.
   lineage_column = "cell_type"
 )
 crb$addHLATyping(
   donor_typing,
-  source_type = "imputed",
-  typing_method = "inferred from dCODE dextramer binding (not a genotyping assay)",
+  source_type = "genotyped",
+  typing_method = "HLA typing published in table S1 of Zhang et al., Sci Adv 2021",
   source_reference = "10x Genomics CD8+ T cells of Healthy Donor 1-4; Zhang et al., Sci Adv 2021, eabf5835"
 )
 
