@@ -193,9 +193,9 @@ Built by `data-raw/build_ir_demos.R` (see [`immune_repertoire.md`](immune_repert
   ```bash
   mkdir -p data-raw/vdj_10x
   BASE=https://cf.10xgenomics.com/samples/cell-vdj/3.1.0/vdj_v1_hs_pbmc3
-  curl -fL -o data-raw/vdj_10x/pbmc3_t_contig.csv \
+  curl -fL -o data-raw/vdj_10x_dextramer/pbmc3_t_contig.csv \
     "$BASE/vdj_v1_hs_pbmc3_t_filtered_contig_annotations.csv"
-  curl -fL -o data-raw/vdj_10x/pbmc3_b_contig.csv \
+  curl -fL -o data-raw/vdj_10x_dextramer/pbmc3_b_contig.csv \
     "$BASE/vdj_v1_hs_pbmc3_b_filtered_contig_annotations.csv"
   ```
 - **object type**: `Cerebro_v1.3` cell subset of `example.crb` (T + B + Mono, 1,476 cells)
@@ -262,7 +262,7 @@ Built by `data-raw/build_ir_demos.R` (see [`immune_repertoire.md`](immune_repert
 - **dropdown label**: `CD8 dextramer cohort - real antigen-selected cells`
 - **organism / tissue**: human (hg) / peripheral blood CD8+ T cells, four healthy donors
 - **source**: 10x Genomics, *CD8+ T cells of Healthy Donor 1–4* (2019), published as Zhang W *et al.*, **Sci Adv** 7(20):eabf5835 (2021), doi:10.1126/sciadv.abf5835.
-- **acquire**: the build script downloads on demand (~1.6 GB, cached in `data-raw/vdj_10x/`, gitignored); or manually, per donor `d` in 1..4:
+- **acquire**: the build script downloads on demand (~1.6 GB, cached in `data-raw/vdj_10x_dextramer/`, gitignored); or manually, per donor `d` in 1..4:
   ```bash
   base=https://cf.10xgenomics.com/samples/cell-vdj/3.0.2
   stem=vdj_v1_hs_aggregated_donor${d}

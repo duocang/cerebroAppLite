@@ -89,7 +89,7 @@ Three files per donor are used:
 
 ```{r download}
 # All four donors; the build script does this on demand and caches in
-# data-raw/vdj_10x/ (gitignored). Manually:
+# data-raw/vdj_10x_dextramer/ (gitignored). Manually:
 base <- "https://cf.10xgenomics.com/samples/cell-vdj/3.0.2"
 dir.create("data-raw/vdj_10x", recursive = TRUE, showWarnings = FALSE)
 

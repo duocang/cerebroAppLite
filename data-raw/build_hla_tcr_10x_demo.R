@@ -76,7 +76,7 @@
 #
 # USAGE
 #   Rscript data-raw/build_hla_tcr_10x_demo.R
-# Raw downloads are cached in data-raw/vdj_10x/ (gitignored, ~1.6 GB). Only the
+# Raw downloads are cached in data-raw/vdj_10x_dextramer/ (gitignored, ~1.6 GB). Only the
 # built .crb ships.
 # ============================================================================
 
@@ -91,7 +91,7 @@ set.seed(20260721)
 
 ## ---- Configuration ------------------------------------------------------ ##
 DONORS <- 1:4
-CACHE <- "data-raw/vdj_10x"
+CACHE <- "data-raw/vdj_10x_dextramer"
 OUT <- "inst/extdata/v1.4/demo_hla_tcr_10x.crb"
 BASE <- "https://cf.10xgenomics.com/samples/cell-vdj/3.0.2"
 
