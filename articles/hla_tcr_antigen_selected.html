@@ -97,9 +97,9 @@
                         <h4 data-toc-skip class="author">Xuesong
 Wang</h4>
             
-            <h4 data-toc-skip class="date">21 July, 2026</h4>
+            <h4 data-toc-skip class="date">22 July, 2026</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/mihem/cerebroAppLite/blob/ci/hla-one-dataset/vignettes/hla_tcr_antigen_selected.Rmd" class="external-link"><code>vignettes/hla_tcr_antigen_selected.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/mihem/cerebroAppLite/blob/master/vignettes/hla_tcr_antigen_selected.Rmd" class="external-link"><code>vignettes/hla_tcr_antigen_selected.Rmd</code></a></small>
       <div class="d-none name"><code>hla_tcr_antigen_selected.Rmd</code></div>
     </div>
 
@@ -190,22 +190,30 @@ recombination), which is exactly what the network draws.</p>
 <td>trips the size guard — nothing to draw</td>
 </tr>
 <tr class="even">
-<td>dextramer-binding cells</td>
+<td>cells called a binder of any reagent</td>
 <td>2,910</td>
 <td><strong>308 nodes in 75 motifs</strong></td>
 </tr>
 <tr class="odd">
-<td>one epitope: Flu-MP <code>GILGFVFTL</code>
-</td>
+<td>cells called a binder of one reagent
+(<code>A0201_GILGFVFTL_Flu-MP</code>)</td>
 <td>267</td>
 <td><strong>121 nodes in 7 motifs</strong></td>
 </tr>
 </tbody>
 </table>
-<p>The last row is the point: against one immunodominant influenza
-epitope, 45% of the observed CDR3s collapse into <strong>seven</strong>
-families. That is measured convergence in real data, not a designed
-fixture.</p>
+<p>The last row is the point, stated carefully: within the subset
+<strong>labelled by a single reagent</strong>, 45% of the observed CDR3s
+collapse into seven families. The convergence is measured and real — but
+the label on that subset is a raw binder call, so this is convergence
+within a reagent-labelled subset, <em>not</em> a demonstration of
+measured peptide-level specificity. Attributing it to the influenza
+epitope itself would assume exactly what the next section shows is
+unsupported.</p>
+<p>Which, if anything, makes the structure more striking rather than
+less: a noisy label should blur families together, not sharpen them. But
+“more striking” is not “established”, and the page does not need it to
+be.</p>
 </div>
 </div>
 <div class="section level2">
@@ -254,10 +262,12 @@ panel, sorted, and run on 10x 5′ immune profiling: paired αβ TCR
 <h2 id="download">Download<a class="anchor" aria-label="anchor" href="#download"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># All four donors; the build script does this on demand and caches in</span></span>
-<span><span class="co"># data-raw/vdj_10x_dextramer/ (gitignored). Manually:</span></span>
+<code class="sourceCode R"><span><span class="co"># All four donors. The build script does this on demand and caches in</span></span>
+<span><span class="co"># data-raw/vdj_10x_dextramer/ (gitignored) -- use that exact directory, or the</span></span>
+<span><span class="co"># script will not find what you downloaded and will fetch it all again.</span></span>
 <span><span class="va">base</span> <span class="op">&lt;-</span> <span class="st">"https://cf.10xgenomics.com/samples/cell-vdj/3.0.2"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="st">"data-raw/vdj_10x"</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">cache</span> <span class="op">&lt;-</span> <span class="st">"data-raw/vdj_10x_dextramer"</span> <span class="co"># = CACHE in the build script</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">cache</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">d</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">stem</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"vdj_v1_hs_aggregated_donor%d"</span>, <span class="va">d</span><span class="op">)</span></span>
@@ -268,7 +278,7 @@ panel, sorted, and run on 10x 5′ immune profiling: paired αβ TCR
 <span>  <span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span></span>
 <span>      <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"%s/%s/%s%s"</span>, <span class="va">base</span>, <span class="va">stem</span>, <span class="va">stem</span>, <span class="va">suffix</span><span class="op">)</span>,</span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data-raw/vdj_10x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">stem</span>, <span class="va">suffix</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">cache</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">stem</span>, <span class="va">suffix</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>      mode <span class="op">=</span> <span class="st">"wb"</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
@@ -356,28 +366,102 @@ A0301_KLGGALQAK_IE-1_CMV_binder
 A1101_AVFDRKSDAK_EBNA-3B_EBV_binder</code></pre>
 <p>The allele prefix is the <strong>reagent’s own HLA
 restriction</strong> — a published property of the dextramer,
-independent of these cells. So for every antigen-specific cell the
-pipeline recovers a real triple: <em>peptide, antigen, and the HLA
-allele that presents it</em>.</p>
+independent of these cells. So for every binding event the pipeline
+recovers a real triple: <em>peptide, antigen, and the allele that
+reagent is restricted by</em>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">allele_of</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">col</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"HLA-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"^([ABC])([0-9]{2})([0-9]{2})_.*"</span>, <span class="st">"\\1*\\2:\\3"</span>, <span class="va">col</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="co"># A0201_GILGFVFTL_Flu-MP_Influenza_binder -&gt; "HLA-A*02:01"</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="what-that-triple-is-not">What that triple is <em>not</em><a class="anchor" aria-label="anchor" href="#what-that-triple-is-not"></a>
+</h4>
+<p>It is a property of the <strong>reagent</strong>, not a verified
+property of the cell. A binder call does not establish that the cell is
+specific for that peptide, nor that the reagent’s allele is what
+presents it in that donor. Dextramer staining is heavily cross-reactive
+in this experiment, and the size of the effect is easy to state: only
+<strong>5,271 of the 12,000 shipped cells (44 %)</strong> bound a
+reagent whose restriction their donor actually carries. 6,654 bound one
+their donor demonstrably does not, and 75 more cannot be decided at all
+(per donor, yes / no / unknown of 3,000: 2,046 / 879 / 75 · 2,532 / 468
+/ 0 · 3 / 2,997 / 0 · 690 / 2,310 / 0 — donor 3 is the extreme case)
+(see §<em>Why the genotypes are not inferred from binding</em>, where
+the same fact sinks the inference).</p>
+<p>That is why the per-cell columns ship as
+<code>dextramer_antigen</code>, <code>dextramer_peptide</code> and
+<code>dextramer_allele</code> — a reagent label, deliberately not named
+<code>antigen</code> or <code>restricting_allele</code> — and why a
+fourth column, <code>restriction_in_genotype</code>, ships beside them.
+Colour the projection by it and the noise is visible in one look rather
+than buried in a methods note.</p>
+<p>It has <strong>three</strong> states, not two, and the third one
+matters:</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th>value</th>
+<th>meaning</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>yes</code></td>
+<td>the reagent’s restriction is one of the donor’s published
+alleles</td>
+</tr>
+<tr class="even">
+<td><code>no</code></td>
+<td>it is not, <strong>and that locus was called completely</strong>
+(two copies), so absence is real</td>
+</tr>
+<tr class="odd">
+<td><code>unknown</code></td>
+<td>it is not listed, but the locus was called at one copy only — the
+second copy could be it</td>
+</tr>
+</tbody>
+</table>
+<p>Table S1 reports a single HLA-B allele for donors 1 and 2, so every
+B-restricted binder call in those donors is undecidable rather than
+off-genotype. Collapsing that into <code>no</code> would manufacture a
+confirmed negative out of missing data — the same false-negative bias
+<code><a href="../reference/hla_allele_status_by_unit.html">hla_allele_status_by_unit()</a></code> refuses to take when it builds
+carrier / non-carrier groups. The build applies the package’s own rule
+(<code><a href="../reference/hla_locus_call_state.html">hla_locus_call_state()</a></code>: a locus is complete at two
+copies).</p>
+<p>The carrier contrasts on the HLA Associations tab use the
+<strong>published genotypes</strong>, which were measured independently
+of these cells — so they are not circular. That is a narrower claim than
+it may sound, and the page now says so above the tables: independent
+genotypes remove circularity, they do not remove
+<strong>ascertainment</strong>. The repertoire being compared was itself
+captured by the reagent panel; the panel’s reagents are restricted by
+particular alleles; and there are four donors. Donor and panel stay
+confounded with genotype, so a contrast here is suggestive, not a
+test.</p>
+</div>
 </div>
 <div class="section level3">
-<h3 id="step-3-one-specificity-per-cell-or-none">Step 3 — one specificity per cell, or none<a class="anchor" aria-label="anchor" href="#step-3-one-specificity-per-cell-or-none"></a>
+<h3 id="step-3-one-binder-call-per-cell-or-none">Step 3 — one binder call per cell, or none<a class="anchor" aria-label="anchor" href="#step-3-one-binder-call-per-cell-or-none"></a>
 </h3>
 <p>10x’s binarized calls mark each cell against each dextramer. Cells
 binding several are <strong>dropped, not guessed at</strong>: an
-ambiguous specificity would place a cell in the wrong HLA context, which
-is the one error this page must not make. Columns containing
-<code>NR(</code> are the negative controls and are never evidence.</p>
+ambiguous call would place a cell in the wrong HLA context, which is the
+one error this page must not make. Columns containing <code>NR(</code>
+are the negative controls and are never evidence.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">b</span><span class="op">[</span>, <span class="va">dex</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span> <span class="op">==</span> <span class="st">"True"</span></span>
 <span><span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">hits</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
-<span><span class="va">keep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">hits</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span>                 <span class="co"># exactly one specificity</span></span>
+<span><span class="va">keep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">hits</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span>                 <span class="co"># exactly one dextramer bound</span></span>
 <span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/maxCol.html" class="external-link">max.col</a></span><span class="op">(</span><span class="va">hits</span>, ties.method <span class="op">=</span> <span class="st">"first"</span><span class="op">)</span></span></code></pre></div>
+<p>Note what this filter does and does not buy: it removes
+<em>ambiguity</em>, not <em>cross-reactivity</em>. A cell binding
+exactly one reagent is unambiguous, which is not the same as being
+specific for it.</p>
 </div>
 <div class="section level3">
 <h3 id="step-4-donor-genotype-from-the-published-table">Step 4 — donor genotype, from the published table<a class="anchor" aria-label="anchor" href="#step-4-donor-genotype-from-the-published-table"></a>
@@ -482,15 +566,30 @@ the genotype:</p>
 <div class="section level2">
 <h2 id="cell-selection-the-step-that-makes-the-network-legible">Cell selection — the step that makes the network legible<a class="anchor" aria-label="anchor" href="#cell-selection-the-step-that-makes-the-network-legible"></a>
 </h2>
-<p>Only cells that (a) carry a productive clonotype and (b) bound
-<strong>exactly one</strong> dextramer are kept. This is not a
-convenience; it <em>is</em> the data set’s defining property, and the
-reason the network draws at all (see the table in §1).</p>
+<p>Only cells that (a) carry a clonotype with <strong>both</strong>
+chains and (b) bound <strong>exactly one</strong> dextramer are kept.
+The dextramer sort is not a convenience; it <em>is</em> the data set’s
+defining property, and the reason the network draws at all (see the
+table in §1).</p>
+<p>The paired requirement is stricter than “has a <code>CTaa</code>”,
+and deliberately so. <code>combineTCR()</code> writes <code>CTaa</code>
+as <code>&lt;alpha&gt;_&lt;beta&gt;</code> and puts the literal string
+<code>NA</code> on a side it could not resolve, so a non-empty
+<code>CTaa</code> may still be a single chain. This demo is documented
+as paired αβ, so it has to actually be:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span><span class="va">tcr_all</span>, <span class="va">dex_all</span><span class="op">[</span><span class="va">dex_all</span><span class="op">$</span><span class="va">specific</span>, <span class="op">]</span>,</span>
+<code class="sourceCode R"><span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span><span class="va">tcr_all</span>, <span class="va">dex_all</span><span class="op">[</span><span class="va">dex_all</span><span class="op">$</span><span class="va">single_binder</span>, <span class="op">]</span>,</span>
 <span>             by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"barcode_raw"</span>, <span class="st">"donor"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="va">sel</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">sel</span><span class="op">$</span><span class="va">CTaa</span><span class="op">)</span> <span class="op">&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">sel</span><span class="op">$</span><span class="va">CTaa</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="co"># then a deterministic per-donor subsample, so the shipped file stays small</span></span></code></pre></div>
+<span></span>
+<span><span class="va">is_paired</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">ctaa</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">parts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">ctaa</span><span class="op">)</span>, <span class="st">""</span>, <span class="va">ctaa</span><span class="op">)</span>, <span class="st">"_"</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">parts</span>, <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="op">==</span> <span class="fl">2L</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">p</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">"None"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="va">sel</span><span class="op">[</span><span class="fu">is_paired</span><span class="op">(</span><span class="va">sel</span><span class="op">$</span><span class="va">CTaa</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="co"># the deterministic per-donor subsample comes later, after the expression join,</span></span>
+<span><span class="co"># so the shipped object is exactly 3,000 cells per donor</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="expression-and-projection">Expression and projection<a class="anchor" aria-label="anchor" href="#expression-and-projection"></a>
@@ -508,7 +607,13 @@ shipped.</p>
 <span><span class="va">so</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="va">so</span>, nfeatures <span class="op">=</span> <span class="fl">2000</span><span class="op">)</span></span>
 <span><span class="va">so</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData</a></span><span class="op">(</span><span class="va">so</span><span class="op">)</span></span>
 <span><span class="va">so</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/RunPCA.html" class="external-link">RunPCA</a></span><span class="op">(</span><span class="va">so</span>, npcs <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
-<span><span class="va">so</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/RunUMAP.html" class="external-link">RunUMAP</a></span><span class="op">(</span><span class="va">so</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">so</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/RunUMAP.html" class="external-link">RunUMAP</a></span><span class="op">(</span><span class="va">so</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Keep the shipped block SPARSE. Normalized single-cell expression is ~90%</span></span>
+<span><span class="co"># zeros; densifying this one cost 184 MiB of session memory and 4.5 MiB of</span></span>
+<span><span class="co"># installed package for nothing, and every other demo here is a dgCMatrix.</span></span>
+<span><span class="va">expression</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">so</span>, layer <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span><span class="op">[</span><span class="va">hv</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="va">expression</span> <span class="op">&lt;-</span> <span class="fu">methods</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/methods/as.html" class="external-link">as</a></span><span class="op">(</span><span class="va">expression</span>, <span class="st">"CsparseMatrix"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="assembling-the--crb">Assembling the <code>.crb</code><a class="anchor" aria-label="anchor" href="#assembling-the--crb"></a>
@@ -516,8 +621,9 @@ shipped.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">crb</span> <span class="op">&lt;-</span> <span class="va"><a href="../reference/Cerebro_v1.3.html">Cerebro_v1.3</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">crb</span><span class="op">$</span><span class="va">expression</span> <span class="op">&lt;-</span> <span class="va">expression</span></span>
-<span><span class="va">crb</span><span class="op">$</span><span class="fu">setMetaData</span><span class="op">(</span><span class="va">meta</span><span class="op">)</span>          <span class="co"># cell_barcode, sample, cell_type, antigen,</span></span>
-<span>                               <span class="co"># peptide, restricting_allele</span></span>
+<span><span class="va">crb</span><span class="op">$</span><span class="fu">setMetaData</span><span class="op">(</span><span class="va">meta</span><span class="op">)</span>          <span class="co"># cell_barcode, sample, cell_type,</span></span>
+<span>                               <span class="co"># dextramer_antigen, dextramer_peptide,</span></span>
+<span>                               <span class="co"># dextramer_allele, restriction_in_genotype</span></span>
 <span><span class="va">crb</span><span class="op">$</span><span class="va">projections</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>umap <span class="op">=</span> <span class="va">umap</span><span class="op">)</span></span>
 <span><span class="va">crb</span><span class="op">$</span><span class="va">immune_repertoire</span> <span class="op">&lt;-</span> <span class="va">immune_repertoire</span>   <span class="co"># split by donor</span></span>
 <span><span class="va">crb</span><span class="op">$</span><span class="va">technical_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -580,28 +686,51 @@ removes the guess.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="verification-measured-never-assumed">Verification: measured, never assumed<a class="anchor" aria-label="anchor" href="#verification-measured-never-assumed"></a>
+<h2 id="verification-a-gate-not-a-report">Verification: a gate, not a report<a class="anchor" aria-label="anchor" href="#verification-a-gate-not-a-report"></a>
 </h2>
-<p>The build script ends by re-reading the file it just wrote and
-re-deriving the network with the package’s own core, so the numbers
-reported are what the shipped object actually produces:</p>
+<p>The build writes to a <strong>staging</strong> path first. It then
+re-reads that file and re-derives the network with the package’s own
+core, and every number it measures is an <strong>assertion</strong>.
+Only if all of them hold does the staged file replace the shipped
+<code>.crb</code>:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">OUT</span><span class="op">)</span></span>
-<span><span class="va">ir</span> <span class="op">&lt;-</span> <span class="va">check</span><span class="op">$</span><span class="fu">getImmuneRepertoire</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">ch</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"TRB"</span>, <span class="st">"TRA"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">seg</span> <span class="op">&lt;-</span> <span class="fu">cerebroAppLite</span><span class="fu">:::</span><span class="fu"><a href="../reference/hla_parse_ir_segments.html">hla_parse_ir_segments</a></span><span class="op">(</span><span class="va">ir</span>, <span class="va">ch</span><span class="op">)</span></span>
-<span>  <span class="va">g</span> <span class="op">&lt;-</span> <span class="fu">cerebroAppLite</span><span class="fu">:::</span><span class="fu"><a href="../reference/hla_build_motif_graph.html">hla_build_motif_graph</a></span><span class="op">(</span><span class="va">seg</span>, by_v <span class="op">=</span> <span class="cn">TRUE</span>, min_nodes <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></span>
-<span>  <span class="co"># -&gt; unique CDR3, nodes, motifs</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<p>A build that silently loses the motif structure therefore reports it,
-instead of shipping a data set whose network is empty. On the shipped
-object it prints:</p>
-<pre><code>   chains: TRA, TRB
-   TRB: 3350 unique CDR3 -&gt; 157 nodes in 31 motifs
-   TRA: 3067 unique CDR3 -&gt; 367 nodes in 130 motifs
-   HLA: 4 donors, 12 alleles, source_type=genotyped</code></pre>
-<p>12,000 antigen-selected cells (3,000 per donor), 2,000 variable
-genes, 7.8 MB.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">crb</span>, <span class="va">staged</span>, compress <span class="op">=</span> <span class="st">"xz"</span><span class="op">)</span></span>
+<span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">staged</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span>  <span class="st">"donors are not balanced"</span>            <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span> <span class="op">==</span> <span class="va">CELLS_PER_DONOR</span><span class="op">)</span>,</span>
+<span>  <span class="st">"expression block is not sparse"</span>     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">check</span><span class="op">$</span><span class="va">expression</span>, <span class="st">"CsparseMatrix"</span><span class="op">)</span>,</span>
+<span>  <span class="st">"not every observation is paired"</span>    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu">is_paired</span><span class="op">(</span><span class="va">ctaa</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="st">"TRB network has collapsed"</span>          <span class="op">=</span> <span class="va">n_nodes</span> <span class="op">&gt;</span> <span class="fl">100</span> <span class="op">&amp;&amp;</span> <span class="va">n_motifs</span> <span class="op">&gt;=</span> <span class="fl">20</span>,</span>
+<span>  <span class="st">"HLA alleles drifted from table S1"</span>  <span class="op">=</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setequal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">ht</span><span class="op">$</span><span class="va">sample</span>, <span class="va">ht</span><span class="op">$</span><span class="va">allele</span><span class="op">)</span>, <span class="va">genotype_key</span><span class="op">)</span></span>
+<span>  <span class="co"># ... plus provenance, projection alignment, and the honesty columns</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.rename</a></span><span class="op">(</span><span class="va">staged</span>, <span class="va">OUT</span><span class="op">)</span> <span class="co"># only reached if nothing above stopped the script</span></span></code></pre></div>
+<p>This is the difference between a build that <em>tells</em> you it
+broke and one that <em>refuses to ship</em> broken: an earlier version
+printed these same numbers <strong>after</strong> saving, so drifted
+inputs still replaced a good demo and still exited 0. The thresholds are
+set well below the measured values — they detect drift, they are not a
+transcript of one run.</p>
+<p>One assertion is worth calling out because it looks backwards: the
+gate requires that some cells still be <strong>off-genotype</strong>. If
+dextramer cross-reactivity ever vanished from this data, the binder
+calls would have stopped being raw 10x calls and every caveat in this
+vignette would need rewriting — so the caveat is asserted rather than
+assumed.</p>
+<p>On the shipped object the gate prints:</p>
+<pre><code>   cells: 12000 in 4 donors, balanced
+   expression: dgCMatrix 2000x12000, 40.2 MiB in memory
+   repertoire: 12000 observations, all paired; chains TRA, TRB
+   TRB: 3270 unique CDR3 -&gt; 169 nodes in 39 motifs
+   TRA: 3189 unique CDR3 -&gt; 396 nodes in 141 motifs
+   HLA: 4 donors, 12 alleles, source_type=genotyped
+   binder calls vs genotype: 6654 off-genotype, 75 undecidable, of 12000 cells
+   PUBLISHED inst/extdata/v1.4/demo_hla_tcr_dextramer.crb (5.2 MB)</code></pre>
+<p>12,000 dextramer-selected cells (3,000 per donor, every one paired
+αβ), 2,000 variable genes, <strong>5.2 MB</strong> — it was 7.9 MB while
+the expression block was stored dense.</p>
 </div>
 <div class="section level2">
 <h2 id="what-you-see-in-the-app">What you see in the app<a class="anchor" aria-label="anchor" href="#what-you-see-in-the-app"></a>
@@ -615,14 +744,21 @@ Hamming distance 1. Colour by <em>Sample of origin</em> to see the same
 motif reached independently by more than one donor: that is convergence,
 and it is the whole argument.</li>
 <li>
-<strong>Network data</strong> — the rows behind the picture,
-including each node’s antigen and the HLA allele that presents it.</li>
+<strong>Network data</strong> — the rows behind the picture. Besides
+the structural columns it carries whatever the data set declares as a
+grouping, so here that includes each node’s
+<code>dextramer_antigen</code>, <code>dextramer_allele</code> and
+<code>restriction_in_genotype</code> — the reagent it bound, and whether
+that reagent’s restriction is an allele the donor actually carries.</li>
 <li>
 <strong>HLA Associations</strong> — real donor genotypes, so the
-carrier contrasts are real; read the note above the tables for what the
-antigen selection means.</li>
+carrier contrasts are not circular. The note above the tables states
+what the selection still costs: the receptors available to compare were
+chosen by the reagent panel, so ascertainment and donor/panel
+confounding remain. These contrasts do <strong>not</strong> use the
+dextramer binder calls.</li>
 <li>
-<strong>Data &amp; QC</strong> — the inferred genotypes and their
+<strong>Data &amp; QC</strong> — the published genotypes and their
 coverage.</li>
 </ul>
 </div>

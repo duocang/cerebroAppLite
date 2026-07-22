@@ -48,12 +48,20 @@ Measured on this source with the package’s own motif core:
 | subset of the same donor | unique CDR3β | result |
 |----|----|----|
 | all cells, unselected | 26,449 | trips the size guard — nothing to draw |
-| dextramer-binding cells | 2,910 | **308 nodes in 75 motifs** |
-| one epitope: Flu-MP `GILGFVFTL` | 267 | **121 nodes in 7 motifs** |
+| cells called a binder of any reagent | 2,910 | **308 nodes in 75 motifs** |
+| cells called a binder of one reagent (`A0201_GILGFVFTL_Flu-MP`) | 267 | **121 nodes in 7 motifs** |
 
-The last row is the point: against one immunodominant influenza epitope,
-45% of the observed CDR3s collapse into **seven** families. That is
-measured convergence in real data, not a designed fixture.
+The last row is the point, stated carefully: within the subset
+**labelled by a single reagent**, 45% of the observed CDR3s collapse
+into seven families. The convergence is measured and real — but the
+label on that subset is a raw binder call, so this is convergence within
+a reagent-labelled subset, *not* a demonstration of measured
+peptide-level specificity. Attributing it to the influenza epitope
+itself would assume exactly what the next section shows is unsupported.
+
+Which, if anything, makes the structure more striking rather than less:
+a noisy label should blur families together, not sharpen them. But “more
+striking” is not “established”, and the page does not need it to be.
 
 ## The source
 
@@ -75,10 +83,12 @@ Three files per donor are used:
 ## Download
 
 ``` r
-# All four donors; the build script does this on demand and caches in
-# data-raw/vdj_10x_dextramer/ (gitignored). Manually:
+# All four donors. The build script does this on demand and caches in
+# data-raw/vdj_10x_dextramer/ (gitignored) -- use that exact directory, or the
+# script will not find what you downloaded and will fetch it all again.
 base <- "https://cf.10xgenomics.com/samples/cell-vdj/3.0.2"
-dir.create("data-raw/vdj_10x", recursive = TRUE, showWarnings = FALSE)
+cache <- "data-raw/vdj_10x_dextramer" # = CACHE in the build script
+dir.create(cache, recursive = TRUE, showWarnings = FALSE)
 
 for (d in 1:4) {
   stem <- sprintf("vdj_v1_hs_aggregated_donor%d", d)
@@ -89,7 +99,7 @@ for (d in 1:4) {
   )) {
     download.file(
       sprintf("%s/%s/%s%s", base, stem, stem, suffix),
-      file.path("data-raw/vdj_10x", paste0(stem, suffix)),
+      file.path(cache, paste0(stem, suffix)),
       mode = "wb"
     )
   }
@@ -184,8 +194,8 @@ Each dextramer column is named `<allele>_<peptide>_<antigen>_binder`:
 
 The allele prefix is the **reagent’s own HLA restriction** — a published
 property of the dextramer, independent of these cells. So for every
-antigen-specific cell the pipeline recovers a real triple: *peptide,
-antigen, and the HLA allele that presents it*.
+binding event the pipeline recovers a real triple: *peptide, antigen,
+and the allele that reagent is restricted by*.
 
 ``` r
 allele_of <- function(col) {
@@ -194,20 +204,73 @@ allele_of <- function(col) {
 # A0201_GILGFVFTL_Flu-MP_Influenza_binder -> "HLA-A*02:01"
 ```
 
-### Step 3 — one specificity per cell, or none
+#### What that triple is *not*
+
+It is a property of the **reagent**, not a verified property of the
+cell. A binder call does not establish that the cell is specific for
+that peptide, nor that the reagent’s allele is what presents it in that
+donor. Dextramer staining is heavily cross-reactive in this experiment,
+and the size of the effect is easy to state: only **5,271 of the 12,000
+shipped cells (44 %)** bound a reagent whose restriction their donor
+actually carries. 6,654 bound one their donor demonstrably does not, and
+75 more cannot be decided at all (per donor, yes / no / unknown of
+3,000: 2,046 / 879 / 75 · 2,532 / 468 / 0 · 3 / 2,997 / 0 · 690 / 2,310
+/ 0 — donor 3 is the extreme case) (see §*Why the genotypes are not
+inferred from binding*, where the same fact sinks the inference).
+
+That is why the per-cell columns ship as `dextramer_antigen`,
+`dextramer_peptide` and `dextramer_allele` — a reagent label,
+deliberately not named `antigen` or `restricting_allele` — and why a
+fourth column, `restriction_in_genotype`, ships beside them. Colour the
+projection by it and the noise is visible in one look rather than buried
+in a methods note.
+
+It has **three** states, not two, and the third one matters:
+
+| value | meaning |
+|----|----|
+| `yes` | the reagent’s restriction is one of the donor’s published alleles |
+| `no` | it is not, **and that locus was called completely** (two copies), so absence is real |
+| `unknown` | it is not listed, but the locus was called at one copy only — the second copy could be it |
+
+Table S1 reports a single HLA-B allele for donors 1 and 2, so every
+B-restricted binder call in those donors is undecidable rather than
+off-genotype. Collapsing that into `no` would manufacture a confirmed
+negative out of missing data — the same false-negative bias
+[`hla_allele_status_by_unit()`](https://mihem.github.io/cerebroAppLite/reference/hla_allele_status_by_unit.md)
+refuses to take when it builds carrier / non-carrier groups. The build
+applies the package’s own rule
+([`hla_locus_call_state()`](https://mihem.github.io/cerebroAppLite/reference/hla_locus_call_state.md):
+a locus is complete at two copies).
+
+The carrier contrasts on the HLA Associations tab use the **published
+genotypes**, which were measured independently of these cells — so they
+are not circular. That is a narrower claim than it may sound, and the
+page now says so above the tables: independent genotypes remove
+circularity, they do not remove **ascertainment**. The repertoire being
+compared was itself captured by the reagent panel; the panel’s reagents
+are restricted by particular alleles; and there are four donors. Donor
+and panel stay confounded with genotype, so a contrast here is
+suggestive, not a test.
+
+### Step 3 — one binder call per cell, or none
 
 10x’s binarized calls mark each cell against each dextramer. Cells
-binding several are **dropped, not guessed at**: an ambiguous
-specificity would place a cell in the wrong HLA context, which is the
-one error this page must not make. Columns containing `NR(` are the
-negative controls and are never evidence.
+binding several are **dropped, not guessed at**: an ambiguous call would
+place a cell in the wrong HLA context, which is the one error this page
+must not make. Columns containing `NR(` are the negative controls and
+are never evidence.
 
 ``` r
 hits <- as.matrix(b[, dex, drop = FALSE]) == "True"
 hits[is.na(hits)] <- FALSE
-keep <- rowSums(hits) == 1L                 # exactly one specificity
+keep <- rowSums(hits) == 1L                 # exactly one dextramer bound
 idx <- max.col(hits, ties.method = "first")
 ```
+
+Note what this filter does and does not buy: it removes *ambiguity*, not
+*cross-reactivity*. A cell binding exactly one reagent is unambiguous,
+which is not the same as being specific for it.
 
 ### Step 4 — donor genotype, from the published table
 
@@ -284,16 +347,30 @@ crb$addHLATyping(donor_typing, source_type = "genotyped", ...)
 
 ## Cell selection — the step that makes the network legible
 
-Only cells that (a) carry a productive clonotype and (b) bound **exactly
-one** dextramer are kept. This is not a convenience; it *is* the data
-set’s defining property, and the reason the network draws at all (see
-the table in §1).
+Only cells that (a) carry a clonotype with **both** chains and (b) bound
+**exactly one** dextramer are kept. The dextramer sort is not a
+convenience; it *is* the data set’s defining property, and the reason
+the network draws at all (see the table in §1).
+
+The paired requirement is stricter than “has a `CTaa`”, and deliberately
+so. `combineTCR()` writes `CTaa` as `<alpha>_<beta>` and puts the
+literal string `NA` on a side it could not resolve, so a non-empty
+`CTaa` may still be a single chain. This demo is documented as paired
+αβ, so it has to actually be:
 
 ``` r
-sel <- merge(tcr_all, dex_all[dex_all$specific, ],
+sel <- merge(tcr_all, dex_all[dex_all$single_binder, ],
              by = c("barcode_raw", "donor"))
-sel <- sel[!is.na(sel$CTaa) & nzchar(sel$CTaa), ]
-# then a deterministic per-donor subsample, so the shipped file stays small
+
+is_paired <- function(ctaa) {
+  parts <- strsplit(ifelse(is.na(ctaa), "", ctaa), "_", fixed = TRUE)
+  vapply(parts, function(p) {
+    length(p) == 2L && all(nzchar(p)) && !any(p %in% c("NA", "None"))
+  }, logical(1))
+}
+sel <- sel[is_paired(sel$CTaa), ]
+# the deterministic per-donor subsample comes later, after the expression join,
+# so the shipped object is exactly 3,000 cells per donor
 ```
 
 ## Expression and projection
@@ -312,6 +389,12 @@ so <- Seurat::FindVariableFeatures(so, nfeatures = 2000)
 so <- Seurat::ScaleData(so)
 so <- Seurat::RunPCA(so, npcs = 30)
 so <- Seurat::RunUMAP(so, dims = 1:30)
+
+# Keep the shipped block SPARSE. Normalized single-cell expression is ~90%
+# zeros; densifying this one cost 184 MiB of session memory and 4.5 MiB of
+# installed package for nothing, and every other demo here is a dgCMatrix.
+expression <- Seurat::GetAssayData(so, layer = "data")[hv, , drop = FALSE]
+expression <- methods::as(expression, "CsparseMatrix")
 ```
 
 ## Assembling the `.crb`
@@ -319,8 +402,9 @@ so <- Seurat::RunUMAP(so, dims = 1:30)
 ``` r
 crb <- Cerebro_v1.3$new()
 crb$expression <- expression
-crb$setMetaData(meta)          # cell_barcode, sample, cell_type, antigen,
-                               # peptide, restricting_allele
+crb$setMetaData(meta)          # cell_barcode, sample, cell_type,
+                               # dextramer_antigen, dextramer_peptide,
+                               # dextramer_allele, restriction_in_genotype
 crb$projections <- list(umap = umap)
 crb$immune_repertoire <- immune_repertoire   # split by donor
 crb$technical_info <- list(
@@ -348,33 +432,55 @@ Declaring `lineage_column` matters beyond tidiness: when it is absent
 the app must guess which column holds the CD4/CD8 label, and a guess can
 land on a treatment or study-arm column. Declaring it removes the guess.
 
-## Verification: measured, never assumed
+## Verification: a gate, not a report
 
-The build script ends by re-reading the file it just wrote and
-re-deriving the network with the package’s own core, so the numbers
-reported are what the shipped object actually produces:
+The build writes to a **staging** path first. It then re-reads that file
+and re-derives the network with the package’s own core, and every number
+it measures is an **assertion**. Only if all of them hold does the
+staged file replace the shipped `.crb`:
 
 ``` r
-check <- readRDS(OUT)
-ir <- check$getImmuneRepertoire()
-for (ch in c("TRB", "TRA")) {
-  seg <- cerebroAppLite:::hla_parse_ir_segments(ir, ch)
-  g <- cerebroAppLite:::hla_build_motif_graph(seg, by_v = TRUE, min_nodes = 2L)
-  # -> unique CDR3, nodes, motifs
-}
+saveRDS(crb, staged, compress = "xz")
+check <- readRDS(staged)
+
+stopifnot(
+  "donors are not balanced"            = all(table(m$sample) == CELLS_PER_DONOR),
+  "expression block is not sparse"     = inherits(check$expression, "CsparseMatrix"),
+  "not every observation is paired"    = all(is_paired(ctaa)),
+  "TRB network has collapsed"          = n_nodes > 100 && n_motifs >= 20,
+  "HLA alleles drifted from table S1"  = setequal(paste(ht$sample, ht$allele), genotype_key)
+  # ... plus provenance, projection alignment, and the honesty columns
+)
+
+file.rename(staged, OUT) # only reached if nothing above stopped the script
 ```
 
-A build that silently loses the motif structure therefore reports it,
-instead of shipping a data set whose network is empty. On the shipped
-object it prints:
+This is the difference between a build that *tells* you it broke and one
+that *refuses to ship* broken: an earlier version printed these same
+numbers **after** saving, so drifted inputs still replaced a good demo
+and still exited 0. The thresholds are set well below the measured
+values — they detect drift, they are not a transcript of one run.
 
-       chains: TRA, TRB
-       TRB: 3350 unique CDR3 -> 157 nodes in 31 motifs
-       TRA: 3067 unique CDR3 -> 367 nodes in 130 motifs
+One assertion is worth calling out because it looks backwards: the gate
+requires that some cells still be **off-genotype**. If dextramer
+cross-reactivity ever vanished from this data, the binder calls would
+have stopped being raw 10x calls and every caveat in this vignette would
+need rewriting — so the caveat is asserted rather than assumed.
+
+On the shipped object the gate prints:
+
+       cells: 12000 in 4 donors, balanced
+       expression: dgCMatrix 2000x12000, 40.2 MiB in memory
+       repertoire: 12000 observations, all paired; chains TRA, TRB
+       TRB: 3270 unique CDR3 -> 169 nodes in 39 motifs
+       TRA: 3189 unique CDR3 -> 396 nodes in 141 motifs
        HLA: 4 donors, 12 alleles, source_type=genotyped
+       binder calls vs genotype: 6654 off-genotype, 75 undecidable, of 12000 cells
+       PUBLISHED inst/extdata/v1.4/demo_hla_tcr_dextramer.crb (5.2 MB)
 
-12,000 antigen-selected cells (3,000 per donor), 2,000 variable genes,
-7.8 MB.
+12,000 dextramer-selected cells (3,000 per donor, every one paired αβ),
+2,000 variable genes, **5.2 MB** — it was 7.9 MB while the expression
+block was stored dense.
 
 ## What you see in the app
 
@@ -384,9 +490,14 @@ Open the data set and go to **HLA & TCR Motifs**:
   distance 1. Colour by *Sample of origin* to see the same motif reached
   independently by more than one donor: that is convergence, and it is
   the whole argument.
-- **Network data** — the rows behind the picture, including each node’s
-  antigen and the HLA allele that presents it.
+- **Network data** — the rows behind the picture. Besides the structural
+  columns it carries whatever the data set declares as a grouping, so
+  here that includes each node’s `dextramer_antigen`, `dextramer_allele`
+  and `restriction_in_genotype` — the reagent it bound, and whether that
+  reagent’s restriction is an allele the donor actually carries.
 - **HLA Associations** — real donor genotypes, so the carrier contrasts
-  are real; read the note above the tables for what the antigen
-  selection means.
-- **Data & QC** — the inferred genotypes and their coverage.
+  are not circular. The note above the tables states what the selection
+  still costs: the receptors available to compare were chosen by the
+  reagent panel, so ascertainment and donor/panel confounding remain.
+  These contrasts do **not** use the dextramer binder calls.
+- **Data & QC** — the published genotypes and their coverage.
