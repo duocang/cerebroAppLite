@@ -10,6 +10,8 @@ Interactive visualization of single-cell RNA-seq data, built on top of [Shiny](h
 
 CerebroNexus supports loading pre-processed single-cell data, exploring projections and gene expression, browsing marker genes and enriched pathways, and inspecting group compositions — all through an interactive web interface. The sections below cover the key features.
 
+A live demo is available at <https://osmzhlab.uni-muenster.de/shiny/demo/>.
+
 For the original feature set and data preparation workflows, refer to the upstream cerebroApp documentation at <https://romanhaa.github.io/cerebroApp/> — everything described there works the same way here.
 
 *A community fork of [cerebroApp](https://github.com/romanhaa/cerebroApp) by Roman Hillje, developed and maintained by [mihem](https://github.com/mihem).*
